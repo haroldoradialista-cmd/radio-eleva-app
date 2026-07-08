@@ -2,18 +2,18 @@
   "nome": "Rádio Eleva",
   "slogan": "Adore • Viva • Eleve",
   "stream_url": "https://sv16.hdradios.net:8516/stream",
-  "logo_url": "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/assets/logo.png",
-  "whatsapp": "5521999999999",
+  "logo_url": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/assets/logo.png",
+  "whatsapp": "5521978994649",
   "mensagem_pedido": "Olá, Rádio Eleva! Quero pedir uma música: ",
   "chat_url": "",
   "banners": [
     {
-      "imagem": "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/imagens/banner1.png",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/banner1.png",
       "link": ""
     },
     {
-      "imagem": "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/imagens/banner2.png",
-      "link": "https://wa.me/5521999999999"
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/banner2.png",
+      "link": ""
     }
   ],
   "noticias": [
@@ -27,8 +27,8 @@
     }
   ],
   "redes": [
-    { "nome": "Instagram", "link": "https://instagram.com/SEU_INSTAGRAM" },
-    { "nome": "Facebook", "link": "https://facebook.com/SUA_PAGINA" },
-    { "nome": "YouTube", "link": "https://youtube.com/@SEU_CANAL" }
+    { "nome": "Instagram", "link": "" },
+    { "nome": "Facebook", "link": "" },
+    { "nome": "YouTube", "link": "" }
   ]
 }
