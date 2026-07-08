@@ -27,6 +27,11 @@ jobs:
         with:
           channel: stable
 
+      - name: Configurar chave de assinatura
+        run: |
+          mkdir -p ~/.android
+          echo "${{ secrets.CHAVE_ASSINATURA }}" | base64 -d > ~/.android/debug.keystore
+
       - name: Preparar projeto Android
         run: bash setup_android.sh
 
