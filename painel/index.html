@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Eleva — Gerenciador do App</title>
+<style>
+  :root{
+    --navy:#071A33; --navy2:#0D2B52; --navy3:#04101F;
+    --verde:#35C733; --verde2:#1E8A2E; --azul:#1E9BFF;
+    --ouro:#E6B93F; --branco:#FFF; --suave:#E8EEF6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+  body{background:linear-gradient(180deg,#0A2140,var(--navy) 40%,#041020);min-height:100vh;color:var(--suave)}
+  .topo{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--navy3);border-bottom:2px solid var(--ouro)}
+  .topo img{width:42px;height:42px;border-radius:10px}
+  .topo h1{font-size:18px;color:var(--branco)}
+  .topo small{color:var(--ouro);display:block;font-size:11px;letter-spacing:1px}
+  .abas{display:flex;gap:4px;padding:10px 12px;overflow-x:auto;background:rgba(0,0,0,.25)}
+  .aba{padding:9px 16px;border-radius:20px;background:var(--navy2);color:var(--suave);border:1px solid transparent;cursor:pointer;white-space:nowrap;font-weight:700;font-size:13px}
+  .aba.ativa{background:var(--verde2);color:#fff;border-color:var(--ouro)}
+  main{padding:16px;max-width:860px;margin:0 auto}
+  .cartao{background:var(--navy2);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid rgba(255,255,255,.06)}
+  .cartao h2{font-size:16px;color:var(--branco);margin-bottom:10px}
+  label{display:block;font-size:12px;color:var(--ouro);font-weight:700;margin:10px 0 4px}
+  input,textarea,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:var(--navy);color:var(--branco);font-size:14px}
+  textarea{min-height:80px;resize:vertical}
+  .botao{display:inline-block;margin-top:12px;padding:11px 20px;border:none;border-radius:24px;background:linear-gradient(135deg,var(--verde),var(--azul));color:#fff;font-weight:800;font-size:14px;cursor:pointer}
+  .botao.perigo{background:#B3261E}
+  .botao.neutro{background:var(--navy);border:1px solid var(--ouro);color:var(--ouro)}
+  .botao:disabled{opacity:.5}
+  .item{display:flex;gap:10px;align-items:center;background:var(--navy);border-radius:10px;padding:10px;margin-bottom:8px}
+  .item img{width:84px;height:32px;object-fit:cover;border-radius:6px}
+  .item .info{flex:1;min-width:0}
+  .item .info b{display:block;color:var(--branco);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .info span{font-size:11px;color:#9FB3CC;word-break:break-all}
+  .mini{padding:6px 12px;font-size:12px;margin-top:0}
+  #aviso{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--verde2);color:#fff;padding:12px 22px;border-radius:24px;font-weight:700;display:none;z-index:99;max-width:90%;text-align:center}
+  #aviso.erro{background:#B3261E}
+  .oculto{display:none!important}
+  .grade2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:560px){.grade2{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
+  th{color:var(--ouro)}
+  .msgchat{background:var(--navy);border-radius:10px;padding:10px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+  .msgchat .corpo{flex:1}
+  .msgchat b{color:var(--ouro);font-size:12px}
+  .msgchat p{color:var(--branco);font-size:14px;margin-top:2px}
+  .msgchat small{color:#9FB3CC;font-size:10px}
+  .rotulo-secao{font-size:12px;color:#9FB3CC;margin-bottom:12px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
+  <div><h1>Painel Eleva</h1><small>GERENCIADOR DO APLICATIVO</small></div>
+</div>
+
+<!-- ===== TELA DE ACESSO ===== -->
+<main id="telaAcesso">
+  <div class="cartao">
+    <h2>🔑 Acesso ao painel</h2>
+    <p class="rotulo-secao">Cole aqui o seu <b>token do GitHub</b> (a chave que dá permissão ao painel para atualizar o app). Ele fica salvo somente neste navegador.</p>
+    <label>Token do GitHub</label>
+    <input id="campoToken" type="password" placeholder="github_pat_...">
+    <button class="botao" onclick="entrarPainel()">Entrar no painel</button>
+  </div>
+</main>
+
+<!-- ===== PAINEL ===== -->
+<div id="painel" class="oculto">
+  <div class="abas">
+    <button class="aba ativa" data-aba="banners" onclick="trocarAba(this)">🖼️ Banners</button>
+    <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
+    <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
+    <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
+    <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
+  </div>
+
+  <main>
+    <!-- BANNERS -->
+    <section id="sec-banners">
+      <div class="cartao">
+        <h2>Banners no topo do app</h2>
+        <p class="rotulo-secao">Tamanho ideal: <b>1200 x 400</b>. As mudanças chegam aos ouvintes na próxima vez que abrirem o app.</p>
+        <div id="listaBanners"></div>
+        <label>Nova imagem de banner</label>
+        <input type="file" id="arqBanner" accept="image/png,image/jpeg">
+        <label>Link ao tocar no banner (opcional)</label>
+        <input id="linkBanner" placeholder="https://... (deixe vazio se não tiver)">
+        <button class="botao" onclick="adicionarBanner()">➕ Adicionar banner</button>
+      </div>
+    </section>
+
+    <!-- NOTICIAS -->
+    <section id="sec-noticias" class="oculto">
+      <div class="cartao">
+        <h2>Notícias publicadas</h2>
+        <div id="listaNoticias"></div>
+      </div>
+      <div class="cartao">
+        <h2 id="tituloFormNoticia">Nova notícia</h2>
+        <label>Título</label><input id="ntTitulo">
+        <label>Resumo (aparece no cartão)</label><input id="ntResumo">
+        <label>Texto completo (abre dentro do app)</label><textarea id="ntTexto"></textarea>
+        <div class="grade2">
+          <div><label>Data (ex.: 10 de julho de 2026)</label><input id="ntData"></div>
+          <div><label>Link externo (opcional)</label><input id="ntLink" placeholder="https://..."></div>
+        </div>
+        <label>Imagem da notícia (opcional)</label>
+        <input type="file" id="ntImagem" accept="image/png,image/jpeg">
+        <button class="botao" onclick="salvarNoticia()">💾 Publicar notícia</button>
+        <button class="botao neutro" id="btnCancelarEdicao" onclick="cancelarEdicao()" style="display:none">Cancelar edição</button>
+      </div>
+    </section>
+
+    <!-- TEXTOS/REDES -->
+    <section id="sec-textos" class="oculto">
+      <div class="cartao">
+        <h2>Dados da rádio</h2>
+        <label>Nome</label><input id="cfNome">
+        <label>Slogan</label><input id="cfSlogan">
+        <label>URL do streaming</label><input id="cfStream">
+        <label>WhatsApp (com DDI+DDD, só números)</label><input id="cfZap">
+        <label>Mensagem pronta do pedido musical</label><input id="cfMsgPedido">
+      </div>
+      <div class="cartao">
+        <h2>Redes sociais</h2>
+        <label>Instagram</label><input id="cfInsta" placeholder="https://instagram.com/...">
+        <label>Facebook</label><input id="cfFace" placeholder="https://facebook.com/...">
+        <label>YouTube</label><input id="cfYou" placeholder="https://youtube.com/...">
+        <button class="botao" onclick="salvarTextos()">💾 Salvar alterações</button>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="sec-chat" class="oculto">
+      <div class="cartao" id="cartaoLoginMod">
+        <h2>Login do moderador</h2>
+        <p class="rotulo-secao">Use a <b>mesma conta que você criou no app</b> (e-mail e senha) para poder apagar mensagens.</p>
+        <label>E-mail</label><input id="modEmail" type="email">
+        <label>Senha</label><input id="modSenha" type="password">
+        <button class="botao" onclick="loginModerador()">Entrar</button>
+        <p class="rotulo-secao" id="uidInfo" style="margin-top:10px"></p>
+      </div>
+      <div class="cartao">
+        <h2>Mensagens do chat <button class="botao mini neutro" onclick="carregarChat()">🔄 Atualizar</button></h2>
+        <div id="listaChat"><p class="rotulo-secao">Carregando...</p></div>
+      </div>
+    </section>
+
+    <!-- VOTOS -->
+    <section id="sec-votos" class="oculto">
+      <div class="cartao">
+        <h2>Votos das músicas <button class="botao mini neutro" onclick="carregarVotos()">🔄 Atualizar</button></h2>
+        <p class="rotulo-secao">O que os ouvintes acharam das músicas (botões 👍 e 👎 do player).</p>
+        <div id="listaVotos"><p class="rotulo-secao">Carregando...</p></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="aviso"></div>
+
+<script>
+// ================== CONFIGURAÇÕES ==================
+const DONO = 'haroldoradialista-cmd';
+const REPO = 'radio-eleva-app';
+const API  = `https://api.github.com/repos/${DONO}/${REPO}/contents/`;
+const RAW  = `https://raw.githubusercontent.com/${DONO}/${REPO}/main/`;
+const RTDB = 'https://radio-eleva-default-rtdb.firebaseio.com';
+const FIREKEY = 'AIzaSyCsfZI3ZxetPd_w_0NTWLLqnYg7k9C12gE';
+
+let token = localStorage.getItem('tokenEleva') || '';
+let config = null, configSha = '';
+let idxEdicao = -1;
+let modToken = '', modUid = '';
+
+// ================== UTILIDADES ==================
+function avisar(txt, erro=false){
+  const a = document.getElementById('aviso');
+  a.textContent = txt; a.className = erro ? 'erro' : '';
+  a.style.display = 'block';
+  setTimeout(()=>a.style.display='none', 3500);
+}
+function b64Codificar(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64Decodificar(str){ return decodeURIComponent(escape(atob(str))); }
+
+async function gh(caminho, opcoes={}){
+  const r = await fetch(API + caminho, {
+    ...opcoes,
+    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', ...(opcoes.headers||{}) }
+  });
+  if(!r.ok) throw new Error('GitHub respondeu ' + r.status);
+  return r.json();
+}
+
+// ================== ACESSO ==================
+async function entrarPainel(){
+  token = document.getElementById('campoToken').value.trim() || token;
+  if(!token){ avisar('Cole o token primeiro.', true); return; }
+  try{
+    await carregarConfig();
+    localStorage.setItem('tokenEleva', token);
+    document.getElementById('telaAcesso').classList.add('oculto');
+    document.getElementById('painel').classList.remove('oculto');
+    desenharBanners(); desenharNoticias(); preencherTextos();
+    carregarChat(); carregarVotos();
+    avisar('Bem-vindo ao Painel Eleva! 🎉');
+  }catch(e){
+    avisar('Token inválido ou sem permissão. Confira e tente de novo.', true);
+  }
+}
+
+async function carregarConfig(){
+  const d = await gh('config.json?ref=main&t=' + Date.now());
+  configSha = d.sha;
+  config = JSON.parse(b64Decodificar(d.content.replace(/\n/g,'')));
+}
+
+async function salvarConfig(mensagem){
+  const corpo = {
+    message: mensagem,
+    content: b64Codificar(JSON.stringify(config, null, 2)),
+    sha: configSha, branch: 'main'
+  };
+  const d = await gh('config.json', { method:'PUT', body: JSON.stringify(corpo) });
+  configSha = d.content.sha;
+}
+
+async function subirImagem(arquivo, pasta){
+  const nome = pasta + '/' + Date.now() + '_' + arquivo.name.replace(/[^a-zA-Z0-9._-]/g,'');
+  const base64 = await new Promise((res,rej)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>res(fr.result.split(',')[1]);
+    fr.onerror = rej;
+    fr.readAsDataURL(arquivo);
+  });
+  await gh(nome, { method:'PUT', body: JSON.stringify({ message:'Painel: nova imagem', content: base64, branch:'main' }) });
+  return RAW + nome;
+}
+
+// ================== ABAS ==================
+function trocarAba(botao){
+  document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
+  botao.classList.add('ativa');
+  ['banners','noticias','textos','chat','votos'].forEach(s=>
+    document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
+}
+
+// ================== BANNERS ==================
+function desenharBanners(){
+  const el = document.getElementById('listaBanners');
+  el.innerHTML = config.banners.length ? '' : '<p class="rotulo-secao">Nenhum banner ainda.</p>';
+  config.banners.forEach((b,i)=>{
+    el.innerHTML += `<div class="item">
+      <img src="${b.imagem}">
+      <div class="info"><b>Banner ${i+1}</b><span>${b.link||'sem link'}</span></div>
+      <button class="botao mini perigo" onclick="removerBanner(${i})">🗑️</button>
+    </div>`;
+  });
+}
+async function adicionarBanner(){
+  const arq = document.getElementById('arqBanner').files[0];
+  if(!arq){ avisar('Escolha a imagem primeiro.', true); return; }
+  try{
+    avisar('Enviando imagem...');
+    const url = await subirImagem(arq, 'imagens');
+    config.banners.push({ imagem:url, link: document.getElementById('linkBanner').value.trim() });
+    await salvarConfig('Painel: banner adicionado');
+    document.getElementById('arqBanner').value=''; document.getElementById('linkBanner').value='';
+    desenharBanners(); avisar('Banner publicado! ✅');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function removerBanner(i){
+  if(!confirm('Remover este banner?')) return;
+  config.banners.splice(i,1);
+  try{ await salvarConfig('Painel: banner removido'); desenharBanners(); avisar('Banner removido.'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== NOTÍCIAS ==================
+function desenharNoticias(){
+  const el = document.getElementById('listaNoticias');
+  el.innerHTML = config.noticias.length ? '' : '<p class="rotulo-secao">Nenhuma notícia publicada.</p>';
+  config.noticias.forEach((n,i)=>{
+    el.innerHTML += `<div class="item">
+      <div class="info"><b>${n.titulo}</b><span>${n.data||''}</span></div>
+      <button class="botao mini neutro" onclick="editarNoticia(${i})">✏️</button>
+      <button class="botao mini perigo" onclick="removerNoticia(${i})">🗑️</button>
+    </div>`;
+  });
+}
+function editarNoticia(i){
+  const n = config.noticias[i]; idxEdicao = i;
+  ntTitulo.value=n.titulo||''; ntResumo.value=n.resumo||''; ntTexto.value=n.texto||'';
+  ntData.value=n.data||''; ntLink.value=n.link||'';
+  document.getElementById('tituloFormNoticia').textContent='Editando notícia';
+  document.getElementById('btnCancelarEdicao').style.display='inline-block';
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
+function cancelarEdicao(){
+  idxEdicao=-1; ntTitulo.value=ntResumo.value=ntTexto.value=ntData.value=ntLink.value='';
+  document.getElementById('ntImagem').value='';
+  document.getElementById('tituloFormNoticia').textContent='Nova notícia';
+  document.getElementById('btnCancelarEdicao').style.display='none';
+}
+async function salvarNoticia(){
+  if(!ntTitulo.value.trim()){ avisar('Dê um título à notícia.', true); return; }
+  try{
+    let imagem = idxEdicao>=0 ? (config.noticias[idxEdicao].imagem||'') : '';
+    const arq = document.getElementById('ntImagem').files[0];
+    if(arq){ avisar('Enviando imagem...'); imagem = await subirImagem(arq,'imagens'); }
+    const nova = { titulo:ntTitulo.value.trim(), resumo:ntResumo.value.trim(),
+      texto:ntTexto.value.trim(), imagem, link:ntLink.value.trim(), data:ntData.value.trim() };
+    if(idxEdicao>=0) config.noticias[idxEdicao]=nova; else config.noticias.unshift(nova);
+    await salvarConfig('Painel: notícia');
+    cancelarEdicao(); desenharNoticias(); avisar('Notícia publicada! ✅');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function removerNoticia(i){
+  if(!confirm('Apagar esta notícia?')) return;
+  config.noticias.splice(i,1);
+  try{ await salvarConfig('Painel: notícia removida'); desenharNoticias(); avisar('Notícia apagada.'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== TEXTOS/REDES ==================
+function preencherTextos(){
+  cfNome.value=config.nome||''; cfSlogan.value=config.slogan||'';
+  cfStream.value=config.stream_url||''; cfZap.value=config.whatsapp||'';
+  cfMsgPedido.value=config.mensagem_pedido||'';
+  const rede = nome => (config.redes.find(r=>r.nome===nome)||{}).link||'';
+  cfInsta.value=rede('Instagram'); cfFace.value=rede('Facebook'); cfYou.value=rede('YouTube');
+}
+async function salvarTextos(){
+  config.nome=cfNome.value.trim(); config.slogan=cfSlogan.value.trim();
+  config.stream_url=cfStream.value.trim(); config.whatsapp=cfZap.value.trim();
+  config.mensagem_pedido=cfMsgPedido.value.trim();
+  config.redes=[
+    {nome:'Instagram',link:cfInsta.value.trim()},
+    {nome:'Facebook',link:cfFace.value.trim()},
+    {nome:'YouTube',link:cfYou.value.trim()},
+  ];
+  try{ await salvarConfig('Painel: dados da rádio'); avisar('Alterações salvas! ✅'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== CHAT (moderação) ==================
+async function loginModerador(){
+  try{
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREKEY}`,{
+      method:'POST', body: JSON.stringify({ email:modEmail.value.trim(), password:modSenha.value, returnSecureToken:true })
+    });
+    const d = await r.json();
+    if(!r.ok){ avisar('E-mail ou senha incorretos.', true); return; }
+    modToken = d.idToken; modUid = d.localId;
+    document.getElementById('uidInfo').innerHTML =
+      '✅ Logado! Seu código de moderador: <b style="color:var(--ouro)">'+modUid+'</b>';
+    avisar('Moderador conectado!');
+  }catch(e){ avisar('Falha de conexão.', true); }
+}
+async function carregarChat(){
+  const el = document.getElementById('listaChat');
+  try{
+    const r = await fetch(`${RTDB}/chat.json?orderBy=%22%24key%22&limitToLast=100&t=${Date.now()}`);
+    const d = await r.json();
+    if(!d){ el.innerHTML='<p class="rotulo-secao">Nenhuma mensagem ainda.</p>'; return; }
+    const chaves = Object.keys(d).sort().reverse();
+    el.innerHTML = chaves.map(k=>{
+      const m = d[k];
+      return `<div class="msgchat">
+        <div class="corpo"><b>${m.nome||'Ouvinte'}</b><p>${(m.msg||'').replace(/</g,'&lt;')}</p>
+        <small>${(m.quando||'').replace('T',' ').slice(0,16)}</small></div>
+        <button class="botao mini perigo" onclick="apagarMsg('${k}')">🗑️</button>
+      </div>`;
+    }).join('');
+  }catch(e){ el.innerHTML='<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+async function apagarMsg(chave){
+  if(!modToken){ avisar('Faça o login do moderador primeiro (acima).', true); return; }
+  if(!confirm('Apagar esta mensagem?')) return;
+  const r = await fetch(`${RTDB}/chat/${chave}.json?auth=${modToken}`, { method:'DELETE' });
+  if(r.ok){ avisar('Mensagem apagada.'); carregarChat(); }
+  else avisar('Sem permissão. Confira as regras do banco.', true);
+}
+
+// ================== VOTOS ==================
+async function carregarVotos(){
+  const el = document.getElementById('listaVotos');
+  try{
+    const r = await fetch(`${RTDB}/votos.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!d){ el.innerHTML='<p class="rotulo-secao">Nenhum voto ainda.</p>'; return; }
+    const mapa = {};
+    Object.values(d).forEach(v=>{
+      const m = (v.musica||'(sem identificação)').trim()||'(sem identificação)';
+      mapa[m] = mapa[m]||{like:0,dislike:0};
+      if(v.tipo==='like') mapa[m].like++; else mapa[m].dislike++;
+    });
+    const linhas = Object.entries(mapa)
+      .sort((a,b)=>(b[1].like+b[1].dislike)-(a[1].like+a[1].dislike))
+      .map(([m,c])=>`<tr><td>${m}</td><td>👍 ${c.like}</td><td>👎 ${c.dislike}</td></tr>`).join('');
+    el.innerHTML = `<table><tr><th>Música</th><th>Gostei</th><th>Não gostei</th></tr>${linhas}</table>`;
+  }catch(e){ el.innerHTML='<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+
+// entra direto se já tem token salvo
+if(token){ document.getElementById('campoToken').value = token; entrarPainel(); }
+</script>
+</body>
+</html>
