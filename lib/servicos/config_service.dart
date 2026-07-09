@@ -16,6 +16,7 @@ class AppConfig {
   final List<Map<String, dynamic>> noticias;
   final List<Map<String, dynamic>> redes;
   final List<Map<String, dynamic>> programacao;
+  final List<Map<String, dynamic>> enquetes;
 
   AppConfig({
     required this.nome,
@@ -29,6 +30,7 @@ class AppConfig {
     required this.noticias,
     required this.redes,
     required this.programacao,
+    required this.enquetes,
   });
 
   factory AppConfig.fromJson(Map<String, dynamic> j) => AppConfig(
@@ -43,6 +45,7 @@ class AppConfig {
         noticias: List<Map<String, dynamic>>.from(j['noticias'] ?? []),
         redes: List<Map<String, dynamic>>.from(j['redes'] ?? []),
         programacao: List<Map<String, dynamic>>.from(j['programacao'] ?? []),
+        enquetes: List<Map<String, dynamic>>.from(j['enquetes'] ?? []),
       );
 
   factory AppConfig.padrao() => AppConfig(
@@ -57,6 +60,7 @@ class AppConfig {
         noticias: [],
         redes: [],
         programacao: [],
+        enquetes: [],
       );
 }
 

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../servicos/config_service.dart';
 import '../servicos/player_service.dart';
 import '../tema.dart';
+import '../widgets/enquete_card.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -134,6 +135,9 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
                   ),
+
+                  // ===== ENQUETE FIXA (entre o banner e o player) =====
+                  const EnqueteCard(),
 
                   // ===== ÁREA DO PLAYER (2/3 inferior) =====
                   Expanded(
