@@ -8,6 +8,7 @@ on:
       - 'config.json'
       - 'imagens/**'
       - 'README.md'
+      - 'painel/**'
 
 jobs:
   build:
@@ -31,6 +32,11 @@ jobs:
         run: |
           mkdir -p ~/.android
           echo "${{ secrets.CHAVE_ASSINATURA }}" | base64 -d > ~/.android/debug.keystore
+
+      - name: Conferir chave de assinatura
+        run: |
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey | grep "SHA1:" \
+          || (echo "::error::PROBLEMA! O secret CHAVE_ASSINATURA esta ausente ou invalido. Confira em Settings > Secrets and variables > Actions." && exit 1)
 
       - name: Preparar projeto Android
         run: bash setup_android.sh
