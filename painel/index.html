@@ -74,6 +74,7 @@
   <div class="abas">
     <button class="aba ativa" data-aba="banners" onclick="trocarAba(this)">🖼️ Banners</button>
     <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
+    <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
@@ -90,6 +91,10 @@
         <input type="file" id="arqBanner" accept="image/png,image/jpeg">
         <label>Link ao tocar no banner (opcional)</label>
         <input id="linkBanner" placeholder="https://... (deixe vazio se não tiver)">
+        <div class="grade2">
+          <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="bnInicio"></div>
+          <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="bnFim"></div>
+        </div>
         <button class="botao" onclick="adicionarBanner()">➕ Adicionar banner</button>
       </div>
     </section>
@@ -111,8 +116,37 @@
         </div>
         <label>Imagem da notícia (opcional)</label>
         <input type="file" id="ntImagem" accept="image/png,image/jpeg">
+        <div class="grade2">
+          <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="ntInicio"></div>
+          <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="ntFim"></div>
+        </div>
         <button class="botao" onclick="salvarNoticia()">💾 Publicar notícia</button>
         <button class="botao neutro" id="btnCancelarEdicao" onclick="cancelarEdicao()" style="display:none">Cancelar edição</button>
+      </div>
+    </section>
+
+    <!-- PROGRAMACAO -->
+    <section id="sec-programacao" class="oculto">
+      <div class="cartao">
+        <h2>Grade de programação</h2>
+        <p class="rotulo-secao">Esta grade aparece na aba <b>Programação</b> do app.</p>
+        <div id="listaProgramas"></div>
+      </div>
+      <div class="cartao">
+        <h2>Adicionar programa</h2>
+        <div class="grade2">
+          <div><label>Dia</label>
+            <select id="pgDia">
+              <option>Todos os dias</option><option>Segunda</option><option>Terça</option>
+              <option>Quarta</option><option>Quinta</option><option>Sexta</option>
+              <option>Sábado</option><option>Domingo</option>
+            </select>
+          </div>
+          <div><label>Horário (ex.: 08:00)</label><input id="pgHora" type="time"></div>
+        </div>
+        <label>Nome do programa</label><input id="pgNome" placeholder="Ex.: Manhã com Adoração">
+        <label>Apresentador(a) (opcional)</label><input id="pgApres">
+        <button class="botao" onclick="adicionarPrograma()">➕ Adicionar à grade</button>
       </div>
     </section>
 
@@ -206,7 +240,7 @@ async function entrarPainel(){
     localStorage.setItem('tokenEleva', token);
     document.getElementById('telaAcesso').classList.add('oculto');
     document.getElementById('painel').classList.remove('oculto');
-    desenharBanners(); desenharNoticias(); preencherTextos();
+    desenharBanners(); desenharNoticias(); desenharProgramas(); preencherTextos();
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
@@ -246,7 +280,7 @@ async function subirImagem(arquivo, pasta){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','noticias','textos','chat','votos'].forEach(s=>
+  ['banners','noticias','programacao','textos','chat','votos'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
 }
 
@@ -257,7 +291,7 @@ function desenharBanners(){
   config.banners.forEach((b,i)=>{
     el.innerHTML += `<div class="item">
       <img src="${b.imagem}">
-      <div class="info"><b>Banner ${i+1}</b><span>${b.link||'sem link'}</span></div>
+      <div class="info"><b>Banner ${i+1} ${etiquetaAgenda(b)}</b><span>${b.link||'sem link'}</span></div>
       <button class="botao mini perigo" onclick="removerBanner(${i})">🗑️</button>
     </div>`;
   });
@@ -268,9 +302,12 @@ async function adicionarBanner(){
   try{
     avisar('Enviando imagem...');
     const url = await subirImagem(arq, 'imagens');
-    config.banners.push({ imagem:url, link: document.getElementById('linkBanner').value.trim() });
+    const novoBanner = { imagem:url, link: document.getElementById('linkBanner').value.trim() };
+    if(bnInicio.value) novoBanner.publicar_em = bnInicio.value;
+    if(bnFim.value) novoBanner.expirar_em = bnFim.value;
+    config.banners.push(novoBanner);
     await salvarConfig('Painel: banner adicionado');
-    document.getElementById('arqBanner').value=''; document.getElementById('linkBanner').value='';
+    document.getElementById('arqBanner').value=''; document.getElementById('linkBanner').value=''; bnInicio.value=''; bnFim.value='';
     desenharBanners(); avisar('Banner publicado! ✅');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
@@ -287,7 +324,7 @@ function desenharNoticias(){
   el.innerHTML = config.noticias.length ? '' : '<p class="rotulo-secao">Nenhuma notícia publicada.</p>';
   config.noticias.forEach((n,i)=>{
     el.innerHTML += `<div class="item">
-      <div class="info"><b>${n.titulo}</b><span>${n.data||''}</span></div>
+      <div class="info"><b>${n.titulo} ${etiquetaAgenda(n)}</b><span>${n.data||''}</span></div>
       <button class="botao mini neutro" onclick="editarNoticia(${i})">✏️</button>
       <button class="botao mini perigo" onclick="removerNoticia(${i})">🗑️</button>
     </div>`;
@@ -297,12 +334,14 @@ function editarNoticia(i){
   const n = config.noticias[i]; idxEdicao = i;
   ntTitulo.value=n.titulo||''; ntResumo.value=n.resumo||''; ntTexto.value=n.texto||'';
   ntData.value=n.data||''; ntLink.value=n.link||'';
+  ntInicio.value=(n.publicar_em||'').slice(0,16); ntFim.value=(n.expirar_em||'').slice(0,16);
   document.getElementById('tituloFormNoticia').textContent='Editando notícia';
   document.getElementById('btnCancelarEdicao').style.display='inline-block';
   window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
 }
 function cancelarEdicao(){
   idxEdicao=-1; ntTitulo.value=ntResumo.value=ntTexto.value=ntData.value=ntLink.value='';
+  ntInicio.value=''; ntFim.value='';
   document.getElementById('ntImagem').value='';
   document.getElementById('tituloFormNoticia').textContent='Nova notícia';
   document.getElementById('btnCancelarEdicao').style.display='none';
@@ -315,6 +354,8 @@ async function salvarNoticia(){
     if(arq){ avisar('Enviando imagem...'); imagem = await subirImagem(arq,'imagens'); }
     const nova = { titulo:ntTitulo.value.trim(), resumo:ntResumo.value.trim(),
       texto:ntTexto.value.trim(), imagem, link:ntLink.value.trim(), data:ntData.value.trim() };
+    if(ntInicio.value) nova.publicar_em = ntInicio.value;
+    if(ntFim.value) nova.expirar_em = ntFim.value;
     if(idxEdicao>=0) config.noticias[idxEdicao]=nova; else config.noticias.unshift(nova);
     await salvarConfig('Painel: notícia');
     cancelarEdicao(); desenharNoticias(); avisar('Notícia publicada! ✅');
@@ -325,6 +366,44 @@ async function removerNoticia(i){
   config.noticias.splice(i,1);
   try{ await salvarConfig('Painel: notícia removida'); desenharNoticias(); avisar('Notícia apagada.'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== PROGRAMACAO ==================
+const ORDEM_DIAS = ['Todos os dias','Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+function desenharProgramas(){
+  config.programacao = config.programacao || [];
+  const el = document.getElementById('listaProgramas');
+  if(!config.programacao.length){ el.innerHTML='<p class="rotulo-secao">Nenhum programa cadastrado.</p>'; return; }
+  const ordenado = config.programacao.map((p,i)=>({...p,_i:i}))
+    .sort((a,b)=> ORDEM_DIAS.indexOf(a.dia)-ORDEM_DIAS.indexOf(b.dia) || (a.horario||'').localeCompare(b.horario||''));
+  el.innerHTML = ordenado.map(p=>`<div class="item">
+    <div class="info"><b>${p.horario||'--:--'} — ${p.programa}</b>
+    <span>${p.dia}${p.apresentador? ' • com '+p.apresentador:''}</span></div>
+    <button class="botao mini perigo" onclick="removerPrograma(${p._i})">🗑️</button>
+  </div>`).join('');
+}
+async function adicionarPrograma(){
+  if(!pgNome.value.trim() || !pgHora.value){ avisar('Preencha o horário e o nome do programa.', true); return; }
+  config.programacao = config.programacao || [];
+  config.programacao.push({ dia:pgDia.value, horario:pgHora.value, programa:pgNome.value.trim(), apresentador:pgApres.value.trim() });
+  try{ await salvarConfig('Painel: programacao'); pgNome.value=pgApres.value=''; desenharProgramas(); avisar('Programa adicionado! ✅'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function removerPrograma(i){
+  if(!confirm('Remover este programa da grade?')) return;
+  config.programacao.splice(i,1);
+  try{ await salvarConfig('Painel: programacao'); desenharProgramas(); avisar('Programa removido.'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// etiqueta de agendamento (usada em banners e noticias)
+function etiquetaAgenda(item){
+  const agora = new Date();
+  const ini = item.publicar_em ? new Date(item.publicar_em) : null;
+  const fim = item.expirar_em ? new Date(item.expirar_em) : null;
+  if(ini && agora < ini) return '⏰<small style="color:#E6B93F">agendado</small>';
+  if(fim && agora > fim) return '💤<small style="color:#9FB3CC">expirado</small>';
+  return '';
 }
 
 // ================== TEXTOS/REDES ==================
