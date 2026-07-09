@@ -196,7 +196,7 @@ class AuthService {
       ));
       return null;
     } catch (e) {
-      return 'Erro no login Google. Tente novamente.';
+      return 'Erro Google: $e';
     }
   }
 
