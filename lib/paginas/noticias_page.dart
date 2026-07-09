@@ -30,14 +30,14 @@ class NoticiasPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  if (cfg.noticias.isEmpty)
+                  if (filtrarAgendados(cfg.noticias).isEmpty)
                     const Padding(
                       padding: EdgeInsets.only(top: 80),
                       child: Center(
                           child: Text('Nenhuma notícia no momento.\nPuxe para atualizar.',
                               textAlign: TextAlign.center)),
                     ),
-                  ...cfg.noticias.map((n) => _cardNoticia(context, n)),
+                  ...filtrarAgendados(cfg.noticias).map((n) => _cardNoticia(context, n)),
                 ],
               ),
             );

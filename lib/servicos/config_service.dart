@@ -15,6 +15,7 @@ class AppConfig {
   final List<Map<String, dynamic>> banners;
   final List<Map<String, dynamic>> noticias;
   final List<Map<String, dynamic>> redes;
+  final List<Map<String, dynamic>> programacao;
 
   AppConfig({
     required this.nome,
@@ -27,6 +28,7 @@ class AppConfig {
     required this.banners,
     required this.noticias,
     required this.redes,
+    required this.programacao,
   });
 
   factory AppConfig.fromJson(Map<String, dynamic> j) => AppConfig(
@@ -40,6 +42,7 @@ class AppConfig {
         banners: List<Map<String, dynamic>>.from(j['banners'] ?? []),
         noticias: List<Map<String, dynamic>>.from(j['noticias'] ?? []),
         redes: List<Map<String, dynamic>>.from(j['redes'] ?? []),
+        programacao: List<Map<String, dynamic>>.from(j['programacao'] ?? []),
       );
 
   factory AppConfig.padrao() => AppConfig(
@@ -53,6 +56,7 @@ class AppConfig {
         banners: [],
         noticias: [],
         redes: [],
+        programacao: [],
       );
 }
 
@@ -74,4 +78,16 @@ class ConfigService {
       // mantém configuração padrão de emergência
     }
   }
+}
+
+/// Filtra itens pelo agendamento (campos opcionais publicar_em / expirar_em)
+List<Map<String, dynamic>> filtrarAgendados(List<Map<String, dynamic>> itens) {
+  final agora = DateTime.now();
+  return itens.where((i) {
+    final ini = DateTime.tryParse((i['publicar_em'] ?? '').toString());
+    final fim = DateTime.tryParse((i['expirar_em'] ?? '').toString());
+    if (ini != null && agora.isBefore(ini)) return false;
+    if (fim != null && agora.isAfter(fim)) return false;
+    return true;
+  }).toList();
 }

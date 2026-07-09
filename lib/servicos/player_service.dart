@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -9,6 +11,24 @@ class PlayerService {
 
   final AudioPlayer player = AudioPlayer();
   bool _carregado = false;
+
+  // ----- SLEEP TIMER -----
+  Timer? _sleepTimer;
+  final ValueNotifier<int> sleepRestante = ValueNotifier(0); // minutos; 0 = off
+
+  void definirSleep(int minutos) {
+    _sleepTimer?.cancel();
+    sleepRestante.value = minutos;
+    if (minutos <= 0) return;
+    _sleepTimer = Timer.periodic(const Duration(minutes: 1), (t) {
+      sleepRestante.value = sleepRestante.value - 1;
+      if (sleepRestante.value <= 0) {
+        t.cancel();
+        player.stop();
+        _carregado = false;
+      }
+    });
+  }
 
   Future<void> carregar(String streamUrl, String nome, String logoUrl) async {
     if (_carregado) return;

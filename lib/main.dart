@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'paginas/home_page.dart';
+import 'paginas/programacao_page.dart';
 import 'paginas/chat_page.dart';
 import 'paginas/noticias_page.dart';
 import 'paginas/pedidos_page.dart';
@@ -14,7 +15,6 @@ Future<void> main() async {
     androidNotificationChannelName: 'Rádio Eleva',
     androidNotificationOngoing: true,
   );
-  // Carrega o conteúdo gerenciável (banners, notícias, WhatsApp...)
   ConfigService.instancia.carregar();
   runApp(const RadioElevaApp());
 }
@@ -44,6 +44,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   final _paginas = const [
     HomePage(),
+    ProgramacaoPage(),
     ChatPage(),
     NoticiasPage(),
     PedidosPage(),
@@ -56,8 +57,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Color(0xFF04101F),
-          border: Border(
-              top: BorderSide(color: CoresEleva.dourado, width: 1.5)),
+          border:
+              Border(top: BorderSide(color: CoresEleva.dourado, width: 1.5)),
         ),
         child: BottomNavigationBar(
           currentIndex: _abaAtual,
@@ -67,10 +68,15 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           elevation: 0,
           selectedItemColor: CoresEleva.dourado,
           unselectedItemColor: Colors.white54,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800),
           items: const [
             BottomNavigationBarItem(
                 icon: Icon(Icons.home_rounded), label: 'Início'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_month_rounded),
+                label: 'Programação'),
             BottomNavigationBarItem(
                 icon: Icon(Icons.forum_rounded), label: 'Chat'),
             BottomNavigationBarItem(

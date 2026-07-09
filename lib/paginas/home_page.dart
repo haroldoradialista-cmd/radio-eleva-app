@@ -23,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _timerBanner = Timer.periodic(const Duration(seconds: 5), (_) {
-      final banners = ConfigService.instancia.config.value.banners;
+      final banners = filtrarAgendados(ConfigService.instancia.config.value.banners);
       if (banners.length > 1 && _pageController.hasClients) {
         _bannerAtual = (_bannerAtual + 1) % banners.length;
         _pageController.animateToPage(_bannerAtual,
@@ -70,23 +70,24 @@ class _HomePageState extends State<HomePage> {
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
               final alturaBanner = c.maxHeight / 3; // 1/3 da tela, como pedido
+              final banners = filtrarAgendados(cfg.banners);
               return Column(
                 children: [
                   // ===== BANNERS (1/3 superior) =====
                   SizedBox(
                     height: alturaBanner,
                     width: double.infinity,
-                    child: cfg.banners.isEmpty
+                    child: banners.isEmpty
                         ? _bannerPadrao(cfg)
                         : Stack(
                             children: [
                               PageView.builder(
                                 controller: _pageController,
-                                itemCount: cfg.banners.length,
+                                itemCount: banners.length,
                                 onPageChanged: (i) =>
                                     setState(() => _bannerAtual = i),
                                 itemBuilder: (context, i) {
-                                  final b = cfg.banners[i];
+                                  final b = banners[i];
                                   return GestureDetector(
                                     onTap: () => _abrirLink(b['link']),
                                     child: Image.network(
@@ -111,7 +112,7 @@ class _HomePageState extends State<HomePage> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: List.generate(
-                                    cfg.banners.length,
+                                    banners.length,
                                     (i) => AnimatedContainer(
                                       duration:
                                           const Duration(milliseconds: 300),
@@ -298,7 +299,37 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
 
-                          // Redes sociais (gerenciável pelo config.json)
+                          // Sleep timer + Redes sociais
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ValueListenableBuilder<int>(
+                                valueListenable:
+                                    PlayerService.instancia.sleepRestante,
+                                builder: (context, restante, _) {
+                                  return TextButton.icon(
+                                    onPressed: _escolherSleep,
+                                    icon: Icon(Icons.bedtime_rounded,
+                                        size: 20,
+                                        color: restante > 0
+                                            ? CoresEleva.verde
+                                            : CoresEleva.dourado),
+                                    label: Text(
+                                      restante > 0
+                                          ? 'Dormir em ${restante}min'
+                                          : 'Sleep timer',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: restante > 0
+                                              ? CoresEleva.verde
+                                              : CoresEleva.dourado),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                           if (cfg.redes.isNotEmpty)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -324,6 +355,45 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  void _escolherSleep() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: CoresEleva.azulMedio,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(14),
+              child: Text('Desligar a rádio em...',
+                  style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+            ...[15, 30, 45, 60, 90].map((m) => ListTile(
+                  leading: const Icon(Icons.bedtime_rounded,
+                      color: CoresEleva.dourado),
+                  title: Text('$m minutos'),
+                  onTap: () {
+                    PlayerService.instancia.definirSleep(m);
+                    Navigator.pop(context);
+                  },
+                )),
+            ListTile(
+              leading: const Icon(Icons.close_rounded, color: Colors.white54),
+              title: const Text('Cancelar sleep timer'),
+              onTap: () {
+                PlayerService.instancia.definirSleep(0);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
