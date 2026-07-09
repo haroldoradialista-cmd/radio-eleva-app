@@ -24,13 +24,18 @@ class _ChatPageState extends State<ChatPage> {
     return Container(
       decoration: const BoxDecoration(gradient: CoresEleva.fundoApp),
       child: SafeArea(
-        child: ValueListenableBuilder<Usuario?>(
-          valueListenable: AuthService.instancia.usuario,
-          builder: (context, u, _) {
-            if (ConfigService.instancia.config.value.chatUrl.isEmpty) {
+        child: ValueListenableBuilder<AppConfig>(
+          valueListenable: ConfigService.instancia.config,
+          builder: (context, cfg, _) {
+            if (cfg.chatUrl.isEmpty) {
               return const _AvisoEmBreve();
             }
-            return u == null ? const _TelaLogin() : _TelaChat(usuario: u);
+            return ValueListenableBuilder<Usuario?>(
+              valueListenable: AuthService.instancia.usuario,
+              builder: (context, u, _) {
+                return u == null ? const _TelaLogin() : _TelaChat(usuario: u);
+              },
+            );
           },
         ),
       ),
