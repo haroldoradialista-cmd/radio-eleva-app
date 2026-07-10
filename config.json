@@ -41,14 +41,7 @@
       "link": ""
     }
   ],
-  "programacao": [
-    {
-      "dia": "Todos os dias",
-      "horario": "08:00",
-      "programa": "Manhã Melhor",
-      "apresentador": "Luan Oliveira"
-    }
-  ],
+  "programacao": [],
   "enquetes": [
     {
       "id": "e1783644889281",
