@@ -92,6 +92,7 @@
     <button class="aba ativa" data-aba="banners" onclick="trocarAba(this)">🖼️ Banners</button>
     <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
     <button class="aba" data-aba="enquetes" onclick="trocarAba(this)">📊 Enquetes</button>
+    <button class="aba" data-aba="promos" onclick="trocarAba(this)">🎁 Promoções</button>
     <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
@@ -106,6 +107,7 @@
         <h2>Banners no topo do app</h2>
         <p class="rotulo-secao">Tamanho ideal: <b>1200 x 400</b>. As mudanças chegam aos ouvintes na próxima vez que abrirem o app.</p>
         <div id="listaBanners"></div>
+        <input type="file" id="arqTroca" accept="image/png,image/jpeg" style="display:none">
         <label>Nova imagem de banner</label>
         <input type="file" id="arqBanner" accept="image/png,image/jpeg">
         <label>Link ao tocar no banner (opcional)</label>
@@ -166,6 +168,28 @@
       </div>
     </section>
 
+    <!-- PROMOCOES -->
+    <section id="sec-promos" class="oculto">
+      <div class="cartao">
+        <h2>Promoções</h2>
+        <p class="rotulo-secao">A promoção ativa aparece na aba <b>Promoções</b> do app. O ouvinte participa com nome, WhatsApp, Instagram e a resposta da pergunta.</p>
+        <div id="listaPromos"></div>
+      </div>
+      <div class="cartao">
+        <h2>Nova promoção</h2>
+        <label>Banner da promoção (ideal: 1200 x 500 px)</label>
+        <input type="file" id="prFoto" accept="image/png,image/jpeg">
+        <label>Pergunta da promoção</label><input id="prPergunta" placeholder="Ex.: Em que ano a Rádio Eleva nasceu?">
+        <label>Resposta — Opção 1</label><input id="prOp1">
+        <label>Resposta — Opção 2</label><input id="prOp2">
+        <div class="grade2">
+          <div><label>⏰ Início (opcional)</label><input type="datetime-local" id="prInicio"></div>
+          <div><label>⏰ Término (opcional)</label><input type="datetime-local" id="prFim"></div>
+        </div>
+        <button class="botao" onclick="criarPromocao()">➕ Publicar promoção</button>
+      </div>
+    </section>
+
     <!-- PROGRAMACAO -->
     <section id="sec-programacao" class="oculto">
       <div class="cartao">
@@ -192,7 +216,7 @@
         </div>
         <div class="grade2">
           <div><label>Horário (ex.: 08:00)</label><input id="pgHora" type="time"></div>
-          <div><label>Foto do programa (opcional)</label><input type="file" id="pgFoto" accept="image/png,image/jpeg"></div>
+          <div><label>Foto do programa (opcional • quadrada, 400 x 400 px)</label><input type="file" id="pgFoto" accept="image/png,image/jpeg"></div>
         </div>
         <label>Nome do programa</label><input id="pgNome" placeholder="Ex.: Manhã com Adoração">
         <label>Apresentador(a) (opcional)</label><input id="pgApres">
@@ -323,7 +347,7 @@ async function entrarPainel(){
     localStorage.setItem('tokenEleva', token);
     document.getElementById('telaAcesso').classList.add('oculto');
     document.getElementById('painel').classList.remove('oculto');
-    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); preencherTextos();
+    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); preencherTextos();
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
@@ -363,18 +387,32 @@ async function subirImagem(arquivo, pasta){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','noticias','enquetes','programacao','textos','chat','votos','stats'].forEach(s=>
+  ['banners','noticias','enquetes','promos','programacao','textos','chat','votos','stats'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
 }
 
 // ================== BANNERS ==================
-function desenharBanners(){
+let cliquesBanner = {};
+let idxTroca = -1;
+async function carregarCliquesBanner(){
+  try{
+    const r = await fetch(`${RTDB}/banner_cliques.json?t=${Date.now()}`);
+    const d = await r.json();
+    cliquesBanner = {};
+    if(d) Object.values(d).forEach(c=>{ const k=(c.banner||'').toString(); cliquesBanner[k]=(cliquesBanner[k]||0)+1; });
+  }catch(e){}
+}
+function trocarImagemBanner(i){ idxTroca = i; document.getElementById('arqTroca').click(); }
+
+async function desenharBanners(){
+  await carregarCliquesBanner();
   const el = document.getElementById('listaBanners');
   el.innerHTML = config.banners.length ? '' : '<p class="rotulo-secao">Nenhum banner ainda.</p>';
   config.banners.forEach((b,i)=>{
     el.innerHTML += `<div class="item">
       <img src="${b.imagem}">
-      <div class="info"><b>Banner ${i+1} ${etiquetaAgenda(b)}</b><span>${b.link||'sem link'}</span></div>
+      <div class="info"><b>Banner ${i+1} ${etiquetaAgenda(b)} • 👆 ${cliquesBanner[(b.id||b.imagem)]||0} cliques</b><span>${b.link||'sem link'}</span></div>
+      <button class="botao mini neutro" onclick="trocarImagemBanner(${i})" title="Trocar a imagem sem apagar">🔄</button>
       <button class="botao mini perigo" onclick="removerBanner(${i})">🗑️</button>
     </div>`;
   });
@@ -385,7 +423,7 @@ async function adicionarBanner(){
   try{
     avisar('Enviando imagem...');
     const url = await subirImagem(arq, 'imagens');
-    const novoBanner = { imagem:url, link: document.getElementById('linkBanner').value.trim() };
+    const novoBanner = { id:'b'+Date.now(), imagem:url, link: document.getElementById('linkBanner').value.trim() };
     if(bnInicio.value) novoBanner.publicar_em = bnInicio.value;
     if(bnFim.value) novoBanner.expirar_em = bnFim.value;
     config.banners.push(novoBanner);
@@ -495,6 +533,70 @@ async function removerEnquete(i){
   if(!confirm('Remover esta enquete? (os votos ficam guardados no banco)')) return;
   config.enquetes.splice(i,1);
   try{ await salvarConfig('Painel: enquete removida'); desenharEnquetes(); avisar('Enquete removida.'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== PROMOCOES ==================
+async function desenharPromos(){
+  config.promocoes = config.promocoes || [];
+  const el = document.getElementById('listaPromos');
+  if(!config.promocoes.length){ el.innerHTML='<p class="rotulo-secao">Nenhuma promoção criada.</p>'; return; }
+  let html = '';
+  for(let i=0;i<config.promocoes.length;i++){
+    const p = config.promocoes[i];
+    let total = 0;
+    try{
+      const r = await fetch(`${RTDB}/promo_participacoes/${p.id}.json?shallow=true&t=${Date.now()}`);
+      const d = await r.json();
+      total = d ? Object.keys(d).length : 0;
+    }catch(e){}
+    html += `<div class="item" style="flex-wrap:wrap">
+      ${p.imagem? `<img src="${p.imagem}" style="width:84px;height:36px;object-fit:cover;border-radius:8px">`:''}
+      <div class="info"><b>${p.pergunta} ${etiquetaAgenda(p)}</b>
+      <span>${p.opcao1} / ${p.opcao2} — <b>${total} participações</b></span></div>
+      <button class="botao mini" onclick="verParticipacoes('${p.id}')">👥 Ver</button>
+      <button class="botao mini perigo" onclick="removerPromo(${i})">🗑️</button>
+      <div id="part_${p.id}" style="display:none;width:100%;margin-top:8px"></div>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+async function verParticipacoes(id){
+  const box = document.getElementById('part_'+id);
+  if(box.style.display === 'block'){ box.style.display='none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = '<p class="rotulo-secao">Carregando participações...</p>';
+  try{
+    const r = await fetch(`${RTDB}/promo_participacoes/${id}.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!d){ box.innerHTML = '<p class="rotulo-secao">Nenhuma participação ainda.</p>'; return; }
+    const lista = Object.values(d).sort((a,b)=>(a.quando||'').localeCompare(b.quando||''));
+    box.innerHTML = `<table><tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>Instagram</th><th>Resposta</th><th>Quando</th></tr>` +
+      lista.map((x,i)=>`<tr><td>${i+1}</td><td>${x.nome||''}</td><td>${x.whatsapp||''}</td><td>${x.instagram||''}</td><td>${x.resposta||''}</td><td>${(x.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('') + `</table>`;
+  }catch(e){ box.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+async function criarPromocao(){
+  if(!prPergunta.value.trim() || !prOp1.value.trim() || !prOp2.value.trim()){
+    avisar('Preencha a pergunta e as duas opções de resposta.', true); return;
+  }
+  try{
+    let imagem = '';
+    const arq = document.getElementById('prFoto').files[0];
+    if(arq){ avisar('Enviando banner...'); imagem = await subirImagem(arq,'imagens'); }
+    config.promocoes = config.promocoes || [];
+    const nova = { id:'p'+Date.now(), pergunta:prPergunta.value.trim(), opcao1:prOp1.value.trim(), opcao2:prOp2.value.trim(), imagem };
+    if(prInicio.value) nova.publicar_em = prInicio.value;
+    if(prFim.value) nova.expirar_em = prFim.value;
+    config.promocoes.unshift(nova);
+    await salvarConfig('Painel: promocao');
+    prPergunta.value=prOp1.value=prOp2.value=''; prInicio.value=''; prFim.value=''; document.getElementById('prFoto').value='';
+    desenharPromos(); avisar('Promoção publicada! 🎁');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function removerPromo(i){
+  if(!confirm('Remover esta promoção? (as participações ficam guardadas no banco)')) return;
+  config.promocoes.splice(i,1);
+  try{ await salvarConfig('Painel: promocao removida'); desenharPromos(); avisar('Promoção removida.'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
@@ -761,6 +863,20 @@ function desenharRanking(){
     .join('');
   el.innerHTML = `<table><tr><th>#</th><th>Música</th><th>Gostei</th><th>Não gostei</th><th>Saldo</th></tr>${linhas}</table>`;
 }
+
+document.getElementById('arqTroca').addEventListener('change', async (ev)=>{
+  const arq = ev.target.files[0];
+  if(!arq || idxTroca < 0) return;
+  try{
+    avisar('Enviando nova imagem...');
+    const url = await subirImagem(arq, 'imagens');
+    config.banners[idxTroca].imagem = url;
+    if(!config.banners[idxTroca].id) config.banners[idxTroca].id = 'b'+Date.now();
+    await salvarConfig('Painel: imagem do banner trocada');
+    ev.target.value=''; idxTroca=-1;
+    desenharBanners(); avisar('Imagem do banner trocada! ✅');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+});
 
 // entra direto se já tem token salvo
 if(token){ document.getElementById('campoToken').value = token; entrarPainel(); }
