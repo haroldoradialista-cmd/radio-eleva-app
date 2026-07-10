@@ -74,6 +74,7 @@
   <div class="abas">
     <button class="aba ativa" data-aba="banners" onclick="trocarAba(this)">🖼️ Banners</button>
     <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
+    <button class="aba" data-aba="enquetes" onclick="trocarAba(this)">📊 Enquetes</button>
     <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
@@ -122,6 +123,28 @@
         </div>
         <button class="botao" onclick="salvarNoticia()">💾 Publicar notícia</button>
         <button class="botao neutro" id="btnCancelarEdicao" onclick="cancelarEdicao()" style="display:none">Cancelar edição</button>
+      </div>
+    </section>
+
+    <!-- ENQUETES -->
+    <section id="sec-enquetes" class="oculto">
+      <div class="cartao">
+        <h2>Enquetes</h2>
+        <p class="rotulo-secao">A enquete ativa aparece <b>fixa na tela inicial do app</b>, entre o banner e o player. Use o agendamento para programar quando entra e sai do ar.</p>
+        <div id="listaEnquetes"></div>
+      </div>
+      <div class="cartao">
+        <h2>Nova enquete</h2>
+        <label>Pergunta</label><input id="eqPergunta" placeholder="Ex.: Qual louvor você quer ouvir no domingo?">
+        <label>Opção 1</label><input id="eqOp1">
+        <label>Opção 2</label><input id="eqOp2">
+        <label>Opção 3 (opcional)</label><input id="eqOp3">
+        <label>Opção 4 (opcional)</label><input id="eqOp4">
+        <div class="grade2">
+          <div><label>⏰ Entrar no ar em (opcional)</label><input type="datetime-local" id="eqInicio"></div>
+          <div><label>⏰ Sair do ar em (opcional)</label><input type="datetime-local" id="eqFim"></div>
+        </div>
+        <button class="botao" onclick="criarEnquete()">➕ Publicar enquete</button>
       </div>
     </section>
 
@@ -188,9 +211,22 @@
     <!-- VOTOS -->
     <section id="sec-votos" class="oculto">
       <div class="cartao">
-        <h2>Votos das músicas <button class="botao mini neutro" onclick="carregarVotos()">🔄 Atualizar</button></h2>
-        <p class="rotulo-secao">O que os ouvintes acharam das músicas (botões 👍 e 👎 do player).</p>
-        <div id="listaVotos"><p class="rotulo-secao">Carregando...</p></div>
+        <h2>Ranking de votação das músicas</h2>
+        <p class="rotulo-secao">Escolha o período no calendário e gere o ranking real com base nos votos 👍/👎 dos ouvintes no player.</p>
+        <div class="grade2">
+          <div><label>📅 De</label><input type="date" id="vtDe"></div>
+          <div><label>📅 Até</label><input type="date" id="vtAte"></div>
+        </div>
+        <button class="botao" onclick="carregarVotos()">🔎 Gerar ranking do período</button>
+        <button class="botao neutro" onclick="vtDe.value='';vtAte.value='';carregarVotos()">Período todo</button>
+        <p class="rotulo-secao" id="vtResumo" style="margin-top:10px"></p>
+      </div>
+      <div class="cartao">
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="botao mini" id="btnTopMais" onclick="modoRanking='mais';desenharRanking()">👍 100 mais curtidas</button>
+          <button class="botao mini neutro" id="btnTopMenos" onclick="modoRanking='menos';desenharRanking()">👎 100 menos curtidas</button>
+        </div>
+        <div id="listaVotos"><p class="rotulo-secao">Escolha o período e clique em Gerar ranking.</p></div>
       </div>
     </section>
   </main>
@@ -240,7 +276,7 @@ async function entrarPainel(){
     localStorage.setItem('tokenEleva', token);
     document.getElementById('telaAcesso').classList.add('oculto');
     document.getElementById('painel').classList.remove('oculto');
-    desenharBanners(); desenharNoticias(); desenharProgramas(); preencherTextos();
+    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); preencherTextos();
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
@@ -280,7 +316,7 @@ async function subirImagem(arquivo, pasta){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','noticias','programacao','textos','chat','votos'].forEach(s=>
+  ['banners','noticias','enquetes','programacao','textos','chat','votos'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
 }
 
@@ -365,6 +401,53 @@ async function removerNoticia(i){
   if(!confirm('Apagar esta notícia?')) return;
   config.noticias.splice(i,1);
   try{ await salvarConfig('Painel: notícia removida'); desenharNoticias(); avisar('Notícia apagada.'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== ENQUETES ==================
+async function desenharEnquetes(){
+  config.enquetes = config.enquetes || [];
+  const el = document.getElementById('listaEnquetes');
+  if(!config.enquetes.length){ el.innerHTML='<p class="rotulo-secao">Nenhuma enquete criada.</p>'; return; }
+  let html = '';
+  for(let i=0;i<config.enquetes.length;i++){
+    const e = config.enquetes[i];
+    let resultados = '';
+    try{
+      const r = await fetch(`${RTDB}/enquete_votos/${e.id}.json?t=${Date.now()}`);
+      const d = await r.json();
+      const cont = {}; let total = 0;
+      if(d){ Object.values(d).forEach(v=>{ cont[v.opcao]=(cont[v.opcao]||0)+1; total++; }); }
+      resultados = (e.opcoes||[]).map((op,j)=>{
+        const n = cont[j]||0; const pct = total? Math.round(n*100/total):0;
+        return `${op}: <b>${n}</b> (${pct}%)`;
+      }).join(' • ') + ` — <b>${total} votos</b>`;
+    }catch(_){ resultados = 'não foi possível carregar os votos'; }
+    html += `<div class="item"><div class="info">
+      <b>${e.pergunta} ${etiquetaAgenda(e)}</b>
+      <span>${resultados}</span></div>
+      <button class="botao mini perigo" onclick="removerEnquete(${i})">🗑️</button></div>`;
+  }
+  el.innerHTML = html;
+}
+async function criarEnquete(){
+  const opcoes = [eqOp1.value,eqOp2.value,eqOp3.value,eqOp4.value].map(v=>v.trim()).filter(Boolean);
+  if(!eqPergunta.value.trim() || opcoes.length<2){ avisar('Preencha a pergunta e pelo menos 2 opções.', true); return; }
+  config.enquetes = config.enquetes || [];
+  const nova = { id:'e'+Date.now(), pergunta:eqPergunta.value.trim(), opcoes };
+  if(eqInicio.value) nova.publicar_em = eqInicio.value;
+  if(eqFim.value) nova.expirar_em = eqFim.value;
+  config.enquetes.unshift(nova);
+  try{
+    await salvarConfig('Painel: enquete');
+    eqPergunta.value=eqOp1.value=eqOp2.value=eqOp3.value=eqOp4.value=''; eqInicio.value=''; eqFim.value='';
+    desenharEnquetes(); avisar('Enquete publicada! ✅');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function removerEnquete(i){
+  if(!confirm('Remover esta enquete? (os votos ficam guardados no banco)')) return;
+  config.enquetes.splice(i,1);
+  try{ await salvarConfig('Painel: enquete removida'); desenharEnquetes(); avisar('Enquete removida.'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
@@ -467,23 +550,57 @@ async function apagarMsg(chave){
 }
 
 // ================== VOTOS ==================
+let votosBrutos = null;
+let modoRanking = 'mais';
+
 async function carregarVotos(){
   const el = document.getElementById('listaVotos');
+  el.innerHTML = '<p class="rotulo-secao">Carregando votos...</p>';
   try{
     const r = await fetch(`${RTDB}/votos.json?t=${Date.now()}`);
-    const d = await r.json();
-    if(!d){ el.innerHTML='<p class="rotulo-secao">Nenhum voto ainda.</p>'; return; }
-    const mapa = {};
-    Object.values(d).forEach(v=>{
-      const m = (v.musica||'(sem identificação)').trim()||'(sem identificação)';
-      mapa[m] = mapa[m]||{like:0,dislike:0};
-      if(v.tipo==='like') mapa[m].like++; else mapa[m].dislike++;
-    });
-    const linhas = Object.entries(mapa)
-      .sort((a,b)=>(b[1].like+b[1].dislike)-(a[1].like+a[1].dislike))
-      .map(([m,c])=>`<tr><td>${m}</td><td>👍 ${c.like}</td><td>👎 ${c.dislike}</td></tr>`).join('');
-    el.innerHTML = `<table><tr><th>Música</th><th>Gostei</th><th>Não gostei</th></tr>${linhas}</table>`;
-  }catch(e){ el.innerHTML='<p class="rotulo-secao">Erro ao carregar.</p>'; }
+    votosBrutos = await r.json();
+    desenharRanking();
+  }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar os votos.</p>'; }
+}
+
+function desenharRanking(){
+  const el = document.getElementById('listaVotos');
+  document.getElementById('btnTopMais').className  = 'botao mini' + (modoRanking==='mais' ? '' : ' neutro');
+  document.getElementById('btnTopMenos').className = 'botao mini' + (modoRanking==='menos' ? '' : ' neutro');
+  if(!votosBrutos){ el.innerHTML = '<p class="rotulo-secao">Nenhum voto registrado ainda.</p>';
+    document.getElementById('vtResumo').textContent=''; return; }
+
+  // filtro do calendário
+  const de  = vtDe.value  ? new Date(vtDe.value  + 'T00:00:00') : null;
+  const ate = vtAte.value ? new Date(vtAte.value + 'T23:59:59') : null;
+
+  const mapa = {}; let total = 0;
+  Object.values(votosBrutos).forEach(v=>{
+    const quando = v.quando ? new Date(v.quando) : null;
+    if(de && (!quando || quando < de)) return;
+    if(ate && (!quando || quando > ate)) return;
+    total++;
+    const m = (v.musica||'').trim() || '(música sem identificação)';
+    mapa[m] = mapa[m] || {like:0, dislike:0};
+    if(v.tipo==='like') mapa[m].like++; else mapa[m].dislike++;
+  });
+
+  const periodo = (de||ate)
+    ? `de ${de? de.toLocaleDateString('pt-BR'):'...'} até ${ate? ate.toLocaleDateString('pt-BR'):'...'}`
+    : 'em todo o período';
+  document.getElementById('vtResumo').innerHTML =
+    `📊 <b>${total}</b> votos computados ${periodo} • <b>${Object.keys(mapa).length}</b> músicas diferentes`;
+
+  if(!total){ el.innerHTML = '<p class="rotulo-secao">Nenhum voto nesse período.</p>'; return; }
+
+  const linhas = Object.entries(mapa)
+    .sort((a,b)=> modoRanking==='mais'
+        ? (b[1].like - a[1].like) || (a[1].dislike - b[1].dislike)
+        : (b[1].dislike - a[1].dislike) || (a[1].like - b[1].like))
+    .slice(0,100)
+    .map(([m,c],i)=>`<tr><td>${i+1}º</td><td>${m}</td><td>👍 ${c.like}</td><td>👎 ${c.dislike}</td><td>${c.like-c.dislike>0?'+':''}${c.like-c.dislike}</td></tr>`)
+    .join('');
+  el.innerHTML = `<table><tr><th>#</th><th>Música</th><th>Gostei</th><th>Não gostei</th><th>Saldo</th></tr>${linhas}</table>`;
 }
 
 // entra direto se já tem token salvo
