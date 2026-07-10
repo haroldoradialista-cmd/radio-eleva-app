@@ -9,6 +9,7 @@ import 'paginas/noticias_page.dart';
 import 'paginas/pedidos_page.dart';
 import 'servicos/config_service.dart';
 import 'servicos/analytics_service.dart';
+import 'servicos/notificacoes_service.dart';
 import 'tema.dart';
 
 Future<void> main() async {
@@ -22,6 +23,7 @@ Future<void> main() async {
     androidNotificationChannelName: 'Rádio Eleva',
     androidNotificationOngoing: true,
   );
+  await NotificacoesService.iniciar();
   ConfigService.instancia.carregar().then((_) => AnalyticsService.registrarAcesso());
   await carregarTemaSalvo();
   runApp(RadioElevaApp());

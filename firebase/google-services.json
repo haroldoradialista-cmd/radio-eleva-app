@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "475506830183",
+    "firebase_url": "https://radio-eleva-default-rtdb.firebaseio.com",
+    "project_id": "radio-eleva",
+    "storage_bucket": "radio-eleva.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:475506830183:android:0a48d4464c829c37f0ddc2",
+        "android_client_info": {
+          "package_name": "br.com.radioeleva.radio_eleva"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "475506830183-fpegos9ltpsg8l7is9fscs54d8s91k88.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "br.com.radioeleva.radio_eleva",
+            "certificate_hash": "f88d78dff9636e39d62c6b3f1d394ee82ae15ec8"
+          }
+        },
+        {
+          "client_id": "475506830183-f5bke0e81r70k5bf46mehol7uamcgsei.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfnN-oPFS8izZEfKUzNMom839tB9sfRJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "475506830183-f5bke0e81r70k5bf46mehol7uamcgsei.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

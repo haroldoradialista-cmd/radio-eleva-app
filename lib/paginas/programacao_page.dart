@@ -51,53 +51,71 @@ class _ProgramacaoPageState extends State<ProgramacaoPage> {
                   ),
                 ),
 
-                // ===== SELETOR DE DIAS (dia atual em destaque) =====
-                SizedBox(
-                  height: 46,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.symmetric(horizontal: 12),
+                // ===== SELETOR DE DIAS (todos visíveis, sem deslizar) =====
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.center,
                     children: kOrdemDias.map((dia) {
                       final selecionado = dia == _diaSelecionado;
                       final hoje = dia == _diaHoje;
-                      return Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4),
-                        child: GestureDetector(
-                          onTap: () =>
-                              setState(() => _diaSelecionado = dia),
-                          child: AnimatedContainer(
-                            duration: Duration(milliseconds: 200),
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 9),
-                            decoration: BoxDecoration(
-                              gradient: selecionado
-                                  ? CoresEleva.botaoPlay
-                                  : null,
-                              color: selecionado
-                                  ? null
-                                  : CoresEleva.azulMedio,
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: hoje
-                                    ? CoresEleva.dourado
-                                    : CoresEleva.borda,
-                                width: hoje ? 2 : 1,
-                              ),
+                      final abrev = {
+                        'Segunda': 'SEG',
+                        'Terça': 'TER',
+                        'Quarta': 'QUA',
+                        'Quinta': 'QUI',
+                        'Sexta': 'SEX',
+                        'Sábado': 'SÁB',
+                        'Domingo': 'DOM',
+                      }[dia]!;
+                      return GestureDetector(
+                        onTap: () => setState(() => _diaSelecionado = dia),
+                        child: AnimatedContainer(
+                          duration: Duration(milliseconds: 200),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 13, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient:
+                                selecionado ? CoresEleva.botaoPlay : null,
+                            color:
+                                selecionado ? null : CoresEleva.azulMedio,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: hoje
+                                  ? CoresEleva.dourado
+                                  : CoresEleva.borda,
+                              width: hoje ? 2 : 1,
                             ),
-                            child: Text(
-                              hoje ? '$dia • HOJE' : dia,
-                              style: TextStyle(
-                                fontSize: hoje ? 13.5 : 12.5,
-                                fontWeight: hoje
-                                    ? FontWeight.w900
-                                    : FontWeight.w700,
-                                color: selecionado
-                                    ? Colors.white
-                                    : (hoje
-                                        ? CoresEleva.dourado
-                                        : CoresEleva.brancoSuave),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                abrev,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: hoje
+                                      ? FontWeight.w900
+                                      : FontWeight.w700,
+                                  color: selecionado
+                                      ? Colors.white
+                                      : (hoje
+                                          ? CoresEleva.dourado
+                                          : CoresEleva.brancoSuave),
+                                ),
                               ),
-                            ),
+                              if (hoje)
+                                Text('HOJE',
+                                    style: TextStyle(
+                                        fontSize: 7.5,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                        color: selecionado
+                                            ? Colors.white
+                                            : CoresEleva.dourado)),
+                            ],
                           ),
                         ),
                       );
