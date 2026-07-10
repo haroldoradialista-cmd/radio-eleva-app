@@ -41,7 +41,21 @@
       "link": ""
     }
   ],
-  "programacao": [],
+  "programacao": [
+    {
+      "dias": [
+        "Segunda",
+        "Terça",
+        "Quarta",
+        "Quinta",
+        "Sexta"
+      ],
+      "horario": "08:00",
+      "programa": "Manhã de Adoração",
+      "apresentador": "Luan Oliveira",
+      "imagem": ""
+    }
+  ],
   "enquetes": [
     {
       "id": "e1783644889281",
