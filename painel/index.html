@@ -92,6 +92,7 @@
     <button class="aba ativa" data-aba="banners" onclick="trocarAba(this)">🖼️ Banners</button>
     <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
     <button class="aba" data-aba="enquetes" onclick="trocarAba(this)">📊 Enquetes</button>
+    <button class="aba" data-aba="pedidosm" onclick="trocarAba(this)">🎶 Pedido Musical</button>
     <button class="aba" data-aba="promos" onclick="trocarAba(this)">🎁 Promoções</button>
     <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
@@ -165,6 +166,15 @@
           <div><label>⏰ Sair do ar em (opcional)</label><input type="datetime-local" id="eqFim"></div>
         </div>
         <button class="botao" onclick="criarEnquete()">➕ Publicar enquete</button>
+      </div>
+    </section>
+
+    <!-- PEDIDO MUSICAL -->
+    <section id="sec-pedidosm" class="oculto">
+      <div class="cartao">
+        <h2>Pedidos musicais dos ouvintes <button class="botao mini neutro" onclick="carregarPedidosM()">🔄 Atualizar</button></h2>
+        <p class="rotulo-secao">Pedidos enviados pelo formulário PEÇA SUA MÚSICA do app, do mais recente para o mais antigo.</p>
+        <div id="listaPedidosM"><p class="rotulo-secao">Carregando...</p></div>
       </div>
     </section>
 
@@ -347,7 +357,7 @@ async function entrarPainel(){
     localStorage.setItem('tokenEleva', token);
     document.getElementById('telaAcesso').classList.add('oculto');
     document.getElementById('painel').classList.remove('oculto');
-    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); preencherTextos();
+    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos();
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
@@ -387,7 +397,7 @@ async function subirImagem(arquivo, pasta){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','noticias','enquetes','promos','programacao','textos','chat','votos','stats'].forEach(s=>
+  ['banners','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
 }
 
@@ -534,6 +544,32 @@ async function removerEnquete(i){
   config.enquetes.splice(i,1);
   try{ await salvarConfig('Painel: enquete removida'); desenharEnquetes(); avisar('Enquete removida.'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== PEDIDO MUSICAL ==================
+async function carregarPedidosM(){
+  const el = document.getElementById('listaPedidosM');
+  el.innerHTML = '<p class="rotulo-secao">Carregando pedidos...</p>';
+  try{
+    const r = await fetch(`${RTDB}/pedidos_musicais.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!d){ el.innerHTML = '<p class="rotulo-secao">Nenhum pedido musical ainda.</p>'; return; }
+    const lista = Object.entries(d).sort((a,b)=>(b[1].quando||'').localeCompare(a[1].quando||''));
+    el.innerHTML = `<p class="rotulo-secao">📊 <b>${lista.length}</b> pedidos recebidos</p>` +
+      `<table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Quando</th><th></th></tr>` +
+      lista.map(([k,p],i)=>`<tr>
+        <td>${i+1}</td><td>${p.nome||''}</td><td><b>${p.musica||''}</b></td><td>${p.interprete||''}</td>
+        <td>${(p.quando||'').replace('T',' ').slice(0,16)}</td>
+        <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
+      </tr>`).join('') + `</table>`;
+  }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+async function apagarPedidoM(chave){
+  if(!confirm('Apagar este pedido? (use depois de atendê-lo)')) return;
+  try{
+    await fetch(`${RTDB}/pedidos_musicais/${chave}.json`, { method:'DELETE' });
+    avisar('Pedido removido.'); carregarPedidosM();
+  }catch(e){ avisar('Falhou ao remover.', true); }
 }
 
 // ================== PROMOCOES ==================

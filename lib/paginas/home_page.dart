@@ -213,6 +213,12 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
+                  // ===== DATA E HORA =====
+                  Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: RelogioAgora(),
+                  ),
+
                   // ===== ENQUETE FIXA =====
                   EnqueteCard(),
 
@@ -520,5 +526,85 @@ class _HomePageState extends State<HomePage> {
     if (n.contains('you')) return Icons.play_circle_fill_rounded;
     if (n.contains('site')) return Icons.language_rounded;
     return Icons.public_rounded;
+  }
+}
+
+
+// ============================================================
+// RELÓGIO AO VIVO (data e hora para o ouvinte)
+// ============================================================
+class RelogioAgora extends StatefulWidget {
+  RelogioAgora({super.key});
+  @override
+  State<RelogioAgora> createState() => _RelogioAgoraState();
+}
+
+class _RelogioAgoraState extends State<RelogioAgora> {
+  Timer? _timer;
+
+  static final _dias = [
+    'segunda-feira',
+    'terça-feira',
+    'quarta-feira',
+    'quinta-feira',
+    'sexta-feira',
+    'sábado',
+    'domingo'
+  ];
+  static final _meses = [
+    'janeiro',
+    'fevereiro',
+    'março',
+    'abril',
+    'maio',
+    'junho',
+    'julho',
+    'agosto',
+    'setembro',
+    'outubro',
+    'novembro',
+    'dezembro'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final agora = DateTime.now();
+    final data =
+        '${_dias[agora.weekday - 1]}, ${agora.day} de ${_meses[agora.month - 1]} de ${agora.year}';
+    final hora =
+        '${agora.hour.toString().padLeft(2, '0')}:${agora.minute.toString().padLeft(2, '0')}:${agora.second.toString().padLeft(2, '0')}';
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.schedule_rounded, size: 15, color: CoresEleva.dourado),
+        SizedBox(width: 6),
+        Text(data,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: CoresEleva.brancoSuave)),
+        SizedBox(width: 8),
+        Text(hora,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                color: CoresEleva.dourado,
+                letterSpacing: 0.5)),
+      ],
+    );
   }
 }

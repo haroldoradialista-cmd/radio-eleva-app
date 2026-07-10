@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
@@ -56,14 +59,12 @@ class PedidosPage extends StatelessWidget {
                           color: CoresEleva.branco)),
                 ),
                 SizedBox(height: 24),
-
-                // ===== CARTÃO: PEÇA SUA MÚSICA =====
                 _cartaoOpcao(
                   context,
                   icone: Icons.queue_music_rounded,
                   titulo: 'PEÇA SUA MÚSICA',
                   descricao:
-                      'Preencha seu pedido e ele chega organizadinho no estúdio.',
+                      'Seu pedido chega direto no estúdio da Rádio Eleva.',
                   aoTocar: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -71,8 +72,6 @@ class PedidosPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 14),
-
-                // ===== CARTÃO: FALE COM A RÁDIO =====
                 _cartaoOpcao(
                   context,
                   icone: Icons.chat_rounded,
@@ -84,8 +83,8 @@ class PedidosPage extends StatelessWidget {
                 SizedBox(height: 18),
                 Center(
                   child: Text('Atendemos durante a programação ao vivo 🎶',
-                      style: TextStyle(
-                          fontSize: 12, color: CoresEleva.dourado)),
+                      style:
+                          TextStyle(fontSize: 12, color: CoresEleva.dourado)),
                 ),
               ],
             );
@@ -145,8 +144,20 @@ class PedidosPage extends StatelessWidget {
   }
 }
 
+// Deixa tudo em CAIXA ALTA enquanto o ouvinte digita
+class MaiusculasFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue anterior, TextEditingValue novo) {
+    return TextEditingValue(
+      text: novo.text.toUpperCase(),
+      selection: novo.selection,
+    );
+  }
+}
+
 // ============================================================
-// TELA DO FORMULÁRIO DE PEDIDO MUSICAL
+// FORMULÁRIO DE PEDIDO MUSICAL (vai direto para o Painel Eleva)
 // ============================================================
 class PedidoMusicaPage extends StatefulWidget {
   final AppConfig cfg;
@@ -159,6 +170,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   final _nome = TextEditingController();
   final _musica = TextEditingController();
   final _interprete = TextEditingController();
+  bool _enviando = false;
 
   Future<void> _enviar() async {
     if (_nome.text.trim().isEmpty || _musica.text.trim().isEmpty) {
@@ -167,19 +179,34 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
           content: Text('Preencha pelo menos seu nome e a música.')));
       return;
     }
-    if (widget.cfg.whatsapp.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('WhatsApp ainda não configurado.')));
-      return;
+    if (widget.cfg.chatUrl.isEmpty || _enviando) return;
+    setState(() => _enviando = true);
+    try {
+      final base = widget.cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
+      await http.post(
+        Uri.parse('$base/pedidos_musicais.json'),
+        body: jsonEncode({
+          'nome': _nome.text.trim(),
+          'musica': _musica.text.trim(),
+          'interprete': _interprete.text.trim(),
+          'quando': DateTime.now().toIso8601String(),
+        }),
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: CoresEleva.verdeEscuro,
+            content: Text(
+                'Pedido enviado ao estúdio! Fique ligado na programação 🎶')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.red.shade700,
+            content: Text('Falha ao enviar. Verifique sua internet.')));
+      }
     }
-    final numero = widget.cfg.whatsapp.replaceAll(RegExp(r'[^0-9]'), '');
-    final texto = '🎵 *PEDIDO MUSICAL*\n'
-        '👤 Ouvinte: ${_nome.text.trim()}\n'
-        '🎶 Música: ${_musica.text.trim()}\n'
-        '🎤 Intérprete: ${_interprete.text.trim().isEmpty ? '-' : _interprete.text.trim()}';
-    final uri = Uri.parse(
-        'https://wa.me/$numero?text=${Uri.encodeComponent(texto)}');
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (mounted) setState(() => _enviando = false);
   }
 
   @override
@@ -208,30 +235,35 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
               ),
               SizedBox(height: 8),
               Text(
-                'Preencha os campos e toque em enviar — seu pedido chega direto no WhatsApp da Rádio Eleva.',
-                style:
-                    TextStyle(fontSize: 13, color: CoresEleva.brancoSuave),
+                'Preencha os campos e toque em enviar — seu pedido chega direto no estúdio da Rádio Eleva.',
+                style: TextStyle(fontSize: 13, color: CoresEleva.brancoSuave),
               ),
               SizedBox(height: 20),
-              _campo(_nome, 'Nome do ouvinte', Icons.person_rounded),
-              _campo(_musica, 'Música', Icons.music_note_rounded),
-              _campo(_interprete, 'Intérprete', Icons.mic_rounded),
+              _campo(_nome, 'NOME DO OUVINTE', Icons.person_rounded),
+              _campo(_musica, 'MÚSICA', Icons.music_note_rounded),
+              _campo(_interprete, 'INTÉRPRETE', Icons.mic_rounded),
               SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _enviar,
+                  onPressed: _enviando ? null : _enviar,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF25D366),
+                    backgroundColor: CoresEleva.verde,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30)),
-                    textStyle: TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w800),
+                    textStyle:
+                        TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                   ),
-                  icon: Icon(Icons.send_rounded, size: 22),
-                  label: Text('ENVIAR'),
+                  icon: _enviando
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2.5))
+                      : Icon(Icons.send_rounded, size: 22),
+                  label: Text(_enviando ? 'ENVIANDO...' : 'ENVIAR'),
                 ),
               ),
             ],
@@ -246,6 +278,8 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
       padding: EdgeInsets.only(bottom: 14),
       child: TextField(
         controller: c,
+        textCapitalization: TextCapitalization.characters,
+        inputFormatters: [MaiusculasFormatter()],
         decoration: InputDecoration(
           labelText: rotulo,
           labelStyle: TextStyle(color: CoresEleva.textoFraco),
