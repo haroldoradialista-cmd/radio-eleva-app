@@ -6,56 +6,33 @@ import '../servicos/config_service.dart';
 import '../tema.dart';
 
 /// Cartão de enquete fixo na tela inicial (entre o banner e o player).
-/// A enquete ativa é definida e agendada pelo Painel Eleva.
+/// Depois de votar, o ouvinte vê a confirmação — os resultados ficam no Painel.
 class EnqueteCard extends StatefulWidget {
-  const EnqueteCard({super.key});
+  EnqueteCard({super.key});
   @override
   State<EnqueteCard> createState() => _EnqueteCardState();
 }
 
 class _EnqueteCardState extends State<EnqueteCard> {
-  int? _votoDado;
-  Map<int, int> _resultados = {};
+  bool _jaVotou = false;
   String _idCarregado = '';
   bool _enviando = false;
 
   String _baseRtdb(AppConfig cfg) =>
       cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
 
-  Future<void> _prepararEnquete(AppConfig cfg, Map<String, dynamic> e) async {
+  Future<void> _prepararEnquete(Map<String, dynamic> e) async {
     final id = (e['id'] ?? '').toString();
     if (id == _idCarregado) return;
     _idCarregado = id;
     final prefs = await SharedPreferences.getInstance();
-    final voto = prefs.getInt('enquete_$id');
-    if (voto != null) {
-      _votoDado = voto;
-      await _buscarResultados(cfg, id);
-    } else {
-      _votoDado = null;
-      _resultados = {};
-    }
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _buscarResultados(AppConfig cfg, String id) async {
-    try {
-      final r = await http
-          .get(Uri.parse('${_baseRtdb(cfg)}/enquete_votos/$id.json'));
-      if (r.statusCode == 200 && r.body != 'null') {
-        final dados = jsonDecode(r.body) as Map<String, dynamic>;
-        final mapa = <int, int>{};
-        for (final v in dados.values) {
-          final o = int.tryParse((v['opcao'] ?? '').toString()) ?? -1;
-          if (o >= 0) mapa[o] = (mapa[o] ?? 0) + 1;
-        }
-        _resultados = mapa;
-      }
-    } catch (_) {}
+    final votou = prefs.getInt('enquete_$id') != null;
+    if (mounted && votou != _jaVotou) setState(() => _jaVotou = votou);
+    _jaVotou = votou;
   }
 
   Future<void> _votar(AppConfig cfg, Map<String, dynamic> e, int opcao) async {
-    if (_enviando) return;
+    if (_enviando || _jaVotou) return;
     setState(() => _enviando = true);
     final id = (e['id'] ?? '').toString();
     try {
@@ -68,8 +45,14 @@ class _EnqueteCardState extends State<EnqueteCard> {
       );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('enquete_$id', opcao);
-      _votoDado = opcao;
-      await _buscarResultados(cfg, id);
+      _jaVotou = true;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: Duration(seconds: 2),
+          backgroundColor: CoresEleva.verdeEscuro,
+          content: Text('Voto registrado. Obrigado por participar! 🙌'),
+        ));
+      }
     } catch (_) {}
     if (mounted) setState(() => _enviando = false);
   }
@@ -79,20 +62,17 @@ class _EnqueteCardState extends State<EnqueteCard> {
     return ValueListenableBuilder<AppConfig>(
       valueListenable: ConfigService.instancia.config,
       builder: (context, cfg, _) {
-        if (cfg.chatUrl.isEmpty) return const SizedBox.shrink();
+        if (cfg.chatUrl.isEmpty) return SizedBox.shrink();
         final ativas = filtrarAgendados(cfg.enquetes);
-        if (ativas.isEmpty) return const SizedBox.shrink();
+        if (ativas.isEmpty) return SizedBox.shrink();
         final e = ativas.first;
         final opcoes = List<String>.from(e['opcoes'] ?? []);
-        if (opcoes.isEmpty) return const SizedBox.shrink();
-        _prepararEnquete(cfg, e);
-
-        final totalVotos =
-            _resultados.values.fold<int>(0, (s, v) => s + v);
+        if (opcoes.isEmpty) return SizedBox.shrink();
+        _prepararEnquete(e);
 
         return Container(
-          margin: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-          padding: const EdgeInsets.all(12),
+          margin: EdgeInsets.fromLTRB(14, 10, 14, 0),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: CoresEleva.azulMedio,
             borderRadius: BorderRadius.circular(14),
@@ -104,15 +84,15 @@ class _EnqueteCardState extends State<EnqueteCard> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.poll_rounded,
+                  Icon(Icons.poll_rounded,
                       color: CoresEleva.dourado, size: 18),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       (e['pergunta'] ?? 'Enquete').toString(),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 13.5,
                           color: CoresEleva.branco),
@@ -120,8 +100,8 @@ class _EnqueteCardState extends State<EnqueteCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              if (_votoDado == null)
+              SizedBox(height: 8),
+              if (!_jaVotou)
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
@@ -129,14 +109,14 @@ class _EnqueteCardState extends State<EnqueteCard> {
                     return GestureDetector(
                       onTap: () => _votar(cfg, e, i),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 7),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                         decoration: BoxDecoration(
                           gradient: CoresEleva.botaoPlay,
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Text(opcoes[i],
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white)),
@@ -145,87 +125,21 @@ class _EnqueteCardState extends State<EnqueteCard> {
                   }),
                 )
               else
-                Column(
-                  children: List.generate(opcoes.length, (i) {
-                    final votos = _resultados[i] ?? 0;
-                    final fracao =
-                        totalVotos == 0 ? 0.0 : votos / totalVotos;
-                    final pct = (fracao * 100).round();
-                    final minha = i == _votoDado;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 5),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Stack(
-                              children: [
-                                Container(
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    color: CoresEleva.azulProfundo,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                FractionallySizedBox(
-                                  widthFactor:
-                                      fracao.clamp(0.02, 1.0),
-                                  child: Container(
-                                    height: 20,
-                                    decoration: BoxDecoration(
-                                      gradient: minha
-                                          ? CoresEleva.botaoPlay
-                                          : null,
-                                      color: minha
-                                          ? null
-                                          : CoresEleva.azulVivo
-                                              .withOpacity(0.35),
-                                      borderRadius:
-                                          BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                                Positioned.fill(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        '${opcoes[i]}${minha ? ' ✓' : ''}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                            color: CoresEleva.branco),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 36,
-                            child: Text('$pct%',
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: CoresEleva.dourado)),
-                          ),
-                        ],
+                Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded,
+                        color: CoresEleva.verde, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Você já votou nesta enquete. Obrigado por participar! 🙌',
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: CoresEleva.brancoSuave),
                       ),
-                    );
-                  }),
-                ),
-              if (_votoDado != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text('$totalVotos votos • obrigado por participar!',
-                      style: const TextStyle(
-                          fontSize: 10.5, color: CoresEleva.brancoSuave)),
+                    ),
+                  ],
                 ),
             ],
           ),

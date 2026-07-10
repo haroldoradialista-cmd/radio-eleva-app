@@ -6,6 +6,7 @@ import 'paginas/chat_page.dart';
 import 'paginas/noticias_page.dart';
 import 'paginas/pedidos_page.dart';
 import 'servicos/config_service.dart';
+import 'servicos/analytics_service.dart';
 import 'tema.dart';
 
 Future<void> main() async {
@@ -15,26 +16,33 @@ Future<void> main() async {
     androidNotificationChannelName: 'Rádio Eleva',
     androidNotificationOngoing: true,
   );
-  ConfigService.instancia.carregar();
-  runApp(const RadioElevaApp());
+  ConfigService.instancia.carregar().then((_) => AnalyticsService.registrarAcesso());
+  await carregarTemaSalvo();
+  runApp(RadioElevaApp());
 }
 
 class RadioElevaApp extends StatelessWidget {
-  const RadioElevaApp({super.key});
+  RadioElevaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Rádio Eleva',
-      debugShowCheckedModeBanner: false,
-      theme: temaEleva(),
-      home: const TelaPrincipal(),
+    return ValueListenableBuilder<bool>(
+      valueListenable: modoEscuroNotifier,
+      builder: (context, escuro, _) {
+        CoresEleva.escuro = escuro;
+        return MaterialApp(
+          title: 'Rádio Eleva',
+          debugShowCheckedModeBanner: false,
+          theme: temaEleva(),
+          home: TelaPrincipal(),
+        );
+      },
     );
   }
 }
 
 class TelaPrincipal extends StatefulWidget {
-  const TelaPrincipal({super.key});
+  TelaPrincipal({super.key});
   @override
   State<TelaPrincipal> createState() => _TelaPrincipalState();
 }
@@ -42,7 +50,7 @@ class TelaPrincipal extends StatefulWidget {
 class _TelaPrincipalState extends State<TelaPrincipal> {
   int _abaAtual = 0;
 
-  final _paginas = const [
+  final _paginas = [
     HomePage(),
     ProgramacaoPage(),
     ChatPage(),
@@ -55,8 +63,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     return Scaffold(
       body: IndexedStack(index: _abaAtual, children: _paginas),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF04101F),
+        decoration: BoxDecoration(
+          color: CoresEleva.navFundo,
           border:
               Border(top: BorderSide(color: CoresEleva.dourado, width: 1.5)),
         ),
@@ -67,11 +75,11 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           selectedItemColor: CoresEleva.dourado,
-          unselectedItemColor: Colors.white54,
+          unselectedItemColor: CoresEleva.textoFraco,
           selectedFontSize: 11,
           unselectedFontSize: 11,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800),
-          items: const [
+          selectedLabelStyle: TextStyle(fontWeight: FontWeight.w800),
+          items: [
             BottomNavigationBarItem(
                 icon: Icon(Icons.home_rounded), label: 'Início'),
             BottomNavigationBarItem(

@@ -7,7 +7,7 @@ import '../servicos/config_service.dart';
 import '../tema.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  ChatPage({super.key});
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
@@ -22,18 +22,18 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(gradient: CoresEleva.fundoApp),
+      decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
       child: SafeArea(
         child: ValueListenableBuilder<AppConfig>(
           valueListenable: ConfigService.instancia.config,
           builder: (context, cfg, _) {
             if (cfg.chatUrl.isEmpty) {
-              return const _AvisoEmBreve();
+              return _AvisoEmBreve();
             }
             return ValueListenableBuilder<Usuario?>(
               valueListenable: AuthService.instancia.usuario,
               builder: (context, u, _) {
-                return u == null ? const _TelaLogin() : _TelaChat(usuario: u);
+                return u == null ? _TelaLogin() : _TelaChat(usuario: u);
               },
             );
           },
@@ -47,7 +47,7 @@ class _ChatPageState extends State<ChatPage> {
 // TELA DE LOGIN / CADASTRO
 // ============================================================
 class _TelaLogin extends StatefulWidget {
-  const _TelaLogin();
+  _TelaLogin();
   @override
   State<_TelaLogin> createState() => _TelaLoginState();
 }
@@ -74,25 +74,25 @@ class _TelaLoginState extends State<_TelaLogin> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(28),
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: Image.asset('assets/logo.png', width: 90, height: 90),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Text(_cadastro ? 'Crie sua conta' : 'Entre no bate-papo',
               style:
-                  const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 6),
-          const Text(
+                  TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+          SizedBox(height: 6),
+          Text(
             'Converse com outros ouvintes da Rádio Eleva',
             textAlign: TextAlign.center,
             style: TextStyle(color: CoresEleva.brancoSuave),
           ),
-          const SizedBox(height: 26),
+          SizedBox(height: 26),
 
           // ---- Botão Google ----
           SizedBox(
@@ -103,32 +103,32 @@ class _TelaLoginState extends State<_TelaLogin> {
                   : () => _executar(AuthService.instancia.entrarComGoogle),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF1F1F1F),
-                padding: const EdgeInsets.symmetric(vertical: 13),
+                foregroundColor: Color(0xFF1F1F1F),
+                padding: EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28)),
                 textStyle:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
-              icon: const Text('G',
+              icon: Text('G',
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                       color: Color(0xFF4285F4))),
-              label: const Text('Entrar com Google'),
+              label: Text('Entrar com Google'),
             ),
           ),
 
-          const SizedBox(height: 18),
-          Row(children: const [
-            Expanded(child: Divider(color: Colors.white24)),
+          SizedBox(height: 18),
+          Row(children: [
+            Expanded(child: Divider(color: CoresEleva.borda)),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Text('ou', style: TextStyle(color: Colors.white54)),
+              child: Text('ou', style: TextStyle(color: CoresEleva.textoFraco)),
             ),
-            Expanded(child: Divider(color: Colors.white24)),
+            Expanded(child: Divider(color: CoresEleva.borda)),
           ]),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
 
           // ---- Formulário e-mail/senha ----
           if (_cadastro)
@@ -137,7 +137,7 @@ class _TelaLoginState extends State<_TelaLogin> {
               teclado: TextInputType.emailAddress),
           _campo(_senha, 'Senha (mínimo 6 caracteres)', Icons.lock_rounded,
               senha: true),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
 
           SizedBox(
             width: double.infinity,
@@ -147,7 +147,7 @@ class _TelaLoginState extends State<_TelaLogin> {
                   : () {
                       if (_cadastro && _nome.text.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                                 content: Text('Digite seu nome.')));
                         return;
                       }
@@ -160,14 +160,14 @@ class _TelaLoginState extends State<_TelaLogin> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: CoresEleva.verde,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28)),
                 textStyle:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
               child: _ocupado
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
@@ -175,14 +175,14 @@ class _TelaLoginState extends State<_TelaLogin> {
                   : Text(_cadastro ? 'Cadastrar' : 'Entrar'),
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           TextButton(
             onPressed: () => setState(() => _cadastro = !_cadastro),
             child: Text(
               _cadastro
                   ? 'Já tenho conta — quero entrar'
                   : 'Não tem conta? Cadastre-se grátis',
-              style: const TextStyle(
+              style: TextStyle(
                   color: CoresEleva.dourado, fontWeight: FontWeight.w700),
             ),
           ),
@@ -194,7 +194,7 @@ class _TelaLoginState extends State<_TelaLogin> {
   Widget _campo(TextEditingController c, String rotulo, IconData icone,
       {bool senha = false, TextInputType? teclado}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: c,
         obscureText: senha,
@@ -219,7 +219,7 @@ class _TelaLoginState extends State<_TelaLogin> {
 // ============================================================
 class _TelaChat extends StatefulWidget {
   final Usuario usuario;
-  const _TelaChat({required this.usuario});
+  _TelaChat({required this.usuario});
   @override
   State<_TelaChat> createState() => _TelaChatState();
 }
@@ -237,7 +237,7 @@ class _TelaChatState extends State<_TelaChat> {
   void initState() {
     super.initState();
     _buscar();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _buscar());
+    _timer = Timer.periodic(Duration(seconds: 5), (_) => _buscar());
   }
 
   @override
@@ -295,11 +295,11 @@ class _TelaChatState extends State<_TelaChat> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 8, 8),
+          padding: EdgeInsets.fromLTRB(14, 14, 8, 8),
           child: Row(
             children: [
-              const Icon(Icons.forum_rounded, color: CoresEleva.dourado),
-              const SizedBox(width: 10),
+              Icon(Icons.forum_rounded, color: CoresEleva.dourado),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +307,7 @@ class _TelaChatState extends State<_TelaChat> {
                     Text('Bate-papo dos ouvintes',
                         style: Theme.of(context).textTheme.titleLarge),
                     Text('Você está como ${widget.usuario.nome}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12, color: CoresEleva.dourado)),
                   ],
                 ),
@@ -315,20 +315,20 @@ class _TelaChatState extends State<_TelaChat> {
               IconButton(
                 tooltip: 'Sair da conta',
                 onPressed: () => AuthService.instancia.sair(),
-                icon: const Icon(Icons.logout_rounded,
-                    color: Colors.white54, size: 20),
+                icon: Icon(Icons.logout_rounded,
+                    color: CoresEleva.textoFraco, size: 20),
               ),
             ],
           ),
         ),
         Expanded(
           child: _mensagens.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text('Seja o primeiro a mandar uma mensagem! 🙌'))
               : ListView.builder(
                   controller: _scroll,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   itemCount: _mensagens.length,
                   itemBuilder: (context, i) {
                     final m = _mensagens[i];
@@ -338,10 +338,10 @@ class _TelaChatState extends State<_TelaChat> {
                           ? Alignment.centerRight
                           : Alignment.centerLeft,
                       child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(
+                        margin: EdgeInsets.symmetric(vertical: 4),
+                        padding: EdgeInsets.symmetric(
                             horizontal: 14, vertical: 10),
-                        constraints: const BoxConstraints(maxWidth: 290),
+                        constraints: BoxConstraints(maxWidth: 290),
                         decoration: BoxDecoration(
                           color: minha
                               ? CoresEleva.verdeEscuro
@@ -352,13 +352,13 @@ class _TelaChatState extends State<_TelaChat> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(m['nome'] ?? 'Ouvinte',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: CoresEleva.dourado,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 12)),
-                            const SizedBox(height: 3),
+                            SizedBox(height: 3),
                             Text(m['msg'] ?? '',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: CoresEleva.branco)),
                           ],
                         ),
@@ -368,7 +368,7 @@ class _TelaChatState extends State<_TelaChat> {
                 ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+          padding: EdgeInsets.fromLTRB(12, 6, 12, 12),
           child: Row(
             children: [
               Expanded(
@@ -384,28 +384,28 @@ class _TelaChatState extends State<_TelaChat> {
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
+                    contentPadding: EdgeInsets.symmetric(
                         horizontal: 18, vertical: 12),
                   ),
                   onSubmitted: (_) => _enviar(),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               GestureDetector(
                 onTap: _enviar,
                 child: Container(
                   width: 48,
                   height: 48,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: CoresEleva.botaoPlay,
                     shape: BoxShape.circle,
                   ),
                   child: _enviando
-                      ? const Padding(
+                      ? Padding(
                           padding: EdgeInsets.all(13),
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2.2))
-                      : const Icon(Icons.send_rounded,
+                      : Icon(Icons.send_rounded,
                           color: Colors.white, size: 22),
                 ),
               ),
@@ -419,15 +419,15 @@ class _TelaChatState extends State<_TelaChat> {
 
 // ============================================================
 class _AvisoEmBreve extends StatelessWidget {
-  const _AvisoEmBreve();
+  _AvisoEmBreve();
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.forum_rounded, size: 64, color: CoresEleva.dourado),
             SizedBox(height: 16),
             Text('Chat em breve!',

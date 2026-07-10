@@ -8,7 +8,7 @@ import '../tema.dart';
 import '../widgets/enquete_card.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  HomePage({super.key});
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -23,12 +23,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _timerBanner = Timer.periodic(const Duration(seconds: 5), (_) {
+    _timerBanner = Timer.periodic(Duration(seconds: 5), (_) {
       final banners = filtrarAgendados(ConfigService.instancia.config.value.banners);
       if (banners.length > 1 && _pageController.hasClients) {
         _bannerAtual = (_bannerAtual + 1) % banners.length;
         _pageController.animateToPage(_bannerAtual,
-            duration: const Duration(milliseconds: 450),
+            duration: Duration(milliseconds: 450),
             curve: Curves.easeInOut);
       }
     });
@@ -51,7 +51,7 @@ class _HomePageState extends State<HomePage> {
     setState(() => _voto = tipo);
     PlayerService.instancia.votar(cfg.chatUrl, tipo, _musicaAtual);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      duration: const Duration(seconds: 2),
+      duration: Duration(seconds: 2),
       backgroundColor:
           tipo == 'like' ? CoresEleva.verdeEscuro : CoresEleva.azulMedio,
       content: Text(tipo == 'like'
@@ -67,10 +67,11 @@ class _HomePageState extends State<HomePage> {
       valueListenable: ConfigService.instancia.config,
       builder: (context, cfg, _) {
         return Container(
-          decoration: const BoxDecoration(gradient: CoresEleva.fundoApp),
+          decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
-              final alturaBanner = c.maxHeight / 3; // 1/3 da tela, como pedido
+              final alturaBanner =
+                  (c.maxHeight * 0.26).clamp(120.0, 210.0); // banner otimizado
               final banners = filtrarAgendados(cfg.banners);
               return Column(
                 children: [
@@ -116,15 +117,15 @@ class _HomePageState extends State<HomePage> {
                                     banners.length,
                                     (i) => AnimatedContainer(
                                       duration:
-                                          const Duration(milliseconds: 300),
-                                      margin: const EdgeInsets.symmetric(
+                                          Duration(milliseconds: 300),
+                                      margin: EdgeInsets.symmetric(
                                           horizontal: 3),
                                       width: i == _bannerAtual ? 22 : 8,
                                       height: 8,
                                       decoration: BoxDecoration(
                                         color: i == _bannerAtual
                                             ? CoresEleva.dourado
-                                            : Colors.white38,
+                                            : CoresEleva.textoFraco,
                                         borderRadius:
                                             BorderRadius.circular(4),
                                       ),
@@ -137,12 +138,12 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // ===== ENQUETE FIXA (entre o banner e o player) =====
-                  const EnqueteCard(),
+                  EnqueteCard(),
 
                   // ===== ÁREA DO PLAYER (2/3 inferior) =====
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                           horizontal: 24, vertical: 8),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -156,17 +157,17 @@ class _HomePageState extends State<HomePage> {
                                 child: Image.asset('assets/logo.png',
                                     width: 46, height: 46),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(cfg.nome,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.w800,
                                           color: CoresEleva.branco)),
                                   Text(cfg.slogan,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 12,
                                           color: CoresEleva.dourado,
                                           fontWeight: FontWeight.w600,
@@ -180,7 +181,7 @@ class _HomePageState extends State<HomePage> {
                           Column(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 5),
                                 decoration: BoxDecoration(
                                   color: Colors.red.shade700,
@@ -188,7 +189,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  children: const [
+                                  children: [
                                     Icon(Icons.circle,
                                         size: 9, color: Colors.white),
                                     SizedBox(width: 6),
@@ -200,7 +201,7 @@ class _HomePageState extends State<HomePage> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               StreamBuilder<IcyMetadata?>(
                                 stream: player.icyMetadataStream,
                                 builder: (context, snap) {
@@ -217,7 +218,7 @@ class _HomePageState extends State<HomePage> {
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                         color: CoresEleva.brancoSuave),
@@ -237,7 +238,7 @@ class _HomePageState extends State<HomePage> {
                                 corAtiva: CoresEleva.azulVivo,
                                 aoTocar: () => _registrarVoto('dislike', cfg),
                               ),
-                              const SizedBox(width: 28),
+                              SizedBox(width: 28),
                               StreamBuilder<PlayerState>(
                                 stream: player.playerStateStream,
                                 builder: (context, snap) {
@@ -274,7 +275,7 @@ class _HomePageState extends State<HomePage> {
                                         ],
                                       ),
                                       child: carregando
-                                          ? const Padding(
+                                          ? Padding(
                                               padding: EdgeInsets.all(26),
                                               child:
                                                   CircularProgressIndicator(
@@ -293,7 +294,7 @@ class _HomePageState extends State<HomePage> {
                                   );
                                 },
                               ),
-                              const SizedBox(width: 28),
+                              SizedBox(width: 28),
                               _botaoVoto(
                                 icone: Icons.thumb_up_rounded,
                                 ativo: _voto == 'like',
@@ -332,6 +333,27 @@ class _HomePageState extends State<HomePage> {
                                   );
                                 },
                               ),
+                              ValueListenableBuilder<bool>(
+                                valueListenable: modoEscuroNotifier,
+                                builder: (context, escuro, _) {
+                                  return TextButton.icon(
+                                    onPressed: alternarTema,
+                                    icon: Icon(
+                                        escuro
+                                            ? Icons.light_mode_rounded
+                                            : Icons.dark_mode_rounded,
+                                        size: 20,
+                                        color: CoresEleva.dourado),
+                                    label: Text(
+                                      escuro ? 'Modo claro' : 'Modo escuro',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: CoresEleva.dourado),
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           ),
                           if (cfg.redes.isNotEmpty)
@@ -339,7 +361,7 @@ class _HomePageState extends State<HomePage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: cfg.redes.map((r) {
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(
+                                  padding: EdgeInsets.symmetric(
                                       horizontal: 8),
                                   child: IconButton(
                                     onPressed: () => _abrirLink(r['link']),
@@ -366,20 +388,20 @@ class _HomePageState extends State<HomePage> {
     showModalBottomSheet(
       context: context,
       backgroundColor: CoresEleva.azulMedio,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(14),
               child: Text('Desligar a rádio em...',
                   style:
                       TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             ),
             ...[15, 30, 45, 60, 90].map((m) => ListTile(
-                  leading: const Icon(Icons.bedtime_rounded,
+                  leading: Icon(Icons.bedtime_rounded,
                       color: CoresEleva.dourado),
                   title: Text('$m minutos'),
                   onTap: () {
@@ -388,8 +410,8 @@ class _HomePageState extends State<HomePage> {
                   },
                 )),
             ListTile(
-              leading: const Icon(Icons.close_rounded, color: Colors.white54),
-              title: const Text('Cancelar sleep timer'),
+              leading: Icon(Icons.close_rounded, color: CoresEleva.textoFraco),
+              title: Text('Cancelar sleep timer'),
               onTap: () {
                 PlayerService.instancia.definirSleep(0);
                 Navigator.pop(context);
@@ -410,24 +432,24 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onTap: aoTocar,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: Duration(milliseconds: 200),
         width: 58,
         height: 58,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: ativo ? corAtiva : CoresEleva.azulMedio,
           border: Border.all(
-              color: ativo ? CoresEleva.dourado : Colors.white24, width: 1.5),
+              color: ativo ? CoresEleva.dourado : CoresEleva.borda, width: 1.5),
         ),
         child: Icon(icone,
-            color: ativo ? Colors.white : Colors.white70, size: 26),
+            color: ativo ? Colors.white : CoresEleva.textoFraco, size: 26),
       ),
     );
   }
 
   Widget _bannerPadrao(AppConfig cfg) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [CoresEleva.azulMedio, CoresEleva.verdeEscuro],
           begin: Alignment.topLeft,

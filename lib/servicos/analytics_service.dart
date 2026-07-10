@@ -1,0 +1,45 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'config_service.dart';
+
+/// Registra um acesso anônimo por abertura do app (sem identificar o ouvinte):
+/// data/hora, plataforma e cidade aproximada (via internet, sem GPS).
+class AnalyticsService {
+  static bool _registrado = false;
+
+  static Future<void> registrarAcesso() async {
+    if (_registrado) return;
+    _registrado = true;
+    try {
+      final cfg = ConfigService.instancia.config.value;
+      if (cfg.chatUrl.isEmpty) return;
+      final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
+
+      String cidade = '', estado = '', pais = '';
+      try {
+        final g = await http
+            .get(Uri.parse('https://ipwho.is/'))
+            .timeout(const Duration(seconds: 6));
+        if (g.statusCode == 200) {
+          final d = jsonDecode(g.body);
+          if (d['success'] == true) {
+            cidade = (d['city'] ?? '').toString();
+            estado = (d['region'] ?? '').toString();
+            pais = (d['country'] ?? '').toString();
+          }
+        }
+      } catch (_) {}
+
+      await http.post(
+        Uri.parse('$base/acessos.json'),
+        body: jsonEncode({
+          'quando': DateTime.now().toIso8601String(),
+          'plataforma': 'android',
+          'cidade': cidade,
+          'estado': estado,
+          'pais': pais,
+        }),
+      );
+    } catch (_) {}
+  }
+}

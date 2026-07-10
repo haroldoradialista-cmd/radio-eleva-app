@@ -49,6 +49,23 @@
   .msgchat p{color:var(--branco);font-size:14px;margin-top:2px}
   .msgchat small{color:#9FB3CC;font-size:10px}
   .rotulo-secao{font-size:12px;color:#9FB3CC;margin-bottom:12px;line-height:1.5}
+  .diasbox{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .diasbox label{display:flex;align-items:center;gap:5px;background:var(--navy);border:1px solid rgba(255,255,255,.15);
+    border-radius:16px;padding:6px 12px;font-size:12.5px;color:var(--suave);cursor:pointer;margin:0}
+  .diasbox input{width:auto;accent-color:var(--verde)}
+  .atalhos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .barrasV{display:flex;align-items:flex-end;gap:3px;height:150px;margin-top:10px}
+  .barrasV .bv{flex:1;background:linear-gradient(180deg,var(--azul),var(--verde));border-radius:4px 4px 0 0;position:relative;min-height:2px}
+  .barrasV .bv small{position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:9px;color:var(--suave)}
+  .barrasV .bv b{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:9px;color:#9FB3CC;font-weight:400}
+  .barraH{margin:6px 0}
+  .barraH .rotulo{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+  .barraH .trilho{background:var(--navy);border-radius:8px;height:14px;overflow:hidden}
+  .barraH .preenche{height:100%;background:linear-gradient(90deg,var(--verde),var(--azul));border-radius:8px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:8px}
+  .kpi{background:var(--navy);border-radius:12px;padding:12px;text-align:center}
+  .kpi b{display:block;font-size:22px;color:var(--branco)}
+  .kpi span{font-size:11px;color:var(--ouro);font-weight:700}
 </style>
 </head>
 <body>
@@ -78,6 +95,7 @@
     <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
+    <button class="aba" data-aba="stats" onclick="trocarAba(this)">📈 Estatísticas</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
   </div>
 
@@ -157,15 +175,24 @@
       </div>
       <div class="cartao">
         <h2>Adicionar programa</h2>
+        <label>Dias em que o programa acontece</label>
+        <div class="diasbox" id="pgDias">
+          <label><input type="checkbox" value="Segunda">Seg</label>
+          <label><input type="checkbox" value="Terça">Ter</label>
+          <label><input type="checkbox" value="Quarta">Qua</label>
+          <label><input type="checkbox" value="Quinta">Qui</label>
+          <label><input type="checkbox" value="Sexta">Sex</label>
+          <label><input type="checkbox" value="Sábado">Sáb</label>
+          <label><input type="checkbox" value="Domingo">Dom</label>
+        </div>
+        <div class="atalhos">
+          <button class="botao mini neutro" onclick="marcarDias(['Segunda','Terça','Quarta','Quinta','Sexta'])">Seg a Sex</button>
+          <button class="botao mini neutro" onclick="marcarDias(['Sábado','Domingo'])">Fim de semana</button>
+          <button class="botao mini neutro" onclick="marcarDias(['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'])">Todos</button>
+        </div>
         <div class="grade2">
-          <div><label>Dia</label>
-            <select id="pgDia">
-              <option>Todos os dias</option><option>Segunda</option><option>Terça</option>
-              <option>Quarta</option><option>Quinta</option><option>Sexta</option>
-              <option>Sábado</option><option>Domingo</option>
-            </select>
-          </div>
           <div><label>Horário (ex.: 08:00)</label><input id="pgHora" type="time"></div>
+          <div><label>Foto do programa (opcional)</label><input type="file" id="pgFoto" accept="image/png,image/jpeg"></div>
         </div>
         <label>Nome do programa</label><input id="pgNome" placeholder="Ex.: Manhã com Adoração">
         <label>Apresentador(a) (opcional)</label><input id="pgApres">
@@ -206,6 +233,26 @@
         <h2>Mensagens do chat <button class="botao mini neutro" onclick="carregarChat()">🔄 Atualizar</button></h2>
         <div id="listaChat"><p class="rotulo-secao">Carregando...</p></div>
       </div>
+    </section>
+
+    <!-- ESTATISTICAS -->
+    <section id="sec-stats" class="oculto">
+      <div class="cartao">
+        <h2>Estatísticas de ouvintes</h2>
+        <p class="rotulo-secao">Acessos <b>anônimos</b> registrados a cada abertura do app (disponível a partir da versão 1.5). Escolha o período:</p>
+        <div class="grade2">
+          <div><label>📅 De</label><input type="date" id="stDe"></div>
+          <div><label>📅 Até</label><input type="date" id="stAte"></div>
+        </div>
+        <button class="botao" onclick="carregarStats()">📈 Gerar estatísticas</button>
+        <button class="botao neutro" onclick="stDe.value='';stAte.value='';carregarStats()">Período todo</button>
+        <div class="kpis" id="stKpis"></div>
+      </div>
+      <div class="cartao"><h2>⏰ Acessos por horário do dia</h2><div id="stHoras"><p class="rotulo-secao">—</p></div></div>
+      <div class="cartao"><h2>📆 Acessos por dia da semana</h2><div id="stSemana"><p class="rotulo-secao">—</p></div></div>
+      <div class="cartao"><h2>🗓️ Acessos por mês</h2><div id="stMes"><p class="rotulo-secao">—</p></div></div>
+      <div class="cartao"><h2>📱 Por plataforma</h2><div id="stPlataforma"><p class="rotulo-secao">—</p></div></div>
+      <div class="cartao"><h2>📍 Por localização (cidades)</h2><div id="stCidades"><p class="rotulo-secao">—</p></div></div>
     </section>
 
     <!-- VOTOS -->
@@ -316,7 +363,7 @@ async function subirImagem(arquivo, pasta){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','noticias','enquetes','programacao','textos','chat','votos'].forEach(s=>
+  ['banners','noticias','enquetes','programacao','textos','chat','votos','stats'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
 }
 
@@ -452,25 +499,49 @@ async function removerEnquete(i){
 }
 
 // ================== PROGRAMACAO ==================
-const ORDEM_DIAS = ['Todos os dias','Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+const ORDEM_DIAS = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+function marcarDias(dias){
+  document.querySelectorAll('#pgDias input').forEach(c=>{ c.checked = dias.includes(c.value); });
+}
+function diasDoItem(p){
+  if(Array.isArray(p.dias) && p.dias.length) return p.dias;
+  if(p.dia==='Todos os dias'||!p.dia) return ORDEM_DIAS;
+  return [p.dia];
+}
+function resumoDias(ds){
+  const seg_sex = ['Segunda','Terça','Quarta','Quinta','Sexta'];
+  if(ds.length===7) return 'Todos os dias';
+  if(ds.length===5 && seg_sex.every(d=>ds.includes(d))) return 'Segunda a Sexta';
+  if(ds.length===2 && ds.includes('Sábado') && ds.includes('Domingo')) return 'Sábado e Domingo';
+  return ds.join(', ');
+}
 function desenharProgramas(){
   config.programacao = config.programacao || [];
   const el = document.getElementById('listaProgramas');
   if(!config.programacao.length){ el.innerHTML='<p class="rotulo-secao">Nenhum programa cadastrado.</p>'; return; }
   const ordenado = config.programacao.map((p,i)=>({...p,_i:i}))
-    .sort((a,b)=> ORDEM_DIAS.indexOf(a.dia)-ORDEM_DIAS.indexOf(b.dia) || (a.horario||'').localeCompare(b.horario||''));
+    .sort((a,b)=> ORDEM_DIAS.indexOf(diasDoItem(a)[0])-ORDEM_DIAS.indexOf(diasDoItem(b)[0]) || (a.horario||'').localeCompare(b.horario||''));
   el.innerHTML = ordenado.map(p=>`<div class="item">
+    ${p.imagem? `<img src="${p.imagem}" style="width:44px;height:44px;object-fit:cover;border-radius:8px">`:''}
     <div class="info"><b>${p.horario||'--:--'} — ${p.programa}</b>
-    <span>${p.dia}${p.apresentador? ' • com '+p.apresentador:''}</span></div>
+    <span>${resumoDias(diasDoItem(p))}${p.apresentador? ' • com '+p.apresentador:''}</span></div>
     <button class="botao mini perigo" onclick="removerPrograma(${p._i})">🗑️</button>
   </div>`).join('');
 }
 async function adicionarPrograma(){
+  const dias = [...document.querySelectorAll('#pgDias input:checked')].map(c=>c.value);
   if(!pgNome.value.trim() || !pgHora.value){ avisar('Preencha o horário e o nome do programa.', true); return; }
-  config.programacao = config.programacao || [];
-  config.programacao.push({ dia:pgDia.value, horario:pgHora.value, programa:pgNome.value.trim(), apresentador:pgApres.value.trim() });
-  try{ await salvarConfig('Painel: programacao'); pgNome.value=pgApres.value=''; desenharProgramas(); avisar('Programa adicionado! ✅'); }
-  catch(e){ avisar('Falhou: '+e.message, true); }
+  if(!dias.length){ avisar('Marque pelo menos um dia da semana.', true); return; }
+  try{
+    let imagem = '';
+    const arq = document.getElementById('pgFoto').files[0];
+    if(arq){ avisar('Enviando foto...'); imagem = await subirImagem(arq,'imagens'); }
+    config.programacao = config.programacao || [];
+    config.programacao.push({ dias, horario:pgHora.value, programa:pgNome.value.trim(), apresentador:pgApres.value.trim(), imagem });
+    await salvarConfig('Painel: programacao');
+    pgNome.value=pgApres.value=''; document.getElementById('pgFoto').value=''; marcarDias([]);
+    desenharProgramas(); avisar('Programa adicionado! ✅');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
 }
 async function removerPrograma(i){
   if(!confirm('Remover este programa da grade?')) return;
@@ -547,6 +618,94 @@ async function apagarMsg(chave){
   const r = await fetch(`${RTDB}/chat/${chave}.json?auth=${modToken}`, { method:'DELETE' });
   if(r.ok){ avisar('Mensagem apagada.'); carregarChat(); }
   else avisar('Sem permissão. Confira as regras do banco.', true);
+}
+
+// ================== ESTATISTICAS ==================
+const NOMES_DIAS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+function barraH(rotulo, valor, maximo){
+  const pct = maximo? Math.max(2, Math.round(valor*100/maximo)) : 0;
+  return `<div class="barraH"><div class="rotulo"><span>${rotulo}</span><b>${valor.toLocaleString('pt-BR')}</b></div>
+    <div class="trilho"><div class="preenche" style="width:${pct}%"></div></div></div>`;
+}
+async function carregarStats(){
+  const kp = document.getElementById('stKpis');
+  kp.innerHTML = '<div class="kpi"><b>...</b><span>carregando</span></div>';
+  let dados = null;
+  try{
+    const r = await fetch(`${RTDB}/acessos.json?t=${Date.now()}`);
+    dados = await r.json();
+  }catch(e){}
+  if(!dados){
+    kp.innerHTML = '<div class="kpi"><b>0</b><span>acessos ainda</span></div>';
+    ['stHoras','stSemana','stMes','stPlataforma','stCidades'].forEach(id=>
+      document.getElementById(id).innerHTML='<p class="rotulo-secao">Sem dados no período. Os registros começam quando os ouvintes instalarem a versão 1.5 do app.</p>');
+    return;
+  }
+  const de  = stDe.value  ? new Date(stDe.value  + 'T00:00:00') : null;
+  const ate = stAte.value ? new Date(stAte.value + 'T23:59:59') : null;
+
+  const horas = Array(24).fill(0), semana = Array(7).fill(0);
+  const meses = {}, plataformas = {}, cidades = {};
+  let total = 0; const diasComAcesso = new Set();
+
+  Object.values(dados).forEach(a=>{
+    const q = a.quando ? new Date(a.quando) : null;
+    if(!q || isNaN(q)) return;
+    if(de && q < de) return;
+    if(ate && q > ate) return;
+    total++;
+    horas[q.getHours()]++;
+    semana[q.getDay()]++;
+    const m = q.toISOString().slice(0,7);
+    meses[m] = (meses[m]||0)+1;
+    diasComAcesso.add(q.toISOString().slice(0,10));
+    const p = (a.plataforma||'outros').toLowerCase();
+    plataformas[p] = (plataformas[p]||0)+1;
+    const c = (a.cidade||'').trim();
+    const chave = c ? `${c}${a.estado? ' - '+a.estado:''}` : '(não identificada)';
+    cidades[chave] = (cidades[chave]||0)+1;
+  });
+
+  const media = diasComAcesso.size ? Math.round(total/diasComAcesso.size) : 0;
+  kp.innerHTML = `
+    <div class="kpi"><b>${total.toLocaleString('pt-BR')}</b><span>ACESSOS</span></div>
+    <div class="kpi"><b>${media.toLocaleString('pt-BR')}</b><span>MÉDIA/DIA</span></div>
+    <div class="kpi"><b>${Object.keys(cidades).length}</b><span>CIDADES</span></div>`;
+
+  const maxH = Math.max(...horas, 1);
+  document.getElementById('stHoras').innerHTML =
+    `<div class="barrasV">` + horas.map((v,i)=>
+      `<div class="bv" style="height:${Math.max(2, v*100/maxH)}%">${v? `<small>${v}</small>`:''}<b>${String(i).padStart(2,'0')}</b></div>`
+    ).join('') + `</div><div style="height:20px"></div>`;
+
+  const ordemSem = [1,2,3,4,5,6,0];
+  const maxS = Math.max(...semana, 1);
+  document.getElementById('stSemana').innerHTML =
+    ordemSem.map(d=> barraH(NOMES_DIAS[d]+'-feira'.replace('Sábado-feira','Sábado').replace('Domingo-feira','Domingo'), semana[d], maxS)).join('');
+  // corrige nomes sab/dom
+  document.getElementById('stSemana').innerHTML =
+    ordemSem.map(d=>{
+      const nome = (d===0||d===6) ? NOMES_DIAS[d] : NOMES_DIAS[d]+'-feira';
+      return barraH(nome, semana[d], maxS);
+    }).join('');
+
+  const mesesOrd = Object.entries(meses).sort((a,b)=>a[0].localeCompare(b[0]));
+  const maxM = Math.max(...mesesOrd.map(x=>x[1]), 1);
+  const nomeMes = m => { const [ano,mm]=m.split('-'); const nomes=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']; return `${nomes[+mm-1]}/${ano}`; };
+  document.getElementById('stMes').innerHTML =
+    mesesOrd.length? mesesOrd.map(([m,v])=>barraH(nomeMes(m), v, maxM)).join('') : '<p class="rotulo-secao">Sem dados.</p>';
+
+  const plaOrd = Object.entries(plataformas).sort((a,b)=>b[1]-a[1]);
+  const maxP = Math.max(...plaOrd.map(x=>x[1]), 1);
+  const nomePla = p => p==='android'?'Android': p==='ios'?'iOS': p==='web'?'Site':'Outros';
+  document.getElementById('stPlataforma').innerHTML =
+    plaOrd.map(([p,v])=>barraH(nomePla(p), v, maxP)).join('');
+
+  const cidOrd = Object.entries(cidades).sort((a,b)=>b[1]-a[1]).slice(0,30);
+  const maxC = Math.max(...cidOrd.map(x=>x[1]), 1);
+  document.getElementById('stCidades').innerHTML =
+    cidOrd.map(([c,v])=>barraH(c, v, maxC)).join('') +
+    (Object.keys(cidades).length>30? `<p class="rotulo-secao">Mostrando as 30 primeiras de ${Object.keys(cidades).length} cidades.</p>`:'');
 }
 
 // ================== VOTOS ==================
