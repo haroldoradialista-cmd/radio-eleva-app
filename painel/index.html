@@ -97,6 +97,7 @@
     <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
+    <button class="aba" data-aba="notif" onclick="trocarAba(this)">🔔 Notificações</button>
     <button class="aba" data-aba="stats" onclick="trocarAba(this)">📈 Estatísticas</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
   </div>
@@ -289,6 +290,23 @@
       <div class="cartao"><h2>📍 Por localização (cidades)</h2><div id="stCidades"><p class="rotulo-secao">—</p></div></div>
     </section>
 
+    <!-- NOTIFICACOES -->
+    <section id="sec-notif" class="oculto">
+      <div class="cartao">
+        <h2>🔔 Notificações push para os ouvintes</h2>
+        <p class="rotulo-secao">Todo app instalado (a partir da versão 1.8) recebe seus avisos <b>mesmo com o app fechado</b>. O envio é feito pela Central de Mensagens do Firebase — gratuita e com agendamento de data e hora.</p>
+        <a href="https://console.firebase.google.com/project/radio-eleva/messaging" target="_blank" class="botao" style="text-decoration:none;display:inline-block">📨 Abrir a Central de Envio</a>
+        <p class="rotulo-secao" style="margin-top:14px"><b>Como enviar uma notificação:</b><br>
+        1. Clique no botão acima e entre com a conta do Firebase.<br>
+        2. Clique em <b>Criar sua primeira campanha</b> (ou "Nova campanha") → <b>Mensagens do Firebase Notifications</b> → Criar.<br>
+        3. Preencha o <b>Título</b> (ex.: "Começa em 10 minutos!") e o <b>Texto</b> (ex.: "O Manhã com Adoração já vai começar. Toque para ouvir!").<br>
+        4. Em <b>Segmentar</b>, escolha o app <b>Rádio Eleva</b>.<br>
+        5. Em <b>Programação</b>, escolha <b>Agora</b> ou <b>Programada</b> (defina data e hora — perfeito para lembrar de programas e eventos!).<br>
+        6. Avance nas demais etapas sem mudar nada e clique em <b>Revisar → Publicar</b>.</p>
+        <p class="rotulo-secao">💡 Dica: você pode deixar várias notificações agendadas de uma vez — uma para cada programa ou evento da semana.</p>
+      </div>
+    </section>
+
     <!-- VOTOS -->
     <section id="sec-votos" class="oculto">
       <div class="cartao">
@@ -397,7 +415,7 @@ async function subirImagem(arquivo, pasta){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats'].forEach(s=>
+  ['banners','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
 }
 
