@@ -48,5 +48,17 @@
       "apresentador": "Luan Oliveira"
     }
   ],
-  "enquetes": []
+  "enquetes": [
+    {
+      "id": "e1783644889281",
+      "pergunta": "O que você está achando da nossa programação?",
+      "opcoes": [
+        "Boa",
+        "Regular",
+        "Ótima"
+      ],
+      "publicar_em": "2026-07-09T21:54",
+      "expirar_em": "2026-07-09T22:00"
+    }
+  ]
 }
