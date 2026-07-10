@@ -39,5 +39,14 @@
       "nome": "YouTube",
       "link": ""
     }
-  ]
+  ],
+  "programacao": [
+    {
+      "dia": "Todos os dias",
+      "horario": "08:00",
+      "programa": "Manhã Melhor",
+      "apresentador": "Luan Oliveira"
+    }
+  ],
+  "enquetes": []
 }
