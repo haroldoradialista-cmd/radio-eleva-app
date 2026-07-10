@@ -36,7 +36,7 @@ jobs:
       - name: Conferir chave de assinatura
         run: |
           keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey | grep "SHA1:" \
-          || (echo "::error::PROBLEMA! O secret CHAVE_ASSINATURA esta ausente ou invalido. Confira em Settings > Secrets and variables > Actions." && exit 1)
+          || (echo "::error::PROBLEMA! O secret CHAVE_ASSINATURA esta ausente ou invalido." && exit 1)
 
       - name: Preparar projeto Android
         run: bash setup_android.sh
@@ -52,8 +52,9 @@ jobs:
 
       - name: Conferir assinatura do APK gerado
         run: |
-          keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep -E "SHA1:|SHA256:" \
-          || echo "AVISO: nao foi possivel ler a assinatura do APK"
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort | tail -1)
+          echo "=== ASSINATURA REAL DO APK ==="
+          $APKSIGNER verify --print-certs build/app/outputs/flutter-apk/app-release.apk | grep -E "SHA-1|SHA-256"
 
       - name: Publicar APK
         uses: actions/upload-artifact@v4
