@@ -163,21 +163,60 @@ class AuthService {
     }
   }
 
-  // ---------- LOGIN COM GOOGLE ----------
+  // ---------- LOGIN COM GOOGLE (rota dupla) ----------
   Future<String?> entrarComGoogle() async {
+    // Rota A: fluxo padrão com credencial de identidade
     try {
       final g = GoogleSignIn(serverClientId: kGoogleServerClientId);
       final conta = await g.signIn();
       if (conta == null) return 'Login cancelado.';
       final autent = await conta.authentication;
-      final idTokenGoogle = autent.idToken;
-      if (idTokenGoogle == null) {
+      if (autent.idToken != null) {
+        final erro = await _finalizarComIdp(
+            'id_token=${autent.idToken}&providerId=google.com',
+            conta.displayName,
+            conta.email);
+        if (erro == null) return null;
+      }
+      if (autent.accessToken != null) {
+        final erro = await _finalizarComIdp(
+            'access_token=${autent.accessToken}&providerId=google.com',
+            conta.displayName,
+            conta.email);
+        if (erro == null) return null;
+      }
+    } catch (_) {
+      // segue para a rota B
+    }
+
+    // Rota B: fluxo alternativo via token de acesso (contorna o erro 10)
+    try {
+      final g2 = GoogleSignIn(scopes: ['email']);
+      await g2.signOut();
+      final conta2 = await g2.signIn();
+      if (conta2 == null) return 'Login cancelado.';
+      final autent2 = await conta2.authentication;
+      final token = autent2.accessToken ?? autent2.idToken;
+      if (token == null) {
         return 'Não foi possível obter a credencial do Google.';
       }
+      final corpo = autent2.accessToken != null
+          ? 'access_token=${autent2.accessToken}&providerId=google.com'
+          : 'id_token=${autent2.idToken}&providerId=google.com';
+      return await _finalizarComIdp(
+          corpo, conta2.displayName, conta2.email);
+    } catch (e) {
+      return 'Erro Google: $e';
+    }
+  }
+
+  Future<String?> _finalizarComIdp(
+      String postBody, String? nomeConta, String? emailConta) async {
+    try {
       final r = await http.post(
         Uri.parse('$_base/accounts:signInWithIdp?key=$kFirebaseApiKey'),
         body: jsonEncode({
-          'postBody': 'id_token=$idTokenGoogle&providerId=google.com',
+          'postBody': postBody,
           'requestUri': 'http://localhost',
           'returnIdpCredential': true,
           'returnSecureToken': true,
@@ -187,16 +226,16 @@ class AuthService {
       if (r.statusCode != 200) return _traduzErro(d);
       await _salvarSessao(Usuario(
         uid: d['localId'],
-        nome: (d['displayName'] ?? conta.displayName ?? 'Ouvinte').toString(),
-        email: (d['email'] ?? conta.email).toString(),
+        nome: (d['displayName'] ?? nomeConta ?? 'Ouvinte').toString(),
+        email: (d['email'] ?? emailConta ?? '').toString(),
         idToken: d['idToken'],
         refreshToken: d['refreshToken'],
         expiraEm: DateTime.now().millisecondsSinceEpoch ~/ 1000 +
             int.parse((d['expiresIn'] ?? '3600').toString()),
       ));
       return null;
-    } catch (e) {
-      return 'Erro Google: $e';
+    } catch (_) {
+      return 'Falha de conexão. Verifique sua internet.';
     }
   }
 
