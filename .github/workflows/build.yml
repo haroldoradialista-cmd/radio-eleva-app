@@ -32,10 +32,11 @@ jobs:
         run: |
           mkdir -p ~/.android
           echo "${{ secrets.CHAVE_ASSINATURA }}" | base64 -d > ~/.android/debug.keystore
+          echo "${{ secrets.CHAVE_ASSINATURA }}" | base64 -d > chave.keystore
 
       - name: Conferir chave de assinatura
         run: |
-          keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey | grep "SHA1:" \
+          keytool -list -v -keystore chave.keystore -storepass android -alias androiddebugkey | grep "SHA1:" \
           || (echo "::error::PROBLEMA! O secret CHAVE_ASSINATURA esta ausente ou invalido." && exit 1)
 
       - name: Preparar projeto Android
@@ -50,10 +51,10 @@ jobs:
       - name: Compilar APK
         run: flutter build apk --release
 
-      - name: Conferir assinatura do APK gerado
+      - name: Conferir assinatura REAL do APK gerado
         run: |
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort | tail -1)
-          echo "=== ASSINATURA REAL DO APK ==="
+          echo "=== ASSINATURA DE DENTRO DO APK ==="
           $APKSIGNER verify --print-certs build/app/outputs/flutter-apk/app-release.apk | grep -E "SHA-1|SHA-256"
 
       - name: Publicar APK
