@@ -19,6 +19,48 @@ class _ProgramacaoPageState extends State<ProgramacaoPage> {
     _diaSelecionado = _diaHoje;
   }
 
+  Widget _chipDia(String dia) {
+    final selecionado = dia == _diaSelecionado;
+    final hoje = dia == _diaHoje;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4),
+      child: GestureDetector(
+        onTap: () => setState(() => _diaSelecionado = dia),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: selecionado ? CoresEleva.botaoPlay : null,
+            color: selecionado ? null : CoresEleva.azulMedio,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: hoje ? CoresEleva.dourado : CoresEleva.borda,
+              width: hoje ? 2.2 : 1.2,
+            ),
+            boxShadow: selecionado
+                ? [
+                    BoxShadow(
+                        color: CoresEleva.verde.withOpacity(0.35),
+                        blurRadius: 10)
+                  ]
+                : null,
+          ),
+          child: Text(
+            dia.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: hoje ? FontWeight.w900 : FontWeight.w700,
+              letterSpacing: 0.3,
+              color: selecionado
+                  ? Colors.white
+                  : (hoje ? CoresEleva.dourado : CoresEleva.brancoSuave),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -51,75 +93,25 @@ class _ProgramacaoPageState extends State<ProgramacaoPage> {
                   ),
                 ),
 
-                // ===== SELETOR DE DIAS (todos visíveis, sem deslizar) =====
+                // ===== SELETOR DE DIAS (modelo em duas fileiras) =====
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    alignment: WrapAlignment.center,
-                    children: kOrdemDias.map((dia) {
-                      final selecionado = dia == _diaSelecionado;
-                      final hoje = dia == _diaHoje;
-                      final abrev = {
-                        'Segunda': 'SEG',
-                        'Terça': 'TER',
-                        'Quarta': 'QUA',
-                        'Quinta': 'QUI',
-                        'Sexta': 'SEX',
-                        'Sábado': 'SÁB',
-                        'Domingo': 'DOM',
-                      }[dia]!;
-                      return GestureDetector(
-                        onTap: () => setState(() => _diaSelecionado = dia),
-                        child: AnimatedContainer(
-                          duration: Duration(milliseconds: 200),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 13, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient:
-                                selecionado ? CoresEleva.botaoPlay : null,
-                            color:
-                                selecionado ? null : CoresEleva.azulMedio,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: hoje
-                                  ? CoresEleva.dourado
-                                  : CoresEleva.borda,
-                              width: hoje ? 2 : 1,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                abrev,
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: hoje
-                                      ? FontWeight.w900
-                                      : FontWeight.w700,
-                                  color: selecionado
-                                      ? Colors.white
-                                      : (hoje
-                                          ? CoresEleva.dourado
-                                          : CoresEleva.brancoSuave),
-                                ),
-                              ),
-                              if (hoje)
-                                Text('HOJE',
-                                    style: TextStyle(
-                                        fontSize: 7.5,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.5,
-                                        color: selecionado
-                                            ? Colors.white
-                                            : CoresEleva.dourado)),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: ['Segunda', 'Terça', 'Quarta', 'Quinta']
+                            .map((d) => _chipDia(d))
+                            .toList(),
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: ['Sexta', 'Sábado', 'Domingo']
+                            .map((d) => _chipDia(d))
+                            .toList(),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(height: 8),

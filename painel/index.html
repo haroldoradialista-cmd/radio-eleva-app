@@ -110,6 +110,7 @@
         <p class="rotulo-secao">Tamanho ideal: <b>1200 x 400</b>. As mudanças chegam aos ouvintes na próxima vez que abrirem o app.</p>
         <div id="listaBanners"></div>
         <input type="file" id="arqTroca" accept="image/png,image/jpeg" style="display:none">
+        <input type="file" id="arqTrocaGeral" accept="image/png,image/jpeg" style="display:none">
         <label>Nova imagem de banner</label>
         <input type="file" id="arqBanner" accept="image/png,image/jpeg">
         <label>Link ao tocar no banner (opcional)</label>
@@ -157,6 +158,8 @@
       </div>
       <div class="cartao">
         <h2>Nova enquete</h2>
+        <label>Imagem da enquete (opcional • 800 x 300 px)</label>
+        <input type="file" id="eqFoto" accept="image/png,image/jpeg">
         <label>Pergunta</label><input id="eqPergunta" placeholder="Ex.: Qual louvor você quer ouvir no domingo?">
         <label>Opção 1</label><input id="eqOp1">
         <label>Opção 2</label><input id="eqOp2">
@@ -473,7 +476,9 @@ function desenharNoticias(){
   el.innerHTML = config.noticias.length ? '' : '<p class="rotulo-secao">Nenhuma notícia publicada.</p>';
   config.noticias.forEach((n,i)=>{
     el.innerHTML += `<div class="item">
+      ${n.imagem? `<img src="${n.imagem}" style="width:60px;height:34px;object-fit:cover;border-radius:6px">`:''}
       <div class="info"><b>${n.titulo} ${etiquetaAgenda(n)}</b><span>${n.data||''}</span></div>
+      <button class="botao mini neutro" onclick="trocarImagemItem('noticias',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini neutro" onclick="editarNoticia(${i})">✏️</button>
       <button class="botao mini perigo" onclick="removerNoticia(${i})">🗑️</button>
     </div>`;
@@ -536,9 +541,12 @@ async function desenharEnquetes(){
         return `${op}: <b>${n}</b> (${pct}%)`;
       }).join(' • ') + ` — <b>${total} votos</b>`;
     }catch(_){ resultados = 'não foi possível carregar os votos'; }
-    html += `<div class="item"><div class="info">
+    html += `<div class="item">
+      ${e.imagem? `<img src="${e.imagem}" style="width:60px;height:34px;object-fit:cover;border-radius:6px">`:''}
+      <div class="info">
       <b>${e.pergunta} ${etiquetaAgenda(e)}</b>
       <span>${resultados}</span></div>
+      <button class="botao mini neutro" onclick="trocarImagemItem('enquetes',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini perigo" onclick="removerEnquete(${i})">🗑️</button></div>`;
   }
   el.innerHTML = html;
@@ -547,13 +555,16 @@ async function criarEnquete(){
   const opcoes = [eqOp1.value,eqOp2.value,eqOp3.value,eqOp4.value].map(v=>v.trim()).filter(Boolean);
   if(!eqPergunta.value.trim() || opcoes.length<2){ avisar('Preencha a pergunta e pelo menos 2 opções.', true); return; }
   config.enquetes = config.enquetes || [];
-  const nova = { id:'e'+Date.now(), pergunta:eqPergunta.value.trim(), opcoes };
+  let imagemEq = '';
+  const arqEq = document.getElementById('eqFoto').files[0];
+  if(arqEq){ avisar('Enviando imagem...'); imagemEq = await subirImagem(arqEq,'imagens'); }
+  const nova = { id:'e'+Date.now(), pergunta:eqPergunta.value.trim(), opcoes, imagem:imagemEq };
   if(eqInicio.value) nova.publicar_em = eqInicio.value;
   if(eqFim.value) nova.expirar_em = eqFim.value;
   config.enquetes.unshift(nova);
   try{
     await salvarConfig('Painel: enquete');
-    eqPergunta.value=eqOp1.value=eqOp2.value=eqOp3.value=eqOp4.value=''; eqInicio.value=''; eqFim.value='';
+    eqPergunta.value=eqOp1.value=eqOp2.value=eqOp3.value=eqOp4.value=''; eqInicio.value=''; eqFim.value=''; document.getElementById('eqFoto').value='';
     desenharEnquetes(); avisar('Enquete publicada! ✅');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
@@ -608,6 +619,7 @@ async function desenharPromos(){
       ${p.imagem? `<img src="${p.imagem}" style="width:84px;height:36px;object-fit:cover;border-radius:8px">`:''}
       <div class="info"><b>${p.pergunta} ${etiquetaAgenda(p)}</b>
       <span>${p.opcao1} / ${p.opcao2} — <b>${total} participações</b></span></div>
+      <button class="botao mini neutro" onclick="trocarImagemItem('promocoes',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini" onclick="verParticipacoes('${p.id}')">👥 Ver</button>
       <button class="botao mini perigo" onclick="removerPromo(${i})">🗑️</button>
       <div id="part_${p.id}" style="display:none;width:100%;margin-top:8px"></div>
@@ -681,6 +693,7 @@ function desenharProgramas(){
     ${p.imagem? `<img src="${p.imagem}" style="width:44px;height:44px;object-fit:cover;border-radius:8px">`:''}
     <div class="info"><b>${p.horario||'--:--'} — ${p.programa}</b>
     <span>${resumoDias(diasDoItem(p))}${p.apresentador? ' • com '+p.apresentador:''}</span></div>
+    <button class="botao mini neutro" onclick="trocarImagemItem('programacao',${p._i})" title="Trocar foto sem apagar">🔄</button>
     <button class="botao mini perigo" onclick="removerPrograma(${p._i})">🗑️</button>
   </div>`).join('');
 }
@@ -917,6 +930,27 @@ function desenharRanking(){
     .join('');
   el.innerHTML = `<table><tr><th>#</th><th>Música</th><th>Gostei</th><th>Não gostei</th><th>Saldo</th></tr>${linhas}</table>`;
 }
+
+let trocaTipo = '', trocaIdxG = -1;
+function trocarImagemItem(tipo, i){
+  trocaTipo = tipo; trocaIdxG = i;
+  document.getElementById('arqTrocaGeral').click();
+}
+document.getElementById('arqTrocaGeral').addEventListener('change', async (ev)=>{
+  const arq = ev.target.files[0];
+  if(!arq || trocaIdxG < 0 || !trocaTipo) return;
+  try{
+    avisar('Enviando nova imagem...');
+    const url = await subirImagem(arq, 'imagens');
+    config[trocaTipo][trocaIdxG].imagem = url;
+    await salvarConfig('Painel: imagem trocada em ' + trocaTipo);
+    ev.target.value=''; trocaIdxG=-1;
+    const redesenhar = { noticias:desenharNoticias, enquetes:desenharEnquetes, promocoes:desenharPromos, programacao:desenharProgramas };
+    redesenhar[trocaTipo]();
+    trocaTipo='';
+    avisar('Imagem trocada! ✅');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+});
 
 document.getElementById('arqTroca').addEventListener('change', async (ev)=>{
   const arq = ev.target.files[0];

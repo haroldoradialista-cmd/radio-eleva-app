@@ -82,6 +82,20 @@ class _EnqueteCardState extends State<EnqueteCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if ((e['imagem'] ?? '').toString().isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      e['imagem'],
+                      height: 64,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => SizedBox.shrink(),
+                    ),
+                  ),
+                ),
               Row(
                 children: [
                   Icon(Icons.poll_rounded,
