@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'paginas/home_page.dart';
 import 'paginas/programacao_page.dart';
@@ -17,6 +18,7 @@ import 'tema.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  MobileAds.instance.initialize();
   await JustAudioBackground.init(
     androidNotificationChannelId: 'br.com.radioeleva.audio',
     androidNotificationChannelName: 'Rádio Eleva',
