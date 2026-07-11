@@ -259,6 +259,20 @@
 
     <!-- CHAT -->
     <section id="sec-chat" class="oculto">
+      <div class="cartao">
+        <h2>🛡️ Moderação automática</h2>
+        <p class="rotulo-secao">O app suspende sozinho quem usar palavras ofensivas. Defina abaixo o tempo da suspensão e acrescente palavras à lista de bloqueio (o app já tem uma lista básica embutida).</p>
+        <div class="grade2">
+          <div><label>Tempo de suspensão (horas)</label><input id="cfSuspHoras" type="number" min="1" max="720" placeholder="24"></div>
+        </div>
+        <label>Palavras bloqueadas adicionais (separe por vírgula)</label>
+        <textarea id="cfPalavras" placeholder="palavra1, palavra2, palavra3"></textarea>
+        <button class="botao" onclick="salvarModeracao()">💾 Salvar moderação</button>
+      </div>
+      <div class="cartao">
+        <h2>⛔ Ouvintes suspensos <button class="botao mini neutro" onclick="carregarSuspensos()">🔄 Atualizar</button></h2>
+        <div id="listaSuspensos"><p class="rotulo-secao">Carregando...</p></div>
+      </div>
       <div class="cartao" id="cartaoLoginMod">
         <h2>Login do moderador</h2>
         <p class="rotulo-secao">Use a <b>mesma conta que você criou no app</b> (e-mail e senha) para poder apagar mensagens.</p>
@@ -378,7 +392,7 @@ async function entrarPainel(){
     localStorage.setItem('tokenEleva', token);
     document.getElementById('telaAcesso').classList.add('oculto');
     document.getElementById('painel').classList.remove('oculto');
-    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos();
+    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos();
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
@@ -875,6 +889,40 @@ async function carregarStats(){
   document.getElementById('stCidades').innerHTML =
     cidOrd.map(([c,v])=>barraH(c, v, maxC)).join('') +
     (Object.keys(cidades).length>30? `<p class="rotulo-secao">Mostrando as 30 primeiras de ${Object.keys(cidades).length} cidades.</p>`:'');
+}
+
+// ================== MODERACAO ==================
+function preencherModeracao(){
+  cfSuspHoras.value = config.chat_suspensao_horas || 24;
+  cfPalavras.value = (config.chat_palavras || []).join(', ');
+}
+async function salvarModeracao(){
+  config.chat_suspensao_horas = parseInt(cfSuspHoras.value) || 24;
+  config.chat_palavras = cfPalavras.value.split(',').map(p=>p.trim()).filter(Boolean);
+  try{ await salvarConfig('Painel: moderacao do chat'); avisar('Moderação salva! 🛡️'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function carregarSuspensos(){
+  const el = document.getElementById('listaSuspensos');
+  try{
+    const r = await fetch(`${RTDB}/chat_suspensos.json?t=${Date.now()}`);
+    const d = await r.json();
+    const agora = Date.now();
+    const ativos = d ? Object.entries(d).filter(([k,v])=> (v.ate||0) > agora) : [];
+    if(!ativos.length){ el.innerHTML = '<p class="rotulo-secao">Nenhum ouvinte suspenso no momento. 👏</p>'; return; }
+    el.innerHTML = ativos.map(([uid,v])=>{
+      const volta = new Date(v.ate).toLocaleString('pt-BR').slice(0,16);
+      return `<div class="item"><div class="info"><b>${v.nome||'Ouvinte'}</b><span>suspenso até ${volta}</span></div>
+        <button class="botao mini" onclick="liberarSuspenso('${uid}')">✅ Liberar</button></div>`;
+    }).join('');
+  }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+async function liberarSuspenso(uid){
+  if(!confirm('Liberar este ouvinte antes do prazo?')) return;
+  try{
+    await fetch(`${RTDB}/chat_suspensos/${uid}.json`, { method:'DELETE' });
+    avisar('Ouvinte liberado! ✅'); carregarSuspensos();
+  }catch(e){ avisar('Falhou ao liberar.', true); }
 }
 
 // ================== VOTOS ==================

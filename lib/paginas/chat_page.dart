@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
+import '../servicos/moderacao.dart';
 import '../tema.dart';
 
 class ChatPage extends StatefulWidget {
@@ -230,14 +231,48 @@ class _TelaChatState extends State<_TelaChat> {
   Timer? _timer;
   List<Map<String, dynamic>> _mensagens = [];
   bool _enviando = false;
+  int _suspensoAte = 0; // epoch em milissegundos; 0 = livre
 
   String get _chatUrl => ConfigService.instancia.config.value.chatUrl;
+  String get _baseRtdb => _chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
 
   @override
   void initState() {
     super.initState();
+    _verificarSuspensao();
     _buscar();
     _timer = Timer.periodic(Duration(seconds: 5), (_) => _buscar());
+  }
+
+  Future<void> _verificarSuspensao() async {
+    try {
+      final r = await http.get(Uri.parse(
+          '$_baseRtdb/chat_suspensos/${widget.usuario.uid}.json'));
+      if (r.statusCode == 200 && r.body != 'null') {
+        final d = jsonDecode(r.body);
+        final ate = int.tryParse((d['ate'] ?? '0').toString()) ?? 0;
+        if (mounted && ate > DateTime.now().millisecondsSinceEpoch) {
+          setState(() => _suspensoAte = ate);
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _suspender() async {
+    final cfg = ConfigService.instancia.config.value;
+    final ate = DateTime.now().millisecondsSinceEpoch +
+        cfg.chatSuspensaoHoras * 3600 * 1000;
+    try {
+      await http.put(
+        Uri.parse('$_baseRtdb/chat_suspensos/${widget.usuario.uid}.json'),
+        body: jsonEncode({
+          'nome': widget.usuario.nome,
+          'ate': ate,
+          'quando': DateTime.now().toIso8601String(),
+        }),
+      );
+    } catch (_) {}
+    if (mounted) setState(() => _suspensoAte = ate);
   }
 
   @override
@@ -272,6 +307,13 @@ class _TelaChatState extends State<_TelaChat> {
   Future<void> _enviar() async {
     final texto = _msg.text.trim();
     if (texto.isEmpty || _enviando) return;
+    if (_suspensoAte > DateTime.now().millisecondsSinceEpoch) return;
+    final cfg = ConfigService.instancia.config.value;
+    if (contemPalavraOfensiva(texto, cfg.chatPalavras)) {
+      _msg.clear();
+      await _suspender();
+      return;
+    }
     setState(() => _enviando = true);
     try {
       final token = await AuthService.instancia.tokenValido();
@@ -292,8 +334,63 @@ class _TelaChatState extends State<_TelaChat> {
 
   @override
   Widget build(BuildContext context) {
+    final agora = DateTime.now().millisecondsSinceEpoch;
+    if (_suspensoAte > agora) {
+      final volta = DateTime.fromMillisecondsSinceEpoch(_suspensoAte);
+      final dd = volta.day.toString().padLeft(2, '0');
+      final mm = volta.month.toString().padLeft(2, '0');
+      final hh = volta.hour.toString().padLeft(2, '0');
+      final mi = volta.minute.toString().padLeft(2, '0');
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(30),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.block_rounded, size: 64, color: Colors.red.shade400),
+              SizedBox(height: 16),
+              Text('Acesso ao chat suspenso',
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+              SizedBox(height: 10),
+              Text(
+                'Detectamos o uso de linguagem imprópria. Seu acesso ao bate-papo foi suspenso automaticamente até $dd/$mm às $hh:$mi.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: CoresEleva.brancoSuave, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Column(
       children: [
+        // ===== AVISO DE CHAT PÚBLICO =====
+        Container(
+          margin: EdgeInsets.fromLTRB(12, 10, 12, 0),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color: CoresEleva.dourado.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: CoresEleva.dourado.withOpacity(0.5), width: 1),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_rounded, size: 16, color: CoresEleva.dourado),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Você está em um chat público. Não compartilhe seu número de contato nem dados pessoais. O uso de palavras ofensivas e de baixo calão suspenderá automaticamente o seu acesso.',
+                  style: TextStyle(
+                      fontSize: 10.5,
+                      height: 1.35,
+                      color: CoresEleva.brancoSuave),
+                ),
+              ),
+            ],
+          ),
+        ),
         Padding(
           padding: EdgeInsets.fromLTRB(14, 14, 8, 8),
           child: Row(

@@ -8,6 +8,7 @@ import '../servicos/config_service.dart';
 import '../servicos/player_service.dart';
 import '../tema.dart';
 import '../widgets/enquete_card.dart';
+import '../widgets/capa_musica.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({super.key});
@@ -230,33 +231,26 @@ class _HomePageState extends State<HomePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          // Logo centralizada + slogan (sem o nome)
+                          Column(
                             children: [
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(16),
                                 child: Image.asset('assets/logo.png',
-                                    width: 44, height: 44),
+                                    width: 64, height: 64),
                               ),
-                              SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(cfg.nome,
-                                      style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w800,
-                                          color: CoresEleva.branco)),
-                                  Text(cfg.slogan,
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: CoresEleva.dourado,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: 1.2)),
-                                ],
-                              ),
+                              SizedBox(height: 6),
+                              Text(cfg.slogan,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: CoresEleva.dourado,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 2.0)),
                             ],
                           ),
+
+                          // Capa da música que está tocando
+                          CapaMusica(),
 
                           Column(
                             children: [
