@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
+import '../widgets/anuncio_banner.dart';
 
 class NoticiasPage extends StatelessWidget {
   NoticiasPage({super.key});
@@ -20,6 +21,7 @@ class NoticiasPage extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.all(14),
                 children: [
+                  AnuncioBanner(),
                   Row(
                     children: [
                       Icon(Icons.newspaper_rounded,

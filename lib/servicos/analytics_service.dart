@@ -6,6 +6,7 @@ import 'config_service.dart';
 /// data/hora, plataforma e cidade aproximada (via internet, sem GPS).
 class AnalyticsService {
   static bool _registrado = false;
+  static String cidade = '', estado = '', pais = '';
 
   static Future<void> registrarAcesso() async {
     if (_registrado) return;
@@ -15,7 +16,6 @@ class AnalyticsService {
       if (cfg.chatUrl.isEmpty) return;
       final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
 
-      String cidade = '', estado = '', pais = '';
       try {
         final g = await http
             .get(Uri.parse('https://ipwho.is/'))

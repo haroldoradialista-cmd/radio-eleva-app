@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../servicos/moderacao.dart';
+import '../widgets/login_widget.dart';
+import '../widgets/anuncio_banner.dart';
+import 'package:just_audio/just_audio.dart';
+import '../servicos/player_service.dart';
 import '../tema.dart';
 
 class ChatPage extends StatefulWidget {
@@ -34,181 +38,12 @@ class _ChatPageState extends State<ChatPage> {
             return ValueListenableBuilder<Usuario?>(
               valueListenable: AuthService.instancia.usuario,
               builder: (context, u, _) {
-                return u == null ? _TelaLogin() : _TelaChat(usuario: u);
+                return u == null
+                    ? SingleChildScrollView(child: LoginEleva(titulo: 'Entre no bate-papo'))
+                    : _TelaChat(usuario: u);
               },
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// TELA DE LOGIN / CADASTRO
-// ============================================================
-class _TelaLogin extends StatefulWidget {
-  _TelaLogin();
-  @override
-  State<_TelaLogin> createState() => _TelaLoginState();
-}
-
-class _TelaLoginState extends State<_TelaLogin> {
-  bool _cadastro = false;
-  bool _ocupado = false;
-  final _nome = TextEditingController();
-  final _email = TextEditingController();
-  final _senha = TextEditingController();
-
-  Future<void> _executar(Future<String?> Function() acao) async {
-    setState(() => _ocupado = true);
-    final erro = await acao();
-    if (mounted) {
-      setState(() => _ocupado = false);
-      if (erro != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.red.shade700, content: Text(erro)));
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(28),
-      child: Column(
-        children: [
-          SizedBox(height: 20),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.asset('assets/logo.png', width: 90, height: 90),
-          ),
-          SizedBox(height: 18),
-          Text(_cadastro ? 'Crie sua conta' : 'Entre no bate-papo',
-              style:
-                  TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          SizedBox(height: 6),
-          Text(
-            'Converse com outros ouvintes da Rádio Eleva',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: CoresEleva.brancoSuave),
-          ),
-          SizedBox(height: 26),
-
-          // ---- Botão Google ----
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _ocupado
-                  ? null
-                  : () => _executar(AuthService.instancia.entrarComGoogle),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Color(0xFF1F1F1F),
-                padding: EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
-                textStyle:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              icon: Text('G',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF4285F4))),
-              label: Text('Entrar com Google'),
-            ),
-          ),
-
-          SizedBox(height: 18),
-          Row(children: [
-            Expanded(child: Divider(color: CoresEleva.borda)),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Text('ou', style: TextStyle(color: CoresEleva.textoFraco)),
-            ),
-            Expanded(child: Divider(color: CoresEleva.borda)),
-          ]),
-          SizedBox(height: 18),
-
-          // ---- Formulário e-mail/senha ----
-          if (_cadastro)
-            _campo(_nome, 'Seu nome', Icons.person_rounded),
-          _campo(_email, 'E-mail', Icons.email_rounded,
-              teclado: TextInputType.emailAddress),
-          _campo(_senha, 'Senha (mínimo 6 caracteres)', Icons.lock_rounded,
-              senha: true),
-          SizedBox(height: 8),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _ocupado
-                  ? null
-                  : () {
-                      if (_cadastro && _nome.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Digite seu nome.')));
-                        return;
-                      }
-                      _executar(() => _cadastro
-                          ? AuthService.instancia.cadastrar(
-                              _nome.text, _email.text, _senha.text)
-                          : AuthService.instancia
-                              .entrar(_email.text, _senha.text));
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: CoresEleva.verde,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
-                textStyle:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-              ),
-              child: _ocupado
-                  ? SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2.5))
-                  : Text(_cadastro ? 'Cadastrar' : 'Entrar'),
-            ),
-          ),
-          SizedBox(height: 14),
-          TextButton(
-            onPressed: () => setState(() => _cadastro = !_cadastro),
-            child: Text(
-              _cadastro
-                  ? 'Já tenho conta — quero entrar'
-                  : 'Não tem conta? Cadastre-se grátis',
-              style: TextStyle(
-                  color: CoresEleva.dourado, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _campo(TextEditingController c, String rotulo, IconData icone,
-      {bool senha = false, TextInputType? teclado}) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: c,
-        obscureText: senha,
-        keyboardType: teclado,
-        decoration: InputDecoration(
-          hintText: rotulo,
-          prefixIcon: Icon(icone, color: CoresEleva.dourado, size: 20),
-          filled: true,
-          fillColor: CoresEleva.azulMedio,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
         ),
       ),
     );
@@ -362,8 +197,85 @@ class _TelaChatState extends State<_TelaChat> {
         ),
       );
     }
+    final playerEleva = PlayerService.instancia.player;
+    final cfgEleva = ConfigService.instancia.config.value;
     return Column(
       children: [
+        AnuncioBanner(),
+        // ===== MINI PLAYER (modelo enviado) =====
+        Container(
+          margin: EdgeInsets.fromLTRB(12, 8, 12, 0),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: CoresEleva.azulMedio,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: CoresEleva.dourado.withOpacity(0.6)),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child:
+                    Image.asset('assets/logo.png', width: 40, height: 40),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(cfgEleva.nome,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                            color: CoresEleva.branco)),
+                    StreamBuilder<IcyMetadata?>(
+                      stream: playerEleva.icyMetadataStream,
+                      builder: (context, snap) {
+                        final t = snap.data?.info?.title?.trim() ?? '';
+                        return Text(t.isEmpty ? 'Ao vivo' : t,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: CoresEleva.textoFraco));
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              StreamBuilder<PlayerState>(
+                stream: playerEleva.playerStateStream,
+                builder: (context, snap) {
+                  final tocando = snap.data?.playing ?? false;
+                  return GestureDetector(
+                    onTap: () async {
+                      await PlayerService.instancia.carregar(
+                          cfgEleva.streamUrl,
+                          cfgEleva.nome,
+                          cfgEleva.logoUrl);
+                      await PlayerService.instancia.alternar();
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: CoresEleva.dourado, width: 2),
+                      ),
+                      child: Icon(
+                          tocando
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          color: CoresEleva.dourado,
+                          size: 26),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
         // ===== AVISO DE CHAT PÚBLICO =====
         Container(
           margin: EdgeInsets.fromLTRB(12, 10, 12, 0),
@@ -422,7 +334,11 @@ class _TelaChatState extends State<_TelaChat> {
           child: _mensagens.isEmpty
               ? Center(
                   child: Text('Seja o primeiro a mandar uma mensagem! 🙌'))
-              : ListView.builder(
+              : RefreshIndicator(
+                  color: CoresEleva.verde,
+                  onRefresh: _buscar,
+                  child: ListView.builder(
+                  physics: AlwaysScrollableScrollPhysics(),
                   controller: _scroll,
                   padding:
                       EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -430,35 +346,92 @@ class _TelaChatState extends State<_TelaChat> {
                   itemBuilder: (context, i) {
                     final m = _mensagens[i];
                     final minha = m['uid'] == widget.usuario.uid;
-                    return Align(
-                      alignment: minha
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        margin: EdgeInsets.symmetric(vertical: 4),
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                        constraints: BoxConstraints(maxWidth: 290),
-                        decoration: BoxDecoration(
-                          color: minha
-                              ? CoresEleva.verdeEscuro
-                              : CoresEleva.azulMedio,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(m['nome'] ?? 'Ouvinte',
+                    final nome = (m['nome'] ?? 'Ouvinte').toString();
+                    final inicial =
+                        nome.isNotEmpty ? nome[0].toUpperCase() : 'O';
+                    final cores = [
+                      Colors.teal,
+                      Colors.indigo,
+                      Colors.deepPurple,
+                      Colors.green.shade700,
+                      Colors.orange.shade800,
+                      Colors.pink.shade700,
+                    ];
+                    final corAvatar =
+                        cores[nome.codeUnits.fold(0, (a, b) => a + b) %
+                            cores.length];
+                    String hora = '';
+                    final q = (m['quando'] ?? '').toString();
+                    if (q.length >= 16) hora = q.substring(11, 16);
+                    return Padding(
+                      padding: EdgeInsets.symmetric(vertical: 5),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 19,
+                            backgroundColor: corAvatar,
+                            child: Text(inicial,
                                 style: TextStyle(
-                                    color: CoresEleva.dourado,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12)),
-                            SizedBox(height: 3),
-                            Text(m['msg'] ?? '',
-                                style: TextStyle(
-                                    color: CoresEleva.branco)),
-                          ],
-                        ),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16)),
+                          ),
+                          SizedBox(width: 8),
+                          Flexible(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              constraints: BoxConstraints(maxWidth: 290),
+                              decoration: BoxDecoration(
+                                color: CoresEleva.azulMedio,
+                                border: minha
+                                    ? Border.all(
+                                        color: CoresEleva.dourado
+                                            .withOpacity(0.7),
+                                        width: 1)
+                                    : null,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(4),
+                                  topRight: Radius.circular(16),
+                                  bottomLeft: Radius.circular(16),
+                                  bottomRight: Radius.circular(16),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(nome,
+                                      style: TextStyle(
+                                          color: CoresEleva.dourado,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 12.5)),
+                                  SizedBox(height: 3),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.end,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(m['msg'] ?? '',
+                                            style: TextStyle(
+                                                color:
+                                                    CoresEleva.branco)),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(hora,
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              color:
+                                                  CoresEleva.textoFraco)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },

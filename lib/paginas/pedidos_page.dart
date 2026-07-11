@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
+import '../widgets/anuncio_banner.dart';
 
 class PedidosPage extends StatelessWidget {
   PedidosPage({super.key});
@@ -32,6 +33,7 @@ class PedidosPage extends StatelessWidget {
             return ListView(
               padding: EdgeInsets.all(20),
               children: [
+                AnuncioBanner(),
                 SizedBox(height: 10),
                 Center(
                   child: Container(

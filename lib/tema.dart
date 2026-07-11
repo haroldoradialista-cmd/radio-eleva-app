@@ -26,31 +26,31 @@ class CoresEleva {
   static bool escuro = true;
 
   static Color get azulProfundo =>
-      escuro ? const Color(0xFF071A33) : const Color(0xFFEAF1F9);
+      escuro ? const Color(0xFF290ACC) : const Color(0xFFFCBE00);
   static Color get azulMedio =>
-      escuro ? const Color(0xFF0D2B52) : const Color(0xFFFFFFFF);
+      escuro ? const Color(0xFF3A1FD9) : const Color(0xFFFFFFFF);
   static Color get azulVivo => const Color(0xFF1E9BFF);
   static Color get verde => const Color(0xFF35C733);
   static Color get verdeEscuro => const Color(0xFF1E8A2E);
   static Color get dourado =>
-      escuro ? const Color(0xFFE6B93F) : const Color(0xFFA97F10);
+      escuro ? const Color(0xFFFFD65A) : const Color(0xFF5B2ECC);
   static Color get branco =>
-      escuro ? Colors.white : const Color(0xFF0B2242);
+      escuro ? Colors.white : const Color(0xFF241300);
   static Color get brancoSuave =>
-      escuro ? const Color(0xFFE8EEF6) : const Color(0xFF3A4C66);
+      escuro ? const Color(0xFFEDEAFF) : const Color(0xFF3D2A00);
   static Color get textoFraco =>
-      escuro ? Colors.white54 : const Color(0xFF7A8CA5);
+      escuro ? Colors.white60 : const Color(0xFF6E5300);
   static Color get borda =>
-      escuro ? Colors.white24 : const Color(0xFFC7D4E4);
+      escuro ? Colors.white24 : const Color(0x33241300);
   static Color get navFundo =>
-      escuro ? const Color(0xFF04101F) : Colors.white;
+      escuro ? const Color(0xFF1A0691) : Colors.white;
 
   static LinearGradient get fundoApp => LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: escuro
-            ? const [Color(0xFF0A2140), Color(0xFF071A33), Color(0xFF041020)]
-            : const [Color(0xFFF7FAFF), Color(0xFFEAF1F9), Color(0xFFDCE8F5)],
+            ? const [Color(0xFF3B18E8), Color(0xFF290ACC), Color(0xFF16045F)]
+            : const [Color(0xFFFFD54F), Color(0xFFFCBE00), Color(0xFFE0A800)],
       );
 
   static LinearGradient get botaoPlay => const LinearGradient(

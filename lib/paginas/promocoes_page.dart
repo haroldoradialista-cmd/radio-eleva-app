@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
+import '../widgets/anuncio_banner.dart';
+import '../widgets/login_widget.dart';
+import 'pedidos_page.dart' show MaiusculasFormatter;
 
 class PromocoesPage extends StatefulWidget {
   PromocoesPage({super.key});
@@ -12,36 +18,103 @@ class PromocoesPage extends StatefulWidget {
 }
 
 class _PromocoesPageState extends State<PromocoesPage> {
-  final _nome = TextEditingController();
-  final _zap = TextEditingController();
-  final _insta = TextEditingController();
-  int? _resposta;
+  final Map<String, TextEditingController> _nome = {};
+  final Map<String, TextEditingController> _zap = {};
+  final Map<String, TextEditingController> _insta = {};
+  final Map<String, int> _resposta = {};
+  final Set<String> _participadas = {};
+  final Set<String> _regulamentoAberto = {};
   bool _enviando = false;
-  bool _jaParticipou = false;
-  String _idCarregado = '';
+  bool _atualizando = false;
+  Timer? _timerContagem;
 
-  Future<void> _verificarParticipacao(String id) async {
-    if (id == _idCarregado) return;
-    _idCarregado = id;
-    final prefs = await SharedPreferences.getInstance();
-    final ja = prefs.getBool('promo_$id') ?? false;
-    if (mounted && ja != _jaParticipou) setState(() => _jaParticipou = ja);
-    _jaParticipou = ja;
+  @override
+  void initState() {
+    super.initState();
+    _carregarParticipadas();
+    // contagem regressiva ao vivo
+    _timerContagem = Timer.periodic(Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
-  Future<void> _participar(AppConfig cfg, Map<String, dynamic> promo) async {
+  @override
+  void dispose() {
+    _timerContagem?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _carregarParticipadas() async {
+    final prefs = await SharedPreferences.getInstance();
+    final chaves =
+        prefs.getKeys().where((k) => k.startsWith('promo_')).toList();
+    if (mounted) {
+      setState(() {
+        for (final k in chaves) {
+          if (prefs.getBool(k) == true) {
+            _participadas.add(k.replaceFirst('promo_', ''));
+          }
+        }
+      });
+    }
+  }
+
+  TextEditingController _ctrl(Map<String, TextEditingController> m, String id) {
+    return m.putIfAbsent(id, () => TextEditingController());
+  }
+
+  Future<void> _atualizar() async {
+    setState(() => _atualizando = true);
+    await ConfigService.instancia.carregar();
+    if (mounted) {
+      setState(() => _atualizando = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: CoresEleva.verdeEscuro,
+          duration: Duration(seconds: 2),
+          content: Text('Promoções atualizadas! ✅')));
+    }
+  }
+
+  String _contagem(Map<String, dynamic> p) {
+    final fim = DateTime.tryParse((p['expirar_em'] ?? '').toString());
+    if (fim == null) return '';
+    final resta = fim.difference(DateTime.now());
+    if (resta.isNegative) return 'Promoção encerrada';
+    final d = resta.inDays;
+    final h = (resta.inHours % 24).toString().padLeft(2, '0');
+    final m = (resta.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (resta.inSeconds % 60).toString().padLeft(2, '0');
+    return d > 0
+        ? 'A promoção termina em ${d}d ${h}h ${m}m ${s}s'
+        : 'A promoção termina em ${h}h ${m}m ${s}s';
+  }
+
+  void _compartilharPromo(AppConfig cfg, Map<String, dynamic> p) {
+    final link =
+        cfg.linkCompartilhar.isNotEmpty ? '\n📲 ${cfg.linkCompartilhar}' : '';
+    final texto = Uri.encodeComponent(
+        '🎁 Olha essa promoção da ${cfg.nome} que eu achei incrível!\n\n'
+        '"${p['pergunta'] ?? 'Participe!'}"\n\n'
+        'Baixe o app, participe e concorra você também! 🍀$link');
+    launchUrl(Uri.parse('https://wa.me/?text=$texto'),
+        mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _participar(
+      AppConfig cfg, Map<String, dynamic> promo, Usuario u) async {
+    final id = (promo['id'] ?? '').toString();
     if (_enviando) return;
-    if (_nome.text.trim().isEmpty ||
-        _zap.text.trim().isEmpty ||
-        _resposta == null) {
+    final resp = _resposta[id];
+    if (_ctrl(_nome, id).text.trim().isEmpty ||
+        _ctrl(_zap, id).text.trim().isEmpty ||
+        resp == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.red.shade700,
-          content: Text(
-              'Preencha seu nome, WhatsApp e escolha uma resposta.')));
+          content:
+              Text('Preencha seu nome, WhatsApp e escolha uma resposta.')));
       return;
     }
     setState(() => _enviando = true);
-    final id = (promo['id'] ?? '').toString();
     final opcoes = [
       (promo['opcao1'] ?? '').toString(),
       (promo['opcao2'] ?? '').toString()
@@ -51,21 +124,22 @@ class _PromocoesPageState extends State<PromocoesPage> {
       await http.post(
         Uri.parse('$base/promo_participacoes/$id.json'),
         body: jsonEncode({
-          'nome': _nome.text.trim(),
-          'whatsapp': _zap.text.trim(),
-          'instagram': _insta.text.trim(),
-          'resposta': opcoes[_resposta!],
+          'nome': _ctrl(_nome, id).text.trim(),
+          'whatsapp': _ctrl(_zap, id).text.trim(),
+          'instagram': '@${_ctrl(_insta, id).text.trim().replaceAll('@', '')}',
+          'resposta': opcoes[resp],
+          'email': u.email,
+          'uid': u.uid,
           'quando': DateTime.now().toIso8601String(),
         }),
       );
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('promo_$id', true);
       if (mounted) {
-        setState(() => _jaParticipou = true);
+        setState(() => _participadas.add(id));
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             backgroundColor: CoresEleva.verdeEscuro,
-            content:
-                Text('Participação registrada! Boa sorte! 🍀')));
+            content: Text('Participação registrada! Boa sorte! 🍀')));
       }
     } catch (_) {
       if (mounted) {
@@ -77,6 +151,58 @@ class _PromocoesPageState extends State<PromocoesPage> {
     if (mounted) setState(() => _enviando = false);
   }
 
+  void _abrirLogin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Container(
+            decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.arrow_back_rounded,
+                            color: CoresEleva.dourado),
+                      ),
+                      Text('Entrar',
+                          style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              color: CoresEleva.branco)),
+                    ],
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: ValueListenableBuilder<Usuario?>(
+                        valueListenable: AuthService.instancia.usuario,
+                        builder: (context, u, _) {
+                          if (u != null) {
+                            Future.microtask(() {
+                              if (Navigator.canPop(context)) {
+                                Navigator.pop(context);
+                              }
+                            });
+                          }
+                          return LoginEleva(
+                              titulo: 'Entre para participar');
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -86,182 +212,56 @@ class _PromocoesPageState extends State<PromocoesPage> {
           valueListenable: ConfigService.instancia.config,
           builder: (context, cfg, _) {
             final ativas = filtrarAgendados(cfg.promocoes);
-            if (ativas.isEmpty || cfg.chatUrl.isEmpty) {
-              return _semPromocao(context);
-            }
-            final promo = ativas.first;
-            _verificarParticipacao((promo['id'] ?? '').toString());
-            final banner = (promo['imagem'] ?? '').toString();
-            final opcoes = [
-              (promo['opcao1'] ?? '').toString(),
-              (promo['opcao2'] ?? '').toString()
-            ];
-
-            return ListView(
-              padding: EdgeInsets.all(16),
-              children: [
-                Row(
+            return ValueListenableBuilder<Usuario?>(
+              valueListenable: AuthService.instancia.usuario,
+              builder: (context, u, _) {
+                return Column(
                   children: [
-                    Icon(Icons.card_giftcard_rounded,
-                        color: CoresEleva.dourado),
-                    SizedBox(width: 10),
-                    Text('Promoções',
-                        style: Theme.of(context).textTheme.titleLarge),
-                  ],
-                ),
-                SizedBox(height: 14),
-
-                // Banner da promoção
-                if (banner.isNotEmpty)
-                  Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: CoresEleva.borda, width: 1),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(19),
-                      child: Image.network(banner,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (_, __, ___) => SizedBox.shrink()),
-                    ),
-                  ),
-                SizedBox(height: 16),
-
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: CoresEleva.azulMedio,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: CoresEleva.dourado.withOpacity(0.5),
-                        width: 1),
-                  ),
-                  child: _jaParticipou
-                      ? Column(
-                          children: [
-                            Icon(Icons.check_circle_rounded,
-                                color: CoresEleva.verde, size: 52),
-                            SizedBox(height: 10),
-                            Text('Você já está participando!',
+                    AnuncioBanner(),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(16, 10, 12, 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.card_giftcard_rounded,
+                              color: CoresEleva.dourado),
+                          SizedBox(width: 10),
+                          Text('Promoções',
+                              style:
+                                  Theme.of(context).textTheme.titleLarge),
+                          Spacer(),
+                          TextButton.icon(
+                            onPressed: _atualizando ? null : _atualizar,
+                            icon: _atualizando
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: CoresEleva.dourado))
+                                : Icon(Icons.refresh_rounded,
+                                    size: 20, color: CoresEleva.dourado),
+                            label: Text('ATUALIZAR',
                                 style: TextStyle(
-                                    fontSize: 17,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w800,
-                                    color: CoresEleva.branco)),
-                            SizedBox(height: 6),
-                            Text(
-                              'Sua participação foi registrada. Fique ligado na programação para saber o resultado. Boa sorte! 🍀',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: CoresEleva.brancoSuave),
+                                    color: CoresEleva.dourado)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ativas.isEmpty
+                          ? _semPromocao()
+                          : ListView(
+                              padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
+                              children: ativas
+                                  .map((p) => _cartaoPromo(cfg, p, u))
+                                  .toList(),
                             ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              (promo['pergunta'] ?? 'Participe!').toString(),
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: CoresEleva.branco),
-                            ),
-                            SizedBox(height: 12),
-
-                            // Duas bolinhas de opção
-                            ...List.generate(2, (i) {
-                              final marcada = _resposta == i;
-                              return GestureDetector(
-                                onTap: () =>
-                                    setState(() => _resposta = i),
-                                child: Container(
-                                  margin: EdgeInsets.only(bottom: 8),
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: marcada
-                                        ? CoresEleva.verdeEscuro
-                                            .withOpacity(0.35)
-                                        : CoresEleva.azulProfundo,
-                                    borderRadius:
-                                        BorderRadius.circular(14),
-                                    border: Border.all(
-                                        color: marcada
-                                            ? CoresEleva.verde
-                                            : CoresEleva.borda,
-                                        width: marcada ? 1.8 : 1),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        marcada
-                                            ? Icons
-                                                .radio_button_checked_rounded
-                                            : Icons
-                                                .radio_button_unchecked_rounded,
-                                        color: marcada
-                                            ? CoresEleva.verde
-                                            : CoresEleva.textoFraco,
-                                        size: 22,
-                                      ),
-                                      SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(opcoes[i],
-                                            style: TextStyle(
-                                                fontWeight:
-                                                    FontWeight.w700,
-                                                color:
-                                                    CoresEleva.branco)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-
-                            SizedBox(height: 8),
-                            _campo(_nome, 'Nome', Icons.person_rounded),
-                            _campo(_zap, 'WhatsApp com DDD',
-                                Icons.phone_rounded,
-                                teclado: TextInputType.phone),
-                            _campo(_insta, 'Instagram (@seuusuario)',
-                                Icons.camera_alt_rounded),
-                            SizedBox(height: 6),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _enviando
-                                    ? null
-                                    : () => _participar(cfg, promo),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: CoresEleva.verde,
-                                  foregroundColor: Colors.white,
-                                  padding:
-                                      EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(28)),
-                                  textStyle: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800),
-                                ),
-                                child: _enviando
-                                    ? SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2.5))
-                                    : Text('PARTICIPAR 🎁'),
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
@@ -269,19 +269,281 @@ class _PromocoesPageState extends State<PromocoesPage> {
     );
   }
 
+  Widget _cartaoPromo(
+      AppConfig cfg, Map<String, dynamic> promo, Usuario? u) {
+    final id = (promo['id'] ?? '').toString();
+    final banner = (promo['imagem'] ?? '').toString();
+    final regulamento = (promo['regulamento'] ?? '').toString();
+    final contagem = _contagem(promo);
+    final participou = _participadas.contains(id);
+    final opcoes = [
+      (promo['opcao1'] ?? '').toString(),
+      (promo['opcao2'] ?? '').toString()
+    ];
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: CoresEleva.azulMedio,
+        borderRadius: BorderRadius.circular(20),
+        border:
+            Border.all(color: CoresEleva.dourado.withOpacity(0.5), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (banner.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(19)),
+              child: Image.network(banner,
+                  height: 140,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => SizedBox.shrink()),
+            ),
+          Padding(
+            padding: EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Contagem regressiva
+                if (contagem.isNotEmpty)
+                  Container(
+                    margin: EdgeInsets.only(bottom: 8),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade700.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.alarm_rounded,
+                            size: 15, color: Colors.white),
+                        SizedBox(width: 6),
+                        Text(contagem,
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white)),
+                      ],
+                    ),
+                  ),
+
+                Text((promo['pergunta'] ?? 'Participe!').toString(),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: CoresEleva.branco)),
+
+                // Regulamento
+                if (regulamento.isNotEmpty) ...[
+                  SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => setState(() {
+                      _regulamentoAberto.contains(id)
+                          ? _regulamentoAberto.remove(id)
+                          : _regulamentoAberto.add(id);
+                    }),
+                    child: Row(
+                      children: [
+                        Icon(Icons.description_rounded,
+                            size: 16, color: CoresEleva.dourado),
+                        SizedBox(width: 6),
+                        Text('Regulamento',
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                color: CoresEleva.dourado)),
+                        Icon(
+                            _regulamentoAberto.contains(id)
+                                ? Icons.expand_less_rounded
+                                : Icons.expand_more_rounded,
+                            size: 18,
+                            color: CoresEleva.dourado),
+                      ],
+                    ),
+                  ),
+                  if (_regulamentoAberto.contains(id))
+                    Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(regulamento,
+                          style: TextStyle(
+                              fontSize: 12,
+                              height: 1.4,
+                              color: CoresEleva.brancoSuave)),
+                    ),
+                ],
+                SizedBox(height: 10),
+
+                // Conteúdo conforme a situação do ouvinte
+                if (participou)
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: CoresEleva.verdeEscuro.withOpacity(0.35),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: CoresEleva.verde),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle_rounded,
+                            color: CoresEleva.verde, size: 28),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '🎉 Participação confirmada nesta promoção! Boa sorte — e fique de olho: cada nova promoção tem cadastro próprio.',
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                height: 1.4,
+                                fontWeight: FontWeight.w600,
+                                color: CoresEleva.branco),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (u == null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _abrirLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CoresEleva.verde,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24)),
+                      ),
+                      icon: Icon(Icons.login_rounded, size: 20),
+                      label: Text('FAZER LOGIN PARA PARTICIPAR',
+                          style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w800)),
+                    ),
+                  )
+                else ...[
+                  ...List.generate(2, (i) {
+                    final marcada = _resposta[id] == i;
+                    return GestureDetector(
+                      onTap: () => setState(() => _resposta[id] = i),
+                      child: Container(
+                        margin: EdgeInsets.only(bottom: 8),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 11),
+                        decoration: BoxDecoration(
+                          color: marcada
+                              ? CoresEleva.verdeEscuro.withOpacity(0.35)
+                              : CoresEleva.azulProfundo.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: marcada
+                                  ? CoresEleva.verde
+                                  : CoresEleva.borda,
+                              width: marcada ? 1.8 : 1),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              marcada
+                                  ? Icons.radio_button_checked_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              color: marcada
+                                  ? CoresEleva.verde
+                                  : CoresEleva.textoFraco,
+                              size: 22,
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(opcoes[i],
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: CoresEleva.branco)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  SizedBox(height: 4),
+                  _campo(_ctrl(_nome, id), 'NOME', Icons.person_rounded),
+                  _campo(_ctrl(_zap, id), 'WHATSAPP COM DDD',
+                      Icons.phone_rounded,
+                      teclado: TextInputType.phone),
+                  _campo(_ctrl(_insta, id), 'SEUUSUARIO',
+                      Icons.camera_alt_rounded,
+                      prefixo: '@'),
+                  SizedBox(height: 4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _enviando
+                          ? null
+                          : () => _participar(cfg, promo, u),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CoresEleva.verde,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(26)),
+                        textStyle: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w800),
+                      ),
+                      child: _enviando
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2.5))
+                          : Text('PARTICIPAR 🎁'),
+                    ),
+                  ),
+                ],
+
+                // Compartilhar
+                SizedBox(height: 8),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => _compartilharPromo(cfg, promo),
+                    icon: Icon(Icons.share_rounded,
+                        size: 18, color: Color(0xFF25D366)),
+                    label: Text('COMPARTILHAR',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: Color(0xFF25D366))),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _campo(TextEditingController c, String rotulo, IconData icone,
-      {TextInputType? teclado}) {
+      {TextInputType? teclado, String? prefixo}) {
     return Padding(
       padding: EdgeInsets.only(bottom: 10),
       child: TextField(
         controller: c,
         keyboardType: teclado,
+        textCapitalization: TextCapitalization.characters,
+        inputFormatters: [MaiusculasFormatter()],
         decoration: InputDecoration(
           hintText: rotulo,
           hintStyle: TextStyle(color: CoresEleva.textoFraco),
           prefixIcon: Icon(icone, color: CoresEleva.dourado, size: 20),
+          prefixText: prefixo,
+          prefixStyle: TextStyle(
+              color: CoresEleva.dourado,
+              fontWeight: FontWeight.w800,
+              fontSize: 15),
           filled: true,
-          fillColor: CoresEleva.azulProfundo,
+          fillColor: CoresEleva.azulProfundo.withOpacity(0.5),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
@@ -292,7 +554,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
     );
   }
 
-  Widget _semPromocao(BuildContext context) {
+  Widget _semPromocao() {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(32),

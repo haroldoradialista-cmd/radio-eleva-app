@@ -109,6 +109,16 @@
         <h2>Banners no topo do app</h2>
         <p class="rotulo-secao">Tamanho ideal: <b>1200 x 400</b>. As mudanças chegam aos ouvintes na próxima vez que abrirem o app.</p>
         <div id="listaBanners"></div>
+        <hr style="border-color:#20365555;margin:16px 0">
+        <h2>📊 Relatório de cliques (pós-venda para anunciantes)</h2>
+        <label>Banner</label>
+        <select id="selBannerRel"><option value="__todos__">TODOS os banners</option></select>
+        <div class="grade2">
+          <div><label>🗓️ De (data e hora)</label><input type="datetime-local" id="relDe"></div>
+          <div><label>🗓️ Até (data e hora)</label><input type="datetime-local" id="relAte"></div>
+        </div>
+        <button class="botao" onclick="gerarRelatorio()">📊 Gerar relatório</button>
+        <p class="rotulo-secao">O relatório abre em uma nova janela com opções de PDF, Excel e JPEG.</p>
         <input type="file" id="arqTroca" accept="image/png,image/jpeg" style="display:none">
         <input type="file" id="arqTrocaGeral" accept="image/png,image/jpeg" style="display:none">
         <label>Nova imagem de banner</label>
@@ -190,12 +200,30 @@
         <div id="listaPromos"></div>
       </div>
       <div class="cartao">
+        <h2>🎲 Sorteador de ganhador</h2>
+        <p class="rotulo-secao">Escolha a promoção e deixe a sorte decidir entre todas as participações.</p>
+        <label>Promoção</label>
+        <select id="selSorteio"></select>
+        <button class="botao" onclick="sortearGanhador()">🎲 SORTEAR GANHADOR</button>
+        <div id="resultadoSorteio" style="display:none;margin-top:14px">
+          <div class="item" style="flex-wrap:wrap">
+            <div class="info"><b id="sorteioNome"></b><span id="sorteioContato"></span></div>
+          </div>
+          <label>Mensagem de parabéns (edite se quiser)</label>
+          <textarea id="sorteioMsg" rows="7" readonly></textarea>
+          <button class="botao neutro" onclick="sorteioMsg.readOnly=false;sorteioMsg.focus();avisar('Pode editar a mensagem! ✏️')">✏️ Editar</button>
+          <button class="botao" onclick="baixarParabensPDF()">📄 Baixar em PDF</button>
+        </div>
+      </div>
+      <div class="cartao">
         <h2>Nova promoção</h2>
         <label>Banner da promoção (ideal: 1200 x 500 px)</label>
         <input type="file" id="prFoto" accept="image/png,image/jpeg">
         <label>Pergunta da promoção</label><input id="prPergunta" placeholder="Ex.: Em que ano a Rádio Eleva nasceu?">
         <label>Resposta — Opção 1</label><input id="prOp1">
         <label>Resposta — Opção 2</label><input id="prOp2">
+        <label>Regulamento da promoção (aparece para o ouvinte)</label>
+        <textarea id="prRegulamento" placeholder="Ex.: Válida para maiores de 18 anos. Sorteio ao vivo no dia..."></textarea>
         <div class="grade2">
           <div><label>⏰ Início (opcional)</label><input type="datetime-local" id="prInicio"></div>
           <div><label>⏰ Término (opcional)</label><input type="datetime-local" id="prFim"></div>
@@ -289,6 +317,11 @@
 
     <!-- ESTATISTICAS -->
     <section id="sec-stats" class="oculto">
+      <div class="cartao" style="text-align:center">
+        <h2>🎧 OUVINTES CONECTADOS AGORA</h2>
+        <div id="ouvintesAgora" style="font-size:52px;font-weight:900;color:#3ECF8E">—</div>
+        <p class="rotulo-secao">Ouvintes com o player tocando neste momento • atualiza a cada 30 segundos</p>
+      </div>
       <div class="cartao">
         <h2>Estatísticas de ouvintes</h2>
         <p class="rotulo-secao">Acessos <b>anônimos</b> registrados a cada abertura do app (disponível a partir da versão 1.5). Escolha o período:</p>
@@ -392,7 +425,7 @@ async function entrarPainel(){
     localStorage.setItem('tokenEleva', token);
     document.getElementById('telaAcesso').classList.add('oculto');
     document.getElementById('painel').classList.remove('oculto');
-    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos();
+    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
@@ -448,6 +481,7 @@ async function carregarCliquesBanner(){
   }catch(e){}
 }
 function trocarImagemBanner(i){ idxTroca = i; document.getElementById('arqTroca').click(); }
+
 
 async function desenharBanners(){
   await carregarCliquesBanner();
@@ -589,6 +623,56 @@ async function removerEnquete(i){
   catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
+// ================== SORTEADOR ==================
+let ultimoGanhador = null;
+function preencherSorteio(){
+  const sel = document.getElementById('selSorteio');
+  if(!sel) return;
+  sel.innerHTML = (config.promocoes||[]).map(p=>`<option value="${p.id}">${p.pergunta}</option>`).join('') || '<option value="">Nenhuma promoção</option>';
+}
+async function sortearGanhador(){
+  const id = document.getElementById('selSorteio').value;
+  if(!id){ avisar('Crie uma promoção primeiro.', true); return; }
+  const promo = (config.promocoes||[]).find(p=>p.id===id) || {};
+  try{
+    const r = await fetch(`${RTDB}/promo_participacoes/${id}.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!d){ avisar('Essa promoção ainda não tem participações.', true); return; }
+    const lista = Object.values(d);
+    const g = lista[Math.floor(Math.random()*lista.length)];
+    ultimoGanhador = g;
+    document.getElementById('resultadoSorteio').style.display='block';
+    document.getElementById('sorteioNome').textContent = `🏆 ${g.nome||'Ouvinte'} (${lista.length} participações no sorteio)`;
+    document.getElementById('sorteioContato').textContent = `WhatsApp: ${g.whatsapp||'-'} • Instagram: ${g.instagram||'-'} • E-mail: ${g.email||'-'}`;
+    const msg = document.getElementById('sorteioMsg');
+    msg.readOnly = true;
+    msg.value = `🎉 PARABÉNS, ${(g.nome||'OUVINTE').toUpperCase()}! 🎉\n\n`+
+`Você é o grande vencedor(a) da promoção "${promo.pergunta||''}" da Rádio Eleva!\n\n`+
+`A sua participação foi sorteada entre todos os ouvintes e a sorte sorriu para você. Que essa conquista chegue com muita alegria e bênçãos!\n\n`+
+`Em breve nossa equipe entrará em contato pelo seu WhatsApp para combinar a entrega do prêmio.\n\n`+
+`Adore • Viva • Eleve\n📻 Rádio Eleva — a sua companhia de fé e música!`;
+    avisar('Ganhador sorteado! 🏆');
+  }catch(e){ avisar('Falhou ao sortear.', true); }
+}
+function baixarParabensPDF(){
+  const msg = document.getElementById('sorteioMsg').value;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Parabéns - Rádio Eleva</title><style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#1a1a2e;padding:40px;text-align:center}
+    .quadro{border:6px double #E6B93F;border-radius:22px;padding:44px;max-width:640px;margin:0 auto}
+    h1{color:#1B7A4B;letter-spacing:1px} .msg{white-space:pre-wrap;font-size:17px;line-height:1.7;text-align:center;margin-top:18px}
+    .rodape{margin-top:30px;color:#0D2B52;font-weight:bold} @media print{.nao-imprimir{display:none}}
+  </style></head><body>
+  <div class="quadro">
+    <h1>🎉 RÁDIO ELEVA 🎉</h1>
+    <div class="msg">${msg.replace(/</g,'&lt;')}</div>
+    <div class="rodape">${new Date().toLocaleDateString('pt-BR')}</div>
+  </div>
+  <p class="nao-imprimir" style="margin-top:24px"><button onclick="window.print()" style="padding:12px 24px;font-size:16px;border-radius:10px;border:none;background:#1B7A4B;color:#fff;cursor:pointer">🖨️ Salvar em PDF / Imprimir</button></p>
+  </body></html>`);
+  w.document.close();
+}
+
 // ================== PEDIDO MUSICAL ==================
 async function carregarPedidosM(){
   const el = document.getElementById('listaPedidosM');
@@ -640,6 +724,7 @@ async function desenharPromos(){
     </div>`;
   }
   el.innerHTML = html;
+  preencherSorteio();
 }
 async function verParticipacoes(id){
   const box = document.getElementById('part_'+id);
@@ -651,8 +736,8 @@ async function verParticipacoes(id){
     const d = await r.json();
     if(!d){ box.innerHTML = '<p class="rotulo-secao">Nenhuma participação ainda.</p>'; return; }
     const lista = Object.values(d).sort((a,b)=>(a.quando||'').localeCompare(b.quando||''));
-    box.innerHTML = `<table><tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>Instagram</th><th>Resposta</th><th>Quando</th></tr>` +
-      lista.map((x,i)=>`<tr><td>${i+1}</td><td>${x.nome||''}</td><td>${x.whatsapp||''}</td><td>${x.instagram||''}</td><td>${x.resposta||''}</td><td>${(x.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('') + `</table>`;
+    box.innerHTML = `<table><tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Resposta</th><th>Quando</th></tr>` +
+      lista.map((x,i)=>`<tr><td>${i+1}</td><td>${x.nome||''}</td><td>${x.whatsapp||''}</td><td>${x.instagram||''}</td><td>${x.email||''}</td><td>${x.resposta||''}</td><td>${(x.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('') + `</table>`;
   }catch(e){ box.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
 }
 async function criarPromocao(){
@@ -664,12 +749,12 @@ async function criarPromocao(){
     const arq = document.getElementById('prFoto').files[0];
     if(arq){ avisar('Enviando banner...'); imagem = await subirImagem(arq,'imagens'); }
     config.promocoes = config.promocoes || [];
-    const nova = { id:'p'+Date.now(), pergunta:prPergunta.value.trim(), opcao1:prOp1.value.trim(), opcao2:prOp2.value.trim(), imagem };
+    const nova = { id:'p'+Date.now(), pergunta:prPergunta.value.trim(), opcao1:prOp1.value.trim(), opcao2:prOp2.value.trim(), regulamento:prRegulamento.value.trim(), imagem };
     if(prInicio.value) nova.publicar_em = prInicio.value;
     if(prFim.value) nova.expirar_em = prFim.value;
     config.promocoes.unshift(nova);
     await salvarConfig('Painel: promocao');
-    prPergunta.value=prOp1.value=prOp2.value=''; prInicio.value=''; prFim.value=''; document.getElementById('prFoto').value='';
+    prPergunta.value=prOp1.value=prOp2.value=''; prRegulamento.value=''; prInicio.value=''; prFim.value=''; document.getElementById('prFoto').value='';
     desenharPromos(); avisar('Promoção publicada! 🎁');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
@@ -746,6 +831,7 @@ function etiquetaAgenda(item){
 // ================== TEXTOS/REDES ==================
 function preencherTextos(){
   cfNome.value=config.nome||''; cfSlogan.value=config.slogan||'';
+  if(document.getElementById('cfLinkComp')) cfLinkComp.value=config.link_compartilhar||'';
   cfStream.value=config.stream_url||''; cfZap.value=config.whatsapp||'';
   cfMsgPedido.value=config.mensagem_pedido||'';
   const rede = nome => (config.redes.find(r=>r.nome===nome)||{}).link||'';
@@ -755,6 +841,7 @@ async function salvarTextos(){
   config.nome=cfNome.value.trim(); config.slogan=cfSlogan.value.trim();
   config.stream_url=cfStream.value.trim(); config.whatsapp=cfZap.value.trim();
   config.mensagem_pedido=cfMsgPedido.value.trim();
+  if(document.getElementById('cfLinkComp')) config.link_compartilhar=cfLinkComp.value.trim();
   config.redes=[
     {nome:'Instagram',link:cfInsta.value.trim()},
     {nome:'Facebook',link:cfFace.value.trim()},
@@ -889,6 +976,121 @@ async function carregarStats(){
   document.getElementById('stCidades').innerHTML =
     cidOrd.map(([c,v])=>barraH(c, v, maxC)).join('') +
     (Object.keys(cidades).length>30? `<p class="rotulo-secao">Mostrando as 30 primeiras de ${Object.keys(cidades).length} cidades.</p>`:'');
+}
+
+// ================== OUVINTES AGORA ==================
+let timerOuvintes = null;
+async function contarOuvintesAgora(){
+  try{
+    const r = await fetch(`${RTDB}/ouvintes_online.json?t=${Date.now()}`);
+    const d = await r.json();
+    const limite = Date.now() - 120000;
+    const n = d ? Object.values(d).filter(o=> (o.t||0) > limite).length : 0;
+    const el = document.getElementById('ouvintesAgora');
+    if(el) el.textContent = n;
+  }catch(e){}
+}
+function iniciarOuvintesAgora(){
+  contarOuvintesAgora();
+  if(!timerOuvintes) timerOuvintes = setInterval(contarOuvintesAgora, 30000);
+}
+
+// ================== RELATORIO DE BANNERS ==================
+function preencherSelBannerRel(){
+  const sel = document.getElementById('selBannerRel');
+  if(!sel) return;
+  sel.innerHTML = '<option value="__todos__">TODOS os banners</option>' +
+    (config.banners||[]).map((b,i)=>`<option value="${b.id||b.imagem}">Banner ${i+1}${b.link? ' — '+b.link.slice(0,40):''}</option>`).join('');
+}
+async function gerarRelatorio(){
+  try{
+    avisar('Gerando relatório...');
+    const alvo = document.getElementById('selBannerRel').value;
+    const de = relDe.value ? new Date(relDe.value) : null;
+    const ate = relAte.value ? new Date(relAte.value) : null;
+    const r = await fetch(`${RTDB}/banner_cliques.json?t=${Date.now()}`);
+    const d = await r.json();
+    let cliques = d ? Object.values(d) : [];
+    cliques = cliques.filter(c=>{
+      if(alvo !== '__todos__' && (c.banner||'') !== alvo) return false;
+      const q = c.quando ? new Date(c.quando) : null;
+      if(de && (!q || q < de)) return false;
+      if(ate && (!q || q > ate)) return false;
+      return true;
+    });
+    const conta = (campo)=>{
+      const m = {};
+      cliques.forEach(c=>{ const k=(c[campo]||'—'); m[k]=(m[k]||0)+1; });
+      return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+    };
+    const porBanner = conta('banner');
+    const idx = {}; (config.banners||[]).forEach((b,i)=> idx[b.id||b.imagem]=`Banner ${i+1}`);
+    const linhas = (pares)=> pares.map(([k,v])=>`<tr><td>${idx[k]||k}</td><td>${v}</td></tr>`).join('');
+    const linhasSimples = (pares)=> pares.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    const periodo = `${de? de.toLocaleString('pt-BR'):'início'} até ${ate? ate.toLocaleString('pt-BR'):'agora'}`;
+    const nomeAlvo = alvo==='__todos__' ? 'TODOS os banners' : (idx[alvo]||'Banner');
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>Relatório de Cliques - Rádio Eleva</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#14203a;padding:26px}
+      .rel{max-width:760px;margin:0 auto;border:2px solid #E6B93F;border-radius:16px;padding:28px}
+      h1{color:#0D2B52;margin:4px 0} h2{color:#1B7A4B;font-size:16px;margin:20px 0 6px}
+      .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:12px}
+      .total{font-size:40px;font-weight:900;color:#1B7A4B;text-align:center;margin:14px 0}
+      table{width:100%;border-collapse:collapse;font-size:13.5px}
+      th,td{border:1px solid #cfd8e6;padding:7px 10px;text-align:left}
+      th{background:#0D2B52;color:#fff}
+      .rodape{margin-top:18px;font-size:12px;color:#5a6a85;text-align:center}
+      .nao-imprimir{text-align:center;margin-top:20px}
+      .nao-imprimir button{padding:11px 18px;margin:0 6px;font-size:14px;border-radius:10px;border:none;cursor:pointer;color:#fff}
+      @media print{.nao-imprimir{display:none}}
+    </style></head><body>
+    <div class="rel" id="rel">
+      <div class="topo">
+        <h1>📻 RÁDIO ELEVA</h1>
+        <div>Adore • Viva • Eleve</div>
+        <h2 style="margin-top:10px">RELATÓRIO DE CLIQUES EM ANÚNCIOS</h2>
+        <div><b>${nomeAlvo}</b> — Período: ${periodo}</div>
+      </div>
+      <div class="total">${cliques.length} cliques</div>
+      <h2>Cliques por banner</h2>
+      <table><tr><th>Banner</th><th>Cliques</th></tr>${linhas(porBanner)||'<tr><td colspan=2>Sem dados</td></tr>'}</table>
+      <h2>Por cidade</h2>
+      <table><tr><th>Cidade</th><th>Cliques</th></tr>${linhasSimples(conta('cidade'))||'<tr><td colspan=2>Sem dados</td></tr>'}</table>
+      <h2>Por estado</h2>
+      <table><tr><th>Estado</th><th>Cliques</th></tr>${linhasSimples(conta('estado'))||'<tr><td colspan=2>Sem dados</td></tr>'}</table>
+      <h2>Por país</h2>
+      <table><tr><th>País</th><th>Cliques</th></tr>${linhasSimples(conta('pais'))||'<tr><td colspan=2>Sem dados</td></tr>'}</table>
+      <h2>Por dispositivo</h2>
+      <table><tr><th>Dispositivo</th><th>Cliques</th></tr>${linhasSimples(conta('dispositivo'))||'<tr><td colspan=2>Sem dados</td></tr>'}</table>
+      <div class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva • Registros antigos podem não ter localização (—)</div>
+    </div>
+    <div class="nao-imprimir">
+      <button style="background:#1B7A4B" onclick="window.print()">📄 Salvar PDF</button>
+      <button style="background:#0D2B52" onclick="baixarCSV()">📊 Excel (CSV)</button>
+      <button style="background:#A97F10" onclick="baixarJPEG()">🖼️ JPEG</button>
+    </div>
+    <script>
+      const dados = ${JSON.stringify(cliques)};
+      function baixarCSV(){
+        let csv = 'banner;quando;cidade;estado;pais;dispositivo\\n';
+        dados.forEach(c=>{ csv += [c.banner,c.quando,c.cidade,c.estado,c.pais,c.dispositivo].map(x=>(x||'')).join(';')+'\\n'; });
+        const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'relatorio_cliques_eleva.csv'; a.click();
+      }
+      function baixarJPEG(){
+        html2canvas(document.getElementById('rel')).then(cv=>{
+          const a = document.createElement('a');
+          a.href = cv.toDataURL('image/jpeg', 0.95);
+          a.download = 'relatorio_cliques_eleva.jpg'; a.click();
+        });
+      }
+    <\/script>
+    </body></html>`);
+    w.document.close();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
 // ================== MODERACAO ==================

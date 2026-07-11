@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
+import '../widgets/anuncio_banner.dart';
 
 class ProgramacaoPage extends StatefulWidget {
   ProgramacaoPage({super.key});
@@ -80,6 +81,7 @@ class _ProgramacaoPageState extends State<ProgramacaoPage> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                AnuncioBanner(),
                 Padding(
                   padding: EdgeInsets.fromLTRB(14, 14, 14, 8),
                   child: Row(

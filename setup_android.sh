@@ -26,6 +26,11 @@ import com.ryanheise.audioservice.AudioServiceActivity
 class MainActivity : AudioServiceActivity()
 KOTLIN
 
+# 6a. AdMob (anúncios): ID do app vem de admob_app_id.txt ou usa o de TESTE
+ADMOB_ID=$(cat admob_app_id.txt 2>/dev/null || echo "ca-app-pub-3940256099942544~3347511713")
+sed -i "s#</application>#    <meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\" android:value=\"$ADMOB_ID\"/>\n    </application>#" "$M"
+echo "AdMob configurado: $ADMOB_ID"
+
 # 6. Firebase (notificações push)
 if [ -f firebase/google-services.json ]; then
   cp firebase/google-services.json android/app/google-services.json

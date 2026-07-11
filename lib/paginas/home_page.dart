@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../servicos/analytics_service.dart';
 import '../servicos/config_service.dart';
 import '../servicos/player_service.dart';
 import '../tema.dart';
-import '../widgets/enquete_card.dart';
+import '../widgets/anuncio_banner.dart';
 import '../widgets/capa_musica.dart';
 
 class HomePage extends StatefulWidget {
@@ -20,7 +22,7 @@ class _HomePageState extends State<HomePage> {
   final _pageController = PageController();
   Timer? _timerBanner;
   int _bannerAtual = 0;
-  String? _voto;
+  bool _curtiu = false;
   String _musicaAtual = '';
 
   @override
@@ -50,7 +52,7 @@ class _HomePageState extends State<HomePage> {
     if (uri != null) launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  /// Registra o clique no banner (pós-venda para anunciantes) e abre o link
+  /// Registra o clique (com localização e dispositivo para o relatório) e abre o link
   void _tocarBanner(AppConfig cfg, Map<String, dynamic> b) {
     if (cfg.chatUrl.isNotEmpty) {
       final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
@@ -58,62 +60,31 @@ class _HomePageState extends State<HomePage> {
           body: jsonEncode({
             'banner': (b['id'] ?? b['imagem'] ?? '').toString(),
             'quando': DateTime.now().toIso8601String(),
+            'cidade': AnalyticsService.cidade,
+            'estado': AnalyticsService.estado,
+            'pais': AnalyticsService.pais,
+            'dispositivo': 'Android',
           }));
     }
     _abrirLink(b['link']);
   }
 
-  void _registrarVoto(String tipo, AppConfig cfg) {
-    setState(() => _voto = tipo);
-    PlayerService.instancia.votar(cfg.chatUrl, tipo, _musicaAtual);
+  void _curtir(AppConfig cfg) {
+    setState(() => _curtiu = true);
+    PlayerService.instancia.votar(cfg.chatUrl, 'like', _musicaAtual);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       duration: Duration(seconds: 2),
-      backgroundColor:
-          tipo == 'like' ? CoresEleva.verdeEscuro : CoresEleva.azulMedio,
-      content: Text(tipo == 'like'
-          ? 'Que bom que você gostou! 🙌'
-          : 'Obrigado pela sua opinião!'),
+      backgroundColor: CoresEleva.verdeEscuro,
+      content: Text('Você curtiu esta música! ❤️'),
     ));
   }
 
-  void _escolherSleep() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: CoresEleva.azulMedio,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: EdgeInsets.all(14),
-              child: Text('Desligar a rádio em...',
-                  style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ),
-            ...[15, 30, 45, 60, 90].map((m) => ListTile(
-                  leading:
-                      Icon(Icons.bedtime_rounded, color: CoresEleva.dourado),
-                  title: Text('$m minutos'),
-                  onTap: () {
-                    PlayerService.instancia.definirSleep(m);
-                    Navigator.pop(context);
-                  },
-                )),
-            ListTile(
-              leading:
-                  Icon(Icons.close_rounded, color: CoresEleva.textoFraco),
-              title: Text('Cancelar sleep timer'),
-              onTap: () {
-                PlayerService.instancia.definirSleep(0);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+  void _compartilhar(AppConfig cfg) {
+    final musica = _musicaAtual.isNotEmpty ? '🎵 $_musicaAtual — ' : '';
+    final link =
+        cfg.linkCompartilhar.isNotEmpty ? '\n${cfg.linkCompartilhar}' : '';
+    Share.share(
+        '${musica}Estou ouvindo a ${cfg.nome} ao vivo! ${cfg.slogan} 📻$link');
   }
 
   @override
@@ -128,12 +99,14 @@ class _HomePageState extends State<HomePage> {
           decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
-              final alturaBanner = (c.maxHeight * 0.26).clamp(120.0, 210.0);
+              final alturaBanner = (c.maxHeight * 0.22).clamp(110.0, 180.0);
               return Column(
                 children: [
-                  // ===== BANNER COM MOLDURA SUAVE =====
+                  AnuncioBanner(),
+
+                  // ===== BANNER CARROSSEL COM MOLDURA =====
                   Padding(
-                    padding: EdgeInsets.fromLTRB(14, 12, 14, 0),
+                    padding: EdgeInsets.fromLTRB(14, 8, 14, 0),
                     child: Container(
                       height: alturaBanner,
                       width: double.infinity,
@@ -143,7 +116,7 @@ class _HomePageState extends State<HomePage> {
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black
-                                .withOpacity(CoresEleva.escuro ? 0.35 : 0.10),
+                                .withOpacity(CoresEleva.escuro ? 0.35 : 0.12),
                             blurRadius: 14,
                             offset: Offset(0, 5),
                           ),
@@ -170,12 +143,12 @@ class _HomePageState extends State<HomePage> {
                                           width: double.infinity,
                                           errorBuilder: (_, __, ___) =>
                                               _bannerPadrao(),
-                                          loadingBuilder: (_, w, p) => p ==
-                                                  null
-                                              ? w
-                                              : Container(
-                                                  color:
-                                                      CoresEleva.azulMedio),
+                                          loadingBuilder: (_, w, p) =>
+                                              p == null
+                                                  ? w
+                                                  : Container(
+                                                      color: CoresEleva
+                                                          .azulMedio),
                                         ),
                                       );
                                     },
@@ -220,37 +193,17 @@ class _HomePageState extends State<HomePage> {
                     child: RelogioAgora(),
                   ),
 
-                  // ===== ENQUETE FIXA =====
-                  EnqueteCard(),
-
-                  // ===== ÁREA DO PLAYER =====
+                  // ===== PLAYER (modelo enviado) =====
                   Expanded(
                     child: Padding(
                       padding:
-                          EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                          EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          // Logo centralizada + slogan (sem o nome)
-                          Column(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.asset('assets/logo.png',
-                                    width: 64, height: 64),
-                              ),
-                              SizedBox(height: 6),
-                              Text(cfg.slogan,
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      color: CoresEleva.dourado,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 2.0)),
-                            ],
-                          ),
-
-                          // Capa da música que está tocando
-                          CapaMusica(),
+                          // Capa da música / foto do programa no ar
+                          CapaMusica(
+                              reserva: (noAr?['imagem'] ?? '').toString()),
 
                           Column(
                             children: [
@@ -284,12 +237,12 @@ class _HomePageState extends State<HomePage> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 13.5,
                                         fontWeight: FontWeight.w800,
                                         color: CoresEleva.dourado),
                                   ),
                                 ),
-                              SizedBox(height: 10),
+                              SizedBox(height: 8),
                               StreamBuilder<IcyMetadata?>(
                                 stream: player.icyMetadataStream,
                                 builder: (context, snap) {
@@ -297,7 +250,7 @@ class _HomePageState extends State<HomePage> {
                                       snap.data?.info?.title?.trim() ?? '';
                                   if (titulo != _musicaAtual) {
                                     _musicaAtual = titulo;
-                                    _voto = null;
+                                    _curtiu = false;
                                   }
                                   return Text(
                                     titulo.isEmpty
@@ -316,17 +269,35 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
 
+                          // CORAÇÃO — PLAY — COMPARTILHAR
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              _botaoVoto(
-                                icone: Icons.thumb_down_rounded,
-                                ativo: _voto == 'dislike',
-                                corAtiva: CoresEleva.azulVivo,
-                                aoTocar: () =>
-                                    _registrarVoto('dislike', cfg),
+                              GestureDetector(
+                                onTap: () => _curtir(cfg),
+                                child: Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: _curtiu
+                                            ? Colors.pink
+                                            : CoresEleva.dourado,
+                                        width: 2),
+                                  ),
+                                  child: Icon(
+                                    _curtiu
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: _curtiu
+                                        ? Colors.pink
+                                        : CoresEleva.dourado,
+                                    size: 27,
+                                  ),
+                                ),
                               ),
-                              SizedBox(width: 28),
+                              SizedBox(width: 30),
                               StreamBuilder<PlayerState>(
                                 stream: player.playerStateStream,
                                 builder: (context, snap) {
@@ -346,8 +317,8 @@ class _HomePageState extends State<HomePage> {
                                           .alternar();
                                     },
                                     child: Container(
-                                      width: 90,
-                                      height: 90,
+                                      width: 88,
+                                      height: 88,
                                       decoration: BoxDecoration(
                                         gradient: CoresEleva.botaoPlay,
                                         shape: BoxShape.circle,
@@ -374,94 +345,34 @@ class _HomePageState extends State<HomePage> {
                                             )
                                           : Icon(
                                               tocando
-                                                  ? Icons.stop_rounded
+                                                  ? Icons.pause_rounded
                                                   : Icons
                                                       .play_arrow_rounded,
-                                              size: 50,
+                                              size: 48,
                                               color: Colors.white,
                                             ),
                                     ),
                                   );
                                 },
                               ),
-                              SizedBox(width: 28),
-                              _botaoVoto(
-                                icone: Icons.thumb_up_rounded,
-                                ativo: _voto == 'like',
-                                corAtiva: CoresEleva.verde,
-                                aoTocar: () => _registrarVoto('like', cfg),
-                              ),
-                            ],
-                          ),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ValueListenableBuilder<int>(
-                                valueListenable:
-                                    PlayerService.instancia.sleepRestante,
-                                builder: (context, restante, _) {
-                                  return TextButton.icon(
-                                    onPressed: _escolherSleep,
-                                    icon: Icon(Icons.bedtime_rounded,
-                                        size: 20,
-                                        color: restante > 0
-                                            ? CoresEleva.verde
-                                            : CoresEleva.dourado),
-                                    label: Text(
-                                      restante > 0
-                                          ? 'Dormir em ${restante}min'
-                                          : 'Sleep timer',
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: restante > 0
-                                              ? CoresEleva.verde
-                                              : CoresEleva.dourado),
-                                    ),
-                                  );
-                                },
-                              ),
-                              ValueListenableBuilder<bool>(
-                                valueListenable: modoEscuroNotifier,
-                                builder: (context, escuro, _) {
-                                  return TextButton.icon(
-                                    onPressed: alternarTema,
-                                    icon: Icon(
-                                        escuro
-                                            ? Icons.light_mode_rounded
-                                            : Icons.dark_mode_rounded,
-                                        size: 20,
-                                        color: CoresEleva.dourado),
-                                    label: Text(
-                                      escuro ? 'Modo claro' : 'Modo escuro',
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: CoresEleva.dourado),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-
-                          if (cfg.redes.isNotEmpty)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: cfg.redes.map((r) {
-                                return Padding(
-                                  padding:
-                                      EdgeInsets.symmetric(horizontal: 8),
-                                  child: IconButton(
-                                    onPressed: () => _abrirLink(r['link']),
-                                    icon: Icon(_iconeRede(r['nome'] ?? ''),
+                              SizedBox(width: 30),
+                              GestureDetector(
+                                onTap: () => _compartilhar(cfg),
+                                child: Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
                                         color: CoresEleva.dourado,
-                                        size: 26),
+                                        width: 2),
                                   ),
-                                );
-                              }).toList(),
-                            ),
+                                  child: Icon(Icons.share_rounded,
+                                      color: CoresEleva.dourado, size: 24),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -475,31 +386,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _botaoVoto({
-    required IconData icone,
-    required bool ativo,
-    required Color corAtiva,
-    required VoidCallback aoTocar,
-  }) {
-    return GestureDetector(
-      onTap: aoTocar,
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: ativo ? corAtiva : CoresEleva.azulMedio,
-          border: Border.all(
-              color: ativo ? CoresEleva.dourado : CoresEleva.borda,
-              width: 1.5),
-        ),
-        child: Icon(icone,
-            color: ativo ? Colors.white : CoresEleva.textoFraco, size: 25),
-      ),
-    );
-  }
-
   Widget _bannerPadrao() {
     return Container(
       decoration: BoxDecoration(
@@ -509,23 +395,13 @@ class _HomePageState extends State<HomePage> {
           end: Alignment.bottomRight,
         ),
       ),
-      child: Center(child: Image.asset('assets/logo.png', height: 110)),
+      child: Center(child: Image.asset('assets/logo.png', height: 100)),
     );
-  }
-
-  IconData _iconeRede(String nome) {
-    final n = nome.toLowerCase();
-    if (n.contains('insta')) return Icons.camera_alt_rounded;
-    if (n.contains('face')) return Icons.facebook_rounded;
-    if (n.contains('you')) return Icons.play_circle_fill_rounded;
-    if (n.contains('site')) return Icons.language_rounded;
-    return Icons.public_rounded;
   }
 }
 
-
 // ============================================================
-// RELÓGIO AO VIVO (data e hora para o ouvinte)
+// RELÓGIO AO VIVO
 // ============================================================
 class RelogioAgora extends StatefulWidget {
   RelogioAgora({super.key});
@@ -546,18 +422,8 @@ class _RelogioAgoraState extends State<RelogioAgora> {
     'domingo'
   ];
   static final _meses = [
-    'janeiro',
-    'fevereiro',
-    'março',
-    'abril',
-    'maio',
-    'junho',
-    'julho',
-    'agosto',
-    'setembro',
-    'outubro',
-    'novembro',
-    'dezembro'
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
   ];
 
   @override

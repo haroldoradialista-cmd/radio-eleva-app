@@ -9,7 +9,9 @@ import '../tema.dart';
 /// Capa quadrada da música que está tocando (busca automática pela
 /// identificação enviada pelo streaming). Some quando não encontra.
 class CapaMusica extends StatefulWidget {
-  CapaMusica({super.key});
+  final String? reserva; // foto do programa no ar
+  final double tamanho;
+  CapaMusica({super.key, this.reserva, this.tamanho = 170});
   @override
   State<CapaMusica> createState() => _CapaMusicaState();
 }
@@ -65,10 +67,12 @@ class _CapaMusicaState extends State<CapaMusica> {
 
   @override
   Widget build(BuildContext context) {
-    if (_capaUrl == null) return SizedBox.shrink();
+    final urlReserva =
+        (widget.reserva ?? '').isNotEmpty ? widget.reserva : null;
+    final url = _capaUrl ?? urlReserva;
     return Container(
-      width: 148,
-      height: 148,
+      width: widget.tamanho,
+      height: widget.tamanho,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: CoresEleva.dourado.withOpacity(0.6), width: 1.5),
@@ -82,11 +86,22 @@ class _CapaMusicaState extends State<CapaMusica> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(17),
-        child: Image.network(
-          _capaUrl!,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => SizedBox.shrink(),
-        ),
+        child: url == null
+            ? Container(
+                color: CoresEleva.azulMedio,
+                padding: EdgeInsets.all(24),
+                child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+              )
+            : Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: CoresEleva.azulMedio,
+                  padding: EdgeInsets.all(24),
+                  child:
+                      Image.asset('assets/logo.png', fit: BoxFit.contain),
+                ),
+              ),
       ),
     );
   }

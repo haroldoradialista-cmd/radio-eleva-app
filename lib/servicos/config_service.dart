@@ -14,6 +14,7 @@ class AppConfig {
   final String chatUrl; // URL do Firebase Realtime Database (sem .json)
   final int chatSuspensaoHoras;
   final List<String> chatPalavras;
+  final String linkCompartilhar;
   final List<Map<String, dynamic>> banners;
   final List<Map<String, dynamic>> noticias;
   final List<Map<String, dynamic>> redes;
@@ -31,6 +32,7 @@ class AppConfig {
     required this.chatUrl,
     required this.chatSuspensaoHoras,
     required this.chatPalavras,
+    required this.linkCompartilhar,
     required this.banners,
     required this.noticias,
     required this.redes,
@@ -49,6 +51,7 @@ class AppConfig {
         chatUrl: j['chat_url'] ?? '',
         chatSuspensaoHoras: int.tryParse((j['chat_suspensao_horas'] ?? '24').toString()) ?? 24,
         chatPalavras: List<String>.from(j['chat_palavras'] ?? []),
+        linkCompartilhar: j['link_compartilhar'] ?? '',
         banners: List<Map<String, dynamic>>.from(j['banners'] ?? []),
         noticias: List<Map<String, dynamic>>.from(j['noticias'] ?? []),
         redes: List<Map<String, dynamic>>.from(j['redes'] ?? []),
@@ -67,6 +70,7 @@ class AppConfig {
         chatUrl: '',
         chatSuspensaoHoras: 24,
         chatPalavras: [],
+        linkCompartilhar: '',
         banners: [],
         noticias: [],
         redes: [],
