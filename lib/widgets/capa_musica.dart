@@ -11,7 +11,7 @@ import '../tema.dart';
 class CapaMusica extends StatefulWidget {
   final String? reserva; // foto do programa no ar
   final double tamanho;
-  CapaMusica({super.key, this.reserva, this.tamanho = 170});
+  CapaMusica({super.key, this.reserva, this.tamanho = 230});
   @override
   State<CapaMusica> createState() => _CapaMusicaState();
 }
