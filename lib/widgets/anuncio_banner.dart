@@ -14,6 +14,7 @@ class _AnuncioBannerState extends State<AnuncioBanner>
     with AutomaticKeepAliveClientMixin {
   BannerAd? _ad;
   bool _pronto = false;
+  static bool _motorLigado = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -21,6 +22,22 @@ class _AnuncioBannerState extends State<AnuncioBanner>
   @override
   void initState() {
     super.initState();
+    _iniciar();
+  }
+
+  Future<void> _iniciar() async {
+    try {
+      if (!_motorLigado) {
+        await MobileAds.instance.initialize();
+        _motorLigado = true;
+      }
+      _carregarAnuncio();
+    } catch (_) {
+      // Se o motor de anúncios falhar, o app segue vivo sem anúncios
+    }
+  }
+
+  void _carregarAnuncio() {
     _ad = BannerAd(
       adUnitId: kAdmobBannerId,
       size: AdSize.banner,
