@@ -26,6 +26,13 @@ import com.ryanheise.audioservice.AudioServiceActivity
 class MainActivity : AudioServiceActivity()
 KOTLIN
 
+# 6pre. Android mínimo 23 (exigência do Google Mobile Ads)
+if [ -f android/app/build.gradle.kts ]; then
+  sed -i 's#minSdk = flutter.minSdkVersion#minSdk = 23#' android/app/build.gradle.kts
+elif [ -f android/app/build.gradle ]; then
+  sed -i 's#minSdkVersion flutter.minSdkVersion#minSdkVersion 23#' android/app/build.gradle
+fi
+
 # 6a. AdMob (anúncios): ID do app vem de admob_app_id.txt ou usa o de TESTE
 ADMOB_ID=$(cat admob_app_id.txt 2>/dev/null || echo "ca-app-pub-3940256099942544~3347511713")
 sed -i "s#</application>#    <meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\" android:value=\"$ADMOB_ID\"/>\n    </application>#" "$M"

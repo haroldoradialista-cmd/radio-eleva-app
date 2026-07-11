@@ -435,6 +435,7 @@ class _TelaChatState extends State<_TelaChat> {
                       ),
                     );
                   },
+                  ),
                 ),
         ),
         Padding(
