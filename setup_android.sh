@@ -44,4 +44,17 @@ if [ -f firebase/google-services.json ]; then
   echo "Firebase configurado para notificações!"
 fi
 
+# 7. ASSINATURA EXPLÍCITA: obriga o uso da nossa chave (chave.keystore na raiz)
+if [ -f chave.keystore ]; then
+  if [ -f android/app/build.gradle.kts ]; then
+    # cria o signingConfig "release" apontando para a nossa chave
+    sed -i 's#buildTypes {#signingConfigs {\n        create("release") {\n            storeFile = file("../../chave.keystore")\n            storePassword = "android"\n            keyAlias = "androiddebugkey"\n            keyPassword = "android"\n        }\n    }\n\n    buildTypes {#' android/app/build.gradle.kts
+    sed -i 's#signingConfig = signingConfigs.getByName("debug")#signingConfig = signingConfigs.getByName("release")#' android/app/build.gradle.kts
+  elif [ -f android/app/build.gradle ]; then
+    sed -i 's#buildTypes {#signingConfigs {\n        release {\n            storeFile file("../../chave.keystore")\n            storePassword "android"\n            keyAlias "androiddebugkey"\n            keyPassword "android"\n        }\n    }\n\n    buildTypes {#' android/app/build.gradle
+    sed -i 's#signingConfig signingConfigs.debug#signingConfig signingConfigs.release#' android/app/build.gradle
+  fi
+  echo "Assinatura explícita configurada com a chave oficial!"
+fi
+
 echo "Configuração Android concluída!"
