@@ -1,59 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../app_config.dart';
 
-/// Banner de anúncios do Google (AdMob) — retângulo reduzido no topo das abas.
-class AnuncioBanner extends StatefulWidget {
+/// Espaço do banner de anúncios (AdMob).
+/// TEMPORARIAMENTE DESATIVADO para diagnóstico — o layout do app não muda.
+/// Quando a conta AdMob estiver pronta, este widget volta a exibir anúncios.
+class AnuncioBanner extends StatelessWidget {
   AnuncioBanner({super.key});
-  @override
-  State<AnuncioBanner> createState() => _AnuncioBannerState();
-}
-
-class _AnuncioBannerState extends State<AnuncioBanner>
-    with AutomaticKeepAliveClientMixin {
-  BannerAd? _ad;
-  bool _pronto = false;
-
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  void initState() {
-    super.initState();
-    _ad = BannerAd(
-      adUnitId: kAdmobBannerId,
-      size: AdSize.banner,
-      request: AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) {
-          if (mounted) setState(() => _pronto = true);
-        },
-        onAdFailedToLoad: (ad, err) {
-          ad.dispose();
-        },
-      ),
-    )..load();
-  }
-
-  @override
-  void dispose() {
-    _ad?.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    if (!_pronto || _ad == null) return SizedBox.shrink();
-    return Container(
-      width: double.infinity,
-      height: _ad!.size.height.toDouble(),
-      alignment: Alignment.center,
-      child: SizedBox(
-        width: _ad!.size.width.toDouble(),
-        height: _ad!.size.height.toDouble(),
-        child: AdWidget(ad: _ad!),
-      ),
-    );
+    return SizedBox.shrink();
   }
 }

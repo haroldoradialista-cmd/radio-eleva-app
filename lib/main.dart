@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'paginas/home_page.dart';
 import 'paginas/programacao_page.dart';
@@ -23,7 +22,6 @@ Future<void> main() async {
     androidNotificationChannelName: 'Rádio Eleva',
     androidNotificationOngoing: true,
   );
-  MobileAds.instance.initialize();
   await NotificacoesService.iniciar();
   ConfigService.instancia.carregar().then((_) {
     AnalyticsService.registrarAcesso();
