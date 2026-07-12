@@ -27,6 +27,7 @@ Future<void> main() async {
   await NotificacoesService.iniciar();
   await DespertadorService.iniciar();
   ConfigService.instancia.carregar().then((_) {
+    ConfigService.instancia.iniciarAutoAtualizacao();
     AnalyticsService.registrarAcesso();
     PresencaService.iniciar();
     // AUTOPLAY: a rádio começa a tocar assim que o app abre

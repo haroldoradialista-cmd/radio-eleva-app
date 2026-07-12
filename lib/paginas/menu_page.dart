@@ -240,12 +240,7 @@ class MenuPage extends StatelessWidget {
                 _itemMenu(context, Icons.poll_rounded, 'Enquetes',
                     'Dê sua opinião e vote',
                     () => _abrirPagina(
-                        context,
-                        'Enquetes',
-                        ListView(
-                          padding: EdgeInsets.only(top: 8, bottom: 20),
-                          children: [EnqueteCard()],
-                        ))),
+                        context, 'Enquetes', PaginaEnquetes())),
                 _itemMenu(context, Icons.alarm_rounded, 'Despertador',
                     'Acorde com a Rádio Eleva tocando',
                     () => _abrirPagina(
@@ -343,6 +338,75 @@ class MenuPage extends StatelessWidget {
             Icon(Icons.chevron_right_rounded, color: CoresEleva.dourado),
         onTap: aoTocar,
       ),
+    );
+  }
+}
+
+
+// ============================================================
+// PÁGINA DE ENQUETES (com botão Atualizar)
+// ============================================================
+class PaginaEnquetes extends StatefulWidget {
+  PaginaEnquetes({super.key});
+  @override
+  State<PaginaEnquetes> createState() => _PaginaEnquetesState();
+}
+
+class _PaginaEnquetesState extends State<PaginaEnquetes> {
+  bool _atualizando = false;
+
+  Future<void> _atualizar() async {
+    setState(() => _atualizando = true);
+    await ConfigService.instancia.carregar();
+    if (mounted) {
+      setState(() => _atualizando = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: CoresEleva.verdeEscuro,
+          duration: Duration(seconds: 2),
+          content: Text('Enquetes atualizadas! ✅')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.only(right: 8),
+          child: Row(
+            children: [
+              Spacer(),
+              TextButton.icon(
+                onPressed: _atualizando ? null : _atualizar,
+                icon: _atualizando
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: CoresEleva.dourado))
+                    : Icon(Icons.refresh_rounded,
+                        size: 20, color: CoresEleva.dourado),
+                label: Text('ATUALIZAR',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: CoresEleva.dourado)),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            color: CoresEleva.verde,
+            onRefresh: () => ConfigService.instancia.carregar(),
+            child: ListView(
+              physics: AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.only(top: 4, bottom: 20),
+              children: [EnqueteCard()],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

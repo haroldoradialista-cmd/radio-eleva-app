@@ -89,7 +89,7 @@ class _EnqueteCardState extends State<EnqueteCard> {
                     borderRadius: BorderRadius.circular(10),
                     child: Image.network(
                       e['imagem'],
-                      height: 64,
+                      height: 122,
                       width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => SizedBox.shrink(),
@@ -104,8 +104,6 @@ class _EnqueteCardState extends State<EnqueteCard> {
                   Expanded(
                     child: Text(
                       (e['pergunta'] ?? 'Enquete').toString(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 13.5,

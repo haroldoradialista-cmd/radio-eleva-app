@@ -234,7 +234,8 @@ class _HomePageState extends State<HomePage> {
                                   padding: EdgeInsets.only(top: 6),
                                   child: Text(
                                     '📻 ${noAr['programa']}',
-                                    maxLines: 1,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                         fontSize: 13.5,
