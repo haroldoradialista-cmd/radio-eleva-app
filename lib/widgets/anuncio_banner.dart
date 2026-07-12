@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../app_config.dart';
+import '../servicos/config_service.dart';
 
 /// Banner de anúncios do Google (AdMob) — retângulo reduzido no topo das abas.
 /// Enquanto não há anúncio para exibir, o espaço fica invisível.
@@ -27,6 +28,7 @@ class _AnuncioBannerState extends State<AnuncioBanner>
 
   Future<void> _iniciar() async {
     try {
+      if (!ConfigService.instancia.config.value.anunciosAtivos) return;
       if (!_motorLigado) {
         await MobileAds.instance.initialize();
         _motorLigado = true;

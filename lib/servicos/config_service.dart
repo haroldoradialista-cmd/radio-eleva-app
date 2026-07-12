@@ -15,6 +15,7 @@ class AppConfig {
   final int chatSuspensaoHoras;
   final List<String> chatPalavras;
   final String linkCompartilhar;
+  final bool anunciosAtivos;
   final List<Map<String, dynamic>> banners;
   final List<Map<String, dynamic>> noticias;
   final List<Map<String, dynamic>> redes;
@@ -33,6 +34,7 @@ class AppConfig {
     required this.chatSuspensaoHoras,
     required this.chatPalavras,
     required this.linkCompartilhar,
+    required this.anunciosAtivos,
     required this.banners,
     required this.noticias,
     required this.redes,
@@ -52,6 +54,7 @@ class AppConfig {
         chatSuspensaoHoras: int.tryParse((j['chat_suspensao_horas'] ?? '24').toString()) ?? 24,
         chatPalavras: List<String>.from(j['chat_palavras'] ?? []),
         linkCompartilhar: j['link_compartilhar'] ?? '',
+        anunciosAtivos: (j['anuncios'] ?? 'sim').toString() != 'nao',
         banners: List<Map<String, dynamic>>.from(j['banners'] ?? []),
         noticias: List<Map<String, dynamic>>.from(j['noticias'] ?? []),
         redes: List<Map<String, dynamic>>.from(j['redes'] ?? []),
@@ -71,6 +74,7 @@ class AppConfig {
         chatSuspensaoHoras: 24,
         chatPalavras: [],
         linkCompartilhar: '',
+        anunciosAtivos: true,
         banners: [],
         noticias: [],
         redes: [],
