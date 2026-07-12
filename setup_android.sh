@@ -29,15 +29,35 @@ KOTLIN
 # 5b. Despertador: receptores de alarme (disparam mesmo com o app fechado)
 sed -i 's#</application>#    <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" android:exported="false"/>\n        <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="false">\n            <intent-filter>\n                <action android:name="android.intent.action.BOOT_COMPLETED"/>\n                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>\n                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n            </intent-filter>\n        </receiver>\n    </application>#' "$M"
 
-# 5c. Desugaring (exigência do despertador)
+# 5c. Desugaring (exigência do despertador) — bloco anexado, método robusto
 if [ -f android/app/build.gradle.kts ]; then
-  sed -i 's#targetCompatibility = JavaVersion.VERSION_11#targetCompatibility = JavaVersion.VERSION_11\n        isCoreLibraryDesugaringEnabled = true#' android/app/build.gradle.kts
-  echo '' >> android/app/build.gradle.kts
-  echo 'dependencies { coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4") }' >> android/app/build.gradle.kts
+  cat >> android/app/build.gradle.kts <<'GRADLE'
+
+android {
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+GRADLE
 elif [ -f android/app/build.gradle ]; then
-  sed -i 's#targetCompatibility JavaVersion.VERSION_11#targetCompatibility JavaVersion.VERSION_11\n        coreLibraryDesugaringEnabled true#' android/app/build.gradle
-  echo "dependencies { coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4' }" >> android/app/build.gradle
+  cat >> android/app/build.gradle <<'GRADLE'
+
+android {
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+}
+GRADLE
 fi
+echo "Desugaring configurado para o despertador!"
 
 # 6pre. Android mínimo 23 (exigência do Google Mobile Ads)
 if [ -f android/app/build.gradle.kts ]; then
