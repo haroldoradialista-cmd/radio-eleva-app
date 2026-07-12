@@ -298,7 +298,7 @@
         <p class="rotulo-secao">Exemplos: 0h e 30min = meia hora • 1h e 30min = uma hora e meia • 24h e 0min = um dia.</p>
         <label>Palavras bloqueadas adicionais (separe por vírgula)</label>
         <textarea id="cfPalavras" placeholder="palavra1, palavra2, palavra3"></textarea>
-        <button class="botao" onclick="salvarModeracao()">💾 Salvar moderação</button>
+        <button class="botao" onclick="salvarModeracao()">✅ Aplicar e salvar</button>
       </div>
       <div class="cartao">
         <h2>⛔ Ouvintes suspensos <button class="botao mini neutro" onclick="carregarSuspensos()">🔄 Atualizar</button></h2>
@@ -1129,8 +1129,8 @@ async function gerarRelatorio(){
 
 // ================== MODERACAO ==================
 function preencherModeracao(){
-  cfSuspHoras.value = config.chat_suspensao_horas || 24;
-  cfSuspMin.value = config.chat_suspensao_minutos || 0;
+  cfSuspHoras.value = (config.chat_suspensao_horas === undefined || config.chat_suspensao_horas === null) ? 24 : config.chat_suspensao_horas;
+  cfSuspMin.value = (config.chat_suspensao_minutos === undefined || config.chat_suspensao_minutos === null) ? 0 : config.chat_suspensao_minutos;
   cfPalavras.value = (config.chat_palavras || []).join(', ');
 }
 async function salvarModeracao(){
@@ -1140,7 +1140,11 @@ async function salvarModeracao(){
     config.chat_suspensao_horas = 24;
   }
   config.chat_palavras = cfPalavras.value.split(',').map(p=>p.trim()).filter(Boolean);
-  try{ await salvarConfig('Painel: moderacao do chat'); avisar('Moderação salva! 🛡️'); }
+  try{
+    await salvarConfig('Painel: moderacao do chat');
+    avisar(`Moderação aplicada: suspensão de ${config.chat_suspensao_horas}h e ${config.chat_suspensao_minutos}min 🛡️`);
+    preencherModeracao();
+  }
   catch(e){ avisar('Falhou: '+e.message, true); }
 }
 async function carregarSuspensos(){
