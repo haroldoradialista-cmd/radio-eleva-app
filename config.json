@@ -49,16 +49,6 @@
   "programacao": [],
   "enquetes": [
     {
-      "id": "e1783685615936",
-      "pergunta": "Tá Gostando?",
-      "opcoes": [
-        "Sim",
-        "Não"
-      ],
-      "publicar_em": "2026-07-10T09:13",
-      "expirar_em": "2026-07-10T09:15"
-    },
-    {
       "id": "e1783644889281",
       "pergunta": "O que você está achando da nossa programação?",
       "opcoes": [
