@@ -35,16 +35,22 @@ bool contemPalavraOfensiva(String texto, List<String> extras) {
     ..._listaBase,
     ...extras.map((e) => normalizar(e.trim())).where((e) => e.isNotEmpty),
   };
-  final tokens = normalizar(texto)
-      .split(RegExp(r'[^a-z]+'))
-      .where((t) => t.isNotEmpty);
+  final norm = normalizar(texto);
+  final tokens =
+      norm.split(RegExp(r'[^a-z]+')).where((t) => t.isNotEmpty);
+  // 1. Palavra exata (evita punir inocentes: "deputado" não contém "puta")
   for (final t in tokens) {
     if (bloqueadas.contains(t)) return true;
   }
-  // pega tentativas de disfarce com espaços/pontos (ex.: p.o.r.r.a)
-  final grudado = normalizar(texto).replaceAll(RegExp(r'[^a-z]'), '');
+  // 2. Disfarces com separadores (p.o.r.r.a / p o r r a / p-o-r-r-a):
+  //    exige que haja separador entre as letras e fronteira de palavra,
+  //    para nunca acusar palavras maiores que apenas contêm o termo.
   for (final p in bloqueadas) {
-    if (p.length >= 4 && grudado.contains(p)) return true;
+    if (p.length < 4) continue;
+    final padrao = p.split('').join('[^a-z]{1,3}');
+    if (RegExp('(^|[^a-z])' + padrao + r'($|[^a-z])').hasMatch(norm)) {
+      return true;
+    }
   }
   return false;
 }
