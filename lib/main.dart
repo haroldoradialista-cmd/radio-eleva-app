@@ -66,19 +66,20 @@ class TelaPrincipal extends StatefulWidget {
 class _TelaPrincipalState extends State<TelaPrincipal> {
   int _abaAtual = 0;
 
-  final _paginas = [
-    HomePage(),
-    ChatPage(),
-    PromocoesPage(),
-    ProgramacaoPage(),
-    PedidosPage(),
-    MenuPage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    // Recriadas a cada build: garante que TODAS as abas troquem de tema
+    // juntas (fundo, textos e cartões), sem perder o estado interno.
+    final paginas = [
+      HomePage(),
+      ChatPage(),
+      PromocoesPage(),
+      ProgramacaoPage(),
+      PedidosPage(),
+      MenuPage(),
+    ];
     return Scaffold(
-      body: IndexedStack(index: _abaAtual, children: _paginas),
+      body: IndexedStack(index: _abaAtual, children: paginas),
       bottomNavigationBar: ClipRRect(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(22),
