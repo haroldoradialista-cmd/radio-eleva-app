@@ -1,4 +1,9 @@
+import 'dart:ui' show DartPluginRegistrant;
+import 'package:flutter/widgets.dart';
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -9,12 +14,16 @@ import 'player_service.dart';
 /// mesmo com o app fechado (alarme exato do Android + tela cheia).
 class DespertadorService {
   static final _plugin = FlutterLocalNotificationsPlugin();
-  static const _idAlarme = 1001;
+  static const int idAlarme = 1001;
+  static const _idAlarme = idAlarme;
   static bool _pronto = false;
 
   static Future<void> iniciar() async {
     if (_pronto) return;
     try {
+      try {
+        await AndroidAlarmManager.initialize();
+      } catch (_) {}
       tzdata.initializeTimeZones();
       try {
         final nome = await FlutterTimezone.getLocalTimezone();
@@ -118,10 +127,33 @@ class DespertadorService {
     }
   }
 
+  /// Grava o alarme AUTÔNOMO: na hora, o Android acorda o motor do app
+  /// em segundo plano e a rádio toca sozinha, sem toque do ouvinte.
+  static Future<void> _agendarAutonomo(DateTime quando) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cfg = ConfigService.instancia.config.value;
+      if (cfg.streamUrl.isNotEmpty) {
+        await prefs.setString('desp_stream', cfg.streamUrl);
+      }
+      await AndroidAlarmManager.oneShotAt(
+        quando,
+        idAlarme,
+        despertadorAutonomo,
+        exact: true,
+        wakeup: true,
+        allowWhileIdle: true,
+        alarmClock: true,
+        rescheduleOnReboot: true,
+      );
+    } catch (_) {}
+  }
+
   /// Alarme único em data e hora específicas
   static Future<void> agendarUnico(DateTime quando) async {
     await iniciar();
     await _agendar(tz.TZDateTime.from(quando, tz.local));
+    await _agendarAutonomo(quando);
   }
 
   /// Alarme diário no mesmo horário (TODO DIA)
@@ -134,10 +166,75 @@ class DespertadorService {
       primeiro = primeiro.add(Duration(days: 1));
     }
     await _agendar(primeiro, repete: DateTimeComponents.time);
+    await _agendarAutonomo(DateTime(primeiro.year, primeiro.month,
+        primeiro.day, primeiro.hour, primeiro.minute));
   }
 
   static Future<void> cancelar() async {
     await iniciar();
     await _plugin.cancel(_idAlarme);
+    try {
+      await AndroidAlarmManager.cancel(idAlarme);
+    } catch (_) {}
+  }
+}
+
+/// ================================================================
+/// MOTOR AUTÔNOMO DO DESPERTADOR
+/// Executado pelo Android em segundo plano na hora exata do alarme,
+/// mesmo com o app fechado e a tela apagada. Liga a rádio sozinho.
+/// ================================================================
+@pragma('vm:entry-point')
+Future<void> despertadorAutonomo() async {
+  AudioPlayer? player;
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    DartPluginRegistrant.ensureInitialized();
+    final prefs = await SharedPreferences.getInstance();
+
+    // Se for TODO DIA, já deixa gravado o alarme de amanhã
+    if ((prefs.getString('desp_tipo') ?? '') == 'diario') {
+      final h = prefs.getInt('desp_hora') ?? 7;
+      final m = prefs.getInt('desp_min') ?? 0;
+      final agora = DateTime.now();
+      final amanha = DateTime(agora.year, agora.month, agora.day, h, m)
+          .add(Duration(days: 1));
+      try {
+        await AndroidAlarmManager.oneShotAt(
+          amanha,
+          DespertadorService.idAlarme,
+          despertadorAutonomo,
+          exact: true,
+          wakeup: true,
+          allowWhileIdle: true,
+          alarmClock: true,
+          rescheduleOnReboot: true,
+        );
+      } catch (_) {}
+    }
+
+    // Liga a rádio com fade in (nasce baixinho e cresce em 30s)
+    final url = prefs.getString('desp_stream') ??
+        'https://sv16.hdradios.net:8516/stream';
+    player = AudioPlayer();
+    await player.setVolume(0.03);
+    await player.setAudioSource(AudioSource.uri(Uri.parse(url)));
+    player.play();
+    for (var i = 1; i <= 30; i++) {
+      await Future.delayed(Duration(seconds: 1));
+      try {
+        await player.setVolume((i / 30).clamp(0.03, 1.0).toDouble());
+      } catch (_) {}
+    }
+
+    // Mantém a rádio despertando por 20 minutos
+    // (se o ouvinte abrir o app nesse meio-tempo, o player principal assume)
+    await Future.delayed(Duration(minutes: 20));
+    await player.stop();
+    await player.dispose();
+  } catch (_) {
+    try {
+      await player?.dispose();
+    } catch (_) {}
   }
 }
