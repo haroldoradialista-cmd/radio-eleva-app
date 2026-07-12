@@ -26,13 +26,22 @@ class PlayerService {
   Timer? _sleepTimer;
   final ValueNotifier<int> sleepRestante = ValueNotifier(0); // minutos; 0 = off
 
+  /// Segundos restantes do sleep timer (0 = desligado)
+  final ValueNotifier<int> sleepSegundos = ValueNotifier(0);
+
   void definirSleep(int minutos) {
     _sleepTimer?.cancel();
+    if (minutos <= 0) {
+      sleepRestante.value = 0;
+      sleepSegundos.value = 0;
+      return;
+    }
     sleepRestante.value = minutos;
-    if (minutos <= 0) return;
-    _sleepTimer = Timer.periodic(const Duration(minutes: 1), (t) {
-      sleepRestante.value = sleepRestante.value - 1;
-      if (sleepRestante.value <= 0) {
+    sleepSegundos.value = minutos * 60;
+    _sleepTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      sleepSegundos.value = sleepSegundos.value - 1;
+      sleepRestante.value = (sleepSegundos.value / 60).ceil();
+      if (sleepSegundos.value <= 0) {
         t.cancel();
         player.stop();
         _carregado = false;

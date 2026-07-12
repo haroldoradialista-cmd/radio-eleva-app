@@ -373,6 +373,70 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ],
                           ),
+
+                          // ===== SLEEP TIMER ATIVO =====
+                          ValueListenableBuilder<int>(
+                            valueListenable:
+                                PlayerService.instancia.sleepSegundos,
+                            builder: (context, seg, _) {
+                              if (seg <= 0) return SizedBox.shrink();
+                              final min = (seg / 60).ceil();
+                              final texto = seg >= 60
+                                  ? '$min ${min == 1 ? 'minuto' : 'minutos'}'
+                                  : '$seg ${seg == 1 ? 'segundo' : 'segundos'}';
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.bedtime_rounded,
+                                      size: 15,
+                                      color: CoresEleva.dourado),
+                                  SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      'Sua rádio desligará em $texto',
+                                      style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: CoresEleva.brancoSuave),
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  GestureDetector(
+                                    onTap: () {
+                                      PlayerService.instancia
+                                          .definirSleep(0);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                        duration: Duration(seconds: 2),
+                                        backgroundColor:
+                                            CoresEleva.azulMedio,
+                                        content: Text(
+                                            'Sleep timer cancelado.'),
+                                      ));
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        border: Border.all(
+                                            color: CoresEleva.dourado,
+                                            width: 1.2),
+                                      ),
+                                      child: Text('CANCELAR',
+                                          style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.5,
+                                              color:
+                                                  CoresEleva.dourado)),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),

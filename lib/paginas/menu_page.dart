@@ -35,6 +35,12 @@ class MenuPage extends StatelessWidget {
                   onTap: () {
                     PlayerService.instancia.definirSleep(m);
                     Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      duration: Duration(seconds: 3),
+                      backgroundColor: CoresEleva.verdeEscuro,
+                      content:
+                          Text('⏰ A Rádio Eleva desligará em $m minutos'),
+                    ));
                   },
                 )),
             ListTile(
