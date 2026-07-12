@@ -8,6 +8,7 @@ import '../widgets/anuncio_banner.dart';
 import '../widgets/enquete_card.dart';
 import '../widgets/login_widget.dart';
 import 'noticias_page.dart';
+import 'despertador_page.dart';
 
 class MenuPage extends StatelessWidget {
   MenuPage({super.key});
@@ -245,6 +246,10 @@ class MenuPage extends StatelessWidget {
                           padding: EdgeInsets.only(top: 8, bottom: 20),
                           children: [EnqueteCard()],
                         ))),
+                _itemMenu(context, Icons.alarm_rounded, 'Despertador',
+                    'Acorde com a Rádio Eleva tocando',
+                    () => _abrirPagina(
+                        context, 'Despertador', DespertadorPage())),
                 _itemMenu(context, Icons.bedtime_rounded, 'Sleep timer',
                     'Desligue a rádio automaticamente',
                     () => _sleep(context)),

@@ -8,7 +8,7 @@ flutter create --org br.com.radioeleva --project-name radio_eleva --platforms an
 M=android/app/src/main/AndroidManifest.xml
 
 # 2. Permissões (internet, áudio em segundo plano e notificações)
-sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <application#' "$M"
+sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>\n    <uses-permission android:name="android.permission.VIBRATE"/>\n    <application#' "$M"
 
 # 3. Serviço de áudio (notificação com play/pause e tocar com tela desligada)
 sed -i 's#</application>#    <service android:name="com.ryanheise.audioservice.AudioService" android:foregroundServiceType="mediaPlayback" android:exported="true">\n            <intent-filter>\n                <action android:name="android.media.browse.MediaBrowserService"/>\n            </intent-filter>\n        </service>\n        <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MEDIA_BUTTON"/>\n            </intent-filter>\n        </receiver>\n    </application>#' "$M"
@@ -25,6 +25,19 @@ import com.ryanheise.audioservice.AudioServiceActivity
 
 class MainActivity : AudioServiceActivity()
 KOTLIN
+
+# 5b. Despertador: receptores de alarme (disparam mesmo com o app fechado)
+sed -i 's#</application>#    <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" android:exported="false"/>\n        <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="false">\n            <intent-filter>\n                <action android:name="android.intent.action.BOOT_COMPLETED"/>\n                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>\n                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n            </intent-filter>\n        </receiver>\n    </application>#' "$M"
+
+# 5c. Desugaring (exigência do despertador)
+if [ -f android/app/build.gradle.kts ]; then
+  sed -i 's#targetCompatibility = JavaVersion.VERSION_11#targetCompatibility = JavaVersion.VERSION_11\n        isCoreLibraryDesugaringEnabled = true#' android/app/build.gradle.kts
+  echo '' >> android/app/build.gradle.kts
+  echo 'dependencies { coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4") }' >> android/app/build.gradle.kts
+elif [ -f android/app/build.gradle ]; then
+  sed -i 's#targetCompatibility JavaVersion.VERSION_11#targetCompatibility JavaVersion.VERSION_11\n        coreLibraryDesugaringEnabled true#' android/app/build.gradle
+  echo "dependencies { coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4' }" >> android/app/build.gradle
+fi
 
 # 6pre. Android mínimo 23 (exigência do Google Mobile Ads)
 if [ -f android/app/build.gradle.kts ]; then

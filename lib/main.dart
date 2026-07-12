@@ -10,6 +10,7 @@ import 'paginas/menu_page.dart';
 import 'servicos/config_service.dart';
 import 'servicos/analytics_service.dart';
 import 'servicos/notificacoes_service.dart';
+import 'servicos/despertador_service.dart';
 import 'servicos/presenca_service.dart';
 import 'servicos/player_service.dart';
 import 'tema.dart';
@@ -23,6 +24,7 @@ Future<void> main() async {
     androidNotificationOngoing: true,
   );
   await NotificacoesService.iniciar();
+  await DespertadorService.iniciar();
   ConfigService.instancia.carregar().then((_) {
     AnalyticsService.registrarAcesso();
     PresencaService.iniciar();
