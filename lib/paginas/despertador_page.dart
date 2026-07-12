@@ -41,13 +41,110 @@ class _DespertadorPageState extends State<DespertadorPage> {
       '${h.hour.toString().padLeft(2, '0')}:${h.minute.toString().padLeft(2, '0')}';
 
   Future<void> _escolherHora() async {
-    final h = await showTimePicker(
+    int h = _hora.hour;
+    int mnt = _hora.minute;
+    await showModalBottomSheet(
       context: context,
-      initialTime: _hora,
-      helpText: 'Horário do despertador',
-      initialEntryMode: TimePickerEntryMode.input, // relógio digital
+      backgroundColor: CoresEleva.azulMedio,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (context) {
+        Widget roda(int total, int inicial, void Function(int) aoMudar) {
+          return SizedBox(
+            width: 84,
+            child: ListWheelScrollView.useDelegate(
+              controller:
+                  FixedExtentScrollController(initialItem: inicial),
+              itemExtent: 46,
+              physics: FixedExtentScrollPhysics(),
+              perspective: 0.004,
+              overAndUnderCenterOpacity: 0.35,
+              onSelectedItemChanged: aoMudar,
+              childDelegate: ListWheelChildLoopingListDelegate(
+                children: List.generate(
+                  total,
+                  (i) => Center(
+                    child: Text(
+                      i.toString().padLeft(2, '0'),
+                      style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: CoresEleva.branco),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Gire para escolher o horário',
+                    style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w800)),
+                SizedBox(height: 6),
+                SizedBox(
+                  height: 170,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // faixa central destacada
+                      Container(
+                        height: 46,
+                        margin: EdgeInsets.symmetric(horizontal: 40),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: CoresEleva.dourado, width: 1.4),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          roda(24, h, (i) => h = i),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text(':',
+                                style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w900,
+                                    color: CoresEleva.dourado)),
+                          ),
+                          roda(60, mnt, (i) => mnt = i),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: CoresEleva.verde,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26)),
+                      textStyle: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w800),
+                    ),
+                    child: Text('CONFIRMAR HORÁRIO'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
-    if (h != null) setState(() => _hora = h);
+    if (mounted) setState(() => _hora = TimeOfDay(hour: h, minute: mnt));
   }
 
   Future<void> _escolherData() async {
@@ -108,8 +205,9 @@ class _DespertadorPageState extends State<DespertadorPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             backgroundColor: Colors.red.shade700,
+            duration: Duration(seconds: 8),
             content: Text(
-                'Não consegui ativar. Verifique a permissão "Alarmes e lembretes" nas configurações do app e tente de novo.')));
+                'Não consegui ativar. Detalhe técnico: ${e.toString().substring(0, e.toString().length > 130 ? 130 : e.toString().length)}')));
       }
     }
   }

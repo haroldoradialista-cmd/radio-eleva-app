@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage> {
           decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
-              final alturaBanner = (c.maxHeight * 0.215).clamp(119.0, 180.0);
+              final alturaBanner = (c.maxHeight * 0.26).clamp(148.0, 208.0);
               return Column(
                 children: [
                   AnuncioBanner(),
