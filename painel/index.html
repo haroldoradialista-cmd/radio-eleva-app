@@ -292,8 +292,10 @@
         <h2>🛡️ Moderação automática</h2>
         <p class="rotulo-secao">O app suspende sozinho quem usar palavras ofensivas. Defina abaixo o tempo da suspensão e acrescente palavras à lista de bloqueio (o app já tem uma lista básica embutida).</p>
         <div class="grade2">
-          <div><label>Tempo de suspensão (horas)</label><input id="cfSuspHoras" type="number" min="1" max="720" placeholder="24"></div>
+          <div><label>Tempo de suspensão — horas</label><input id="cfSuspHoras" type="number" min="0" max="720" placeholder="24"></div>
+          <div><label>Tempo de suspensão — minutos</label><input id="cfSuspMin" type="number" min="0" max="59" placeholder="0"></div>
         </div>
+        <p class="rotulo-secao">Exemplos: 0h e 30min = meia hora • 1h e 30min = uma hora e meia • 24h e 0min = um dia.</p>
         <label>Palavras bloqueadas adicionais (separe por vírgula)</label>
         <textarea id="cfPalavras" placeholder="palavra1, palavra2, palavra3"></textarea>
         <button class="botao" onclick="salvarModeracao()">💾 Salvar moderação</button>
@@ -1128,10 +1130,15 @@ async function gerarRelatorio(){
 // ================== MODERACAO ==================
 function preencherModeracao(){
   cfSuspHoras.value = config.chat_suspensao_horas || 24;
+  cfSuspMin.value = config.chat_suspensao_minutos || 0;
   cfPalavras.value = (config.chat_palavras || []).join(', ');
 }
 async function salvarModeracao(){
-  config.chat_suspensao_horas = parseInt(cfSuspHoras.value) || 24;
+  config.chat_suspensao_horas = parseInt(cfSuspHoras.value) || 0;
+  config.chat_suspensao_minutos = parseInt(cfSuspMin.value) || 0;
+  if(config.chat_suspensao_horas === 0 && config.chat_suspensao_minutos === 0){
+    config.chat_suspensao_horas = 24;
+  }
   config.chat_palavras = cfPalavras.value.split(',').map(p=>p.trim()).filter(Boolean);
   try{ await salvarConfig('Painel: moderacao do chat'); avisar('Moderação salva! 🛡️'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
@@ -1146,7 +1153,10 @@ async function carregarSuspensos(){
     if(!ativos.length){ el.innerHTML = '<p class="rotulo-secao">Nenhum ouvinte suspenso no momento. 👏</p>'; return; }
     el.innerHTML = ativos.map(([uid,v])=>{
       const volta = new Date(v.ate).toLocaleString('pt-BR').slice(0,16);
-      return `<div class="item"><div class="info"><b>${v.nome||'Ouvinte'}</b><span>suspenso até ${volta}</span></div>
+      const coment = (v.msg||'').toString().replace(/</g,'&lt;');
+      return `<div class="item" style="flex-wrap:wrap"><div class="info"><b>${v.nome||'Ouvinte'}</b><span>suspenso até ${volta}</span>
+        ${coment? `<span style="display:block;margin-top:4px;padding:6px 10px;background:#00000033;border-left:3px solid #E6B93F;border-radius:6px">💬 comentário que causou o bloqueio: <i>"${coment}"</i></span>`:'<span style="opacity:.6">💬 (comentário não registrado — bloqueio anterior à v2.1.7)</span>'}
+      </div>
         <button class="botao mini" onclick="liberarSuspenso('${uid}')">✅ Liberar</button></div>`;
     }).join('');
   }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }

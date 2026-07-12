@@ -93,16 +93,20 @@ class _TelaChatState extends State<_TelaChat> {
     } catch (_) {}
   }
 
-  Future<void> _suspender() async {
+  Future<void> _suspender(String comentario) async {
     final cfg = ConfigService.instancia.config.value;
+    var totalMinutos =
+        cfg.chatSuspensaoHoras * 60 + cfg.chatSuspensaoMinutos;
+    if (totalMinutos <= 0) totalMinutos = 24 * 60;
     final ate = DateTime.now().millisecondsSinceEpoch +
-        cfg.chatSuspensaoHoras * 3600 * 1000;
+        totalMinutos * 60 * 1000;
     try {
       await http.put(
         Uri.parse('$_baseRtdb/chat_suspensos/${widget.usuario.uid}.json'),
         body: jsonEncode({
           'nome': widget.usuario.nome,
           'ate': ate,
+          'msg': comentario,
           'quando': DateTime.now().toIso8601String(),
         }),
       );
@@ -146,7 +150,7 @@ class _TelaChatState extends State<_TelaChat> {
     final cfg = ConfigService.instancia.config.value;
     if (contemPalavraOfensiva(texto, cfg.chatPalavras)) {
       _msg.clear();
-      await _suspender();
+      await _suspender(texto);
       return;
     }
     setState(() => _enviando = true);
