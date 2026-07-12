@@ -161,9 +161,28 @@ class MenuPage extends StatelessWidget {
                                       context,
                                       'Sua conta',
                                       SingleChildScrollView(
-                                          child: LoginEleva(
-                                              titulo:
-                                                  'Entre ou crie sua conta'))),
+                                        child:
+                                            ValueListenableBuilder<Usuario?>(
+                                          valueListenable: AuthService
+                                              .instancia.usuario,
+                                          builder: (context, logado, _) {
+                                            if (logado != null) {
+                                              // Logou (Google ou e-mail):
+                                              // fecha e volta ao Menu
+                                              Future.microtask(() {
+                                                if (Navigator.of(context)
+                                                    .canPop()) {
+                                                  Navigator.of(context)
+                                                      .pop();
+                                                }
+                                              });
+                                            }
+                                            return LoginEleva(
+                                                titulo:
+                                                    'Entre ou crie sua conta');
+                                          },
+                                        ),
+                                      )),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: CoresEleva.verde,
                                     foregroundColor: Colors.white,
