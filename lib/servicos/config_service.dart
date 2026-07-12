@@ -94,6 +94,14 @@ class ConfigService {
   ConfigService._();
 
   final ValueNotifier<AppConfig> config = ValueNotifier(AppConfig.padrao());
+  Timer? _autoTimer;
+
+  /// Recarrega o config.json a cada 30s: mudanças feitas no Painel Eleva
+  /// chegam a todas as abas do app automaticamente, sem ação do ouvinte.
+  void iniciarAutoAtualizacao() {
+    _autoTimer?.cancel();
+    _autoTimer = Timer.periodic(Duration(seconds: 30), (_) => carregar());
+  }
 
   Future<void> carregar() async {
     try {
