@@ -332,7 +332,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
                 Border.all(color: CoresEleva.dourado.withOpacity(0.6)),
           ),
           child: Text(
-            'ℹ️ Na hora marcada, a tela do celular acende com a Rádio Eleva e a música começa a tocar. Se o Android pedir permissão de "Alarmes e lembretes" ou de notificação, toque em Permitir. É preciso estar conectado à internet no horário do alarme.',
+            'ℹ️ Na hora marcada, a tela do celular acende com a Rádio Eleva e a música começa a tocar. Permita tudo o que o app pedir ao ativar. IMPORTANTE: se no horário chegar apenas a notificação (sem a rádio abrir sozinha), ative a permissão de tela cheia: Configurações → Aplicativos → Rádio Eleva → Notificações → "Tela cheia" (ou "Acesso especial → Notificações de tela cheia"). Com ela ligada, o despertador acorda você com a rádio tocando. É preciso internet no horário do alarme.',
             style: TextStyle(
                 fontSize: 11.5,
                 height: 1.45,

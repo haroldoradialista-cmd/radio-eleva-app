@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage> {
           decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
-              final alturaBanner = (c.maxHeight * 0.26).clamp(148.0, 208.0);
+              final alturaBanner = (c.maxHeight * 0.245).clamp(140.0, 196.0);
               return Column(
                 children: [
                   AnuncioBanner(),
@@ -203,6 +203,9 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           // Capa da música / foto do programa no ar
                           CapaMusica(
+                            tamanho: (c.maxHeight * 0.30)
+                                .clamp(168.0, 226.0)
+                                .toDouble(),
                               reserva: (noAr?['imagem'] ?? '').toString()),
 
                           Column(

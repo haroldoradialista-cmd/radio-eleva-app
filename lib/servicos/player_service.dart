@@ -29,11 +29,39 @@ class PlayerService {
   /// Segundos restantes do sleep timer (0 = desligado)
   final ValueNotifier<int> sleepSegundos = ValueNotifier(0);
 
+  Timer? _fadeInTimer;
+
+  /// Sobe o volume em rampa suave (usado pelo despertador)
+  void iniciarFadeIn({int duracaoSegundos = 30}) {
+    _fadeInTimer?.cancel();
+    player.setVolume(0.03);
+    var passo = 0;
+    _fadeInTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      passo++;
+      final v = (passo / duracaoSegundos).clamp(0.03, 1.0);
+      player.setVolume(v.toDouble());
+      if (passo >= duracaoSegundos) {
+        t.cancel();
+        player.setVolume(1.0);
+      }
+    });
+  }
+
+  /// Marca que o PRÓXIMO play deve nascer com fade in
+  /// (chamado quando o app é aberto pelo alarme do despertador)
+  void marcarFadeInParaProximoPlay() {
+    player.setVolume(0.03);
+    player.playingStream
+        .firstWhere((tocando) => tocando)
+        .then((_) => iniciarFadeIn());
+  }
+
   void definirSleep(int minutos) {
     _sleepTimer?.cancel();
     if (minutos <= 0) {
       sleepRestante.value = 0;
       sleepSegundos.value = 0;
+      player.setVolume(1.0);
       return;
     }
     sleepRestante.value = minutos;
@@ -41,9 +69,14 @@ class PlayerService {
     _sleepTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       sleepSegundos.value = sleepSegundos.value - 1;
       sleepRestante.value = (sleepSegundos.value / 60).ceil();
+      // Fade out: nos últimos 15 segundos o volume desce suavemente
+      if (sleepSegundos.value > 0 && sleepSegundos.value <= 15) {
+        player.setVolume(sleepSegundos.value / 15);
+      }
       if (sleepSegundos.value <= 0) {
         t.cancel();
         player.stop();
+        player.setVolume(1.0); // volume restaurado para a próxima vez
         _carregado = false;
       }
     });

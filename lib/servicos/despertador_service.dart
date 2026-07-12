@@ -28,6 +28,15 @@ class DespertadorService {
         ),
         onDidReceiveNotificationResponse: (_) => tocarRadio(),
       );
+      // Se o app foi ABERTO pelo alarme (app estava fechado),
+      // o primeiro play nasce com fade in
+      try {
+        final det = await _plugin.getNotificationAppLaunchDetails();
+        if (det?.didNotificationLaunchApp == true &&
+            det?.notificationResponse?.id == _idAlarme) {
+          PlayerService.instancia.marcarFadeInParaProximoPlay();
+        }
+      } catch (_) {}
       _pronto = true;
     } catch (_) {}
   }
@@ -44,6 +53,7 @@ class DespertadorService {
       await PlayerService.instancia
           .carregar(cfg.streamUrl, cfg.nome, cfg.logoUrl);
       await PlayerService.instancia.player.play();
+      PlayerService.instancia.iniciarFadeIn(); // acorda de leve
     } catch (_) {}
   }
 
@@ -53,6 +63,10 @@ class DespertadorService {
           AndroidFlutterLocalNotificationsPlugin>();
       await android?.requestNotificationsPermission();
       await android?.requestExactAlarmsPermission();
+      // Android 14+: permissão especial para acender a tela e abrir o app
+      try {
+        await android?.requestFullScreenIntentPermission();
+      } catch (_) {}
     } catch (_) {}
   }
 
@@ -86,12 +100,21 @@ class DespertadorService {
       );
     }
 
+    // Limpa o alarme anterior antes de reagendar (evita conflito no ATUALIZAR)
+    try {
+      await _plugin.cancel(_idAlarme);
+    } catch (_) {}
     try {
       // Plano A: alarme exato (precisa da permissão "Alarmes e lembretes")
       await tentar(AndroidScheduleMode.exactAllowWhileIdle);
     } catch (_) {
-      // Plano B: alarme comum (dispara com pequena tolerância de minutos)
-      await tentar(AndroidScheduleMode.inexactAllowWhileIdle);
+      try {
+        // Plano B: alarme comum (dispara com pequena tolerância)
+        await tentar(AndroidScheduleMode.inexactAllowWhileIdle);
+      } catch (_) {
+        // Plano C: modo mais simples possível
+        await tentar(AndroidScheduleMode.inexact);
+      }
     }
   }
 
