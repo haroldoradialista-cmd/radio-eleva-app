@@ -9,7 +9,17 @@ class PlayerService {
   static final PlayerService instancia = PlayerService._();
   PlayerService._();
 
-  final AudioPlayer player = AudioPlayer();
+  // Buffer de partida reduzido: o play começa a tocar muito mais rápido
+  final AudioPlayer player = AudioPlayer(
+    audioLoadConfiguration: AudioLoadConfiguration(
+      androidLoadControl: AndroidLoadControl(
+        minBufferDuration: Duration(seconds: 8),
+        maxBufferDuration: Duration(seconds: 30),
+        bufferForPlaybackDuration: Duration(milliseconds: 700),
+        bufferForPlaybackAfterRebufferDuration: Duration(seconds: 2),
+      ),
+    ),
+  );
   bool _carregado = false;
 
   // ----- SLEEP TIMER -----

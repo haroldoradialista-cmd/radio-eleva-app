@@ -94,7 +94,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
         cfg.linkCompartilhar.isNotEmpty ? '\n📲 ${cfg.linkCompartilhar}' : '';
     final texto = Uri.encodeComponent(
         '🎁 Olha essa promoção da ${cfg.nome} que eu achei incrível!\n\n'
-        '"${p['pergunta'] ?? 'Participe!'}"\n\n'
+        '"${p['nome'] ?? p['pergunta'] ?? 'Participe!'}"\n\n'
         'Baixe o app, participe e concorra você também! 🍀$link');
     launchUrl(Uri.parse('https://wa.me/?text=$texto'),
         mode: LaunchMode.externalApplication);
@@ -272,6 +272,8 @@ class _PromocoesPageState extends State<PromocoesPage> {
   Widget _cartaoPromo(
       AppConfig cfg, Map<String, dynamic> promo, Usuario? u) {
     final id = (promo['id'] ?? '').toString();
+    final nomePromo =
+        (promo['nome'] ?? promo['pergunta'] ?? 'Promoção').toString();
     final banner = (promo['imagem'] ?? '').toString();
     final regulamento = (promo['regulamento'] ?? '').toString();
     final contagem = _contagem(promo);
@@ -331,11 +333,22 @@ class _PromocoesPageState extends State<PromocoesPage> {
                     ),
                   ),
 
-                Text((promo['pergunta'] ?? 'Participe!').toString(),
+                Text(nomePromo,
                     style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: CoresEleva.branco)),
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.3,
+                        color: CoresEleva.dourado)),
+                if ((promo['nome'] ?? '').toString().isNotEmpty &&
+                    (promo['pergunta'] ?? '').toString().isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Text(promo['pergunta'].toString(),
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: CoresEleva.branco)),
+                  ),
 
                 // Regulamento
                 if (regulamento.isNotEmpty) ...[
@@ -394,7 +407,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            '🎉 Participação confirmada nesta promoção! Boa sorte — e fique de olho: cada nova promoção tem cadastro próprio.',
+                            '🎉 Participação confirmada na promoção "$nomePromo"! Saiba que cada promoção tem cadastro próprio.',
                             style: TextStyle(
                                 fontSize: 12.5,
                                 height: 1.4,

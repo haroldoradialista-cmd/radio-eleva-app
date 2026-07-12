@@ -219,6 +219,7 @@
         <h2>Nova promoção</h2>
         <label>Banner da promoção (ideal: 1200 x 500 px)</label>
         <input type="file" id="prFoto" accept="image/png,image/jpeg">
+        <label>Nome da promoção</label><input id="prNome" placeholder="Ex.: Qual é a Rádio?">
         <label>Pergunta da promoção</label><input id="prPergunta" placeholder="Ex.: Em que ano a Rádio Eleva nasceu?">
         <label>Resposta — Opção 1</label><input id="prOp1">
         <label>Resposta — Opção 2</label><input id="prOp2">
@@ -628,7 +629,7 @@ let ultimoGanhador = null;
 function preencherSorteio(){
   const sel = document.getElementById('selSorteio');
   if(!sel) return;
-  sel.innerHTML = (config.promocoes||[]).map(p=>`<option value="${p.id}">${p.pergunta}</option>`).join('') || '<option value="">Nenhuma promoção</option>';
+  sel.innerHTML = (config.promocoes||[]).map(p=>`<option value="${p.id}">${p.nome||p.pergunta}</option>`).join('') || '<option value="">Nenhuma promoção</option>';
 }
 async function sortearGanhador(){
   const id = document.getElementById('selSorteio').value;
@@ -646,29 +647,60 @@ async function sortearGanhador(){
     document.getElementById('sorteioContato').textContent = `WhatsApp: ${g.whatsapp||'-'} • Instagram: ${g.instagram||'-'} • E-mail: ${g.email||'-'}`;
     const msg = document.getElementById('sorteioMsg');
     msg.readOnly = true;
-    msg.value = `🎉 PARABÉNS, ${(g.nome||'OUVINTE').toUpperCase()}! 🎉\n\n`+
-`Você é o grande vencedor(a) da promoção "${promo.pergunta||''}" da Rádio Eleva!\n\n`+
-`A sua participação foi sorteada entre todos os ouvintes e a sorte sorriu para você. Que essa conquista chegue com muita alegria e bênçãos!\n\n`+
-`Em breve nossa equipe entrará em contato pelo seu WhatsApp para combinar a entrega do prêmio.\n\n`+
-`Adore • Viva • Eleve\n📻 Rádio Eleva — a sua companhia de fé e música!`;
+    msg.value = `🎉 PARABÉNS, ${(g.nome||'OUVINTE').toUpperCase()} 🎉\n\n`+
+`Você é o(a) grande vencedor(a) da promoção "${promo.nome||promo.pergunta||''}" da Rádio Eleva!\n\n`+
+`Sua participação foi a escolhida entre todos os ouvintes. Receba essa notícia com alegria e gratidão, desejamos que Deus continue abençoando a sua vida e sua família.\n\n`+
+`Em breve, nossa equipe entrará em contato pelo seu WhatsApp para combinar a entrega do seu prêmio.\n\n`+
+`Adore • Viva • Eleve\n📻 Rádio Eleva — inspirando vidas por meio da fé e da boa música.`;
     avisar('Ganhador sorteado! 🏆');
   }catch(e){ avisar('Falhou ao sortear.', true); }
 }
 function baixarParabensPDF(){
   const msg = document.getElementById('sorteioMsg').value;
+  const nomeG = (ultimoGanhador && ultimoGanhador.nome) ? ultimoGanhador.nome : 'Ouvinte';
+  const LOGO = 'https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/assets/logo.png';
+  const corpo = msg.replace(/</g,'&lt;').split('\n').filter(l=>l.trim()!=='').map(l=>{
+    if(l.includes('PARABÉNS')) return '';
+    return `<p>${l}</p>`;
+  }).join('');
   const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><title>Parabéns - Rádio Eleva</title><style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#1a1a2e;padding:40px;text-align:center}
-    .quadro{border:6px double #E6B93F;border-radius:22px;padding:44px;max-width:640px;margin:0 auto}
-    h1{color:#1B7A4B;letter-spacing:1px} .msg{white-space:pre-wrap;font-size:17px;line-height:1.7;text-align:center;margin-top:18px}
-    .rodape{margin-top:30px;color:#0D2B52;font-weight:bold} @media print{.nao-imprimir{display:none}}
+  w.document.write(`<!DOCTYPE html><html><head><title>Parabéns - Rádio Eleva</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body{font-family:'Poppins',Arial,sans-serif;margin:0;padding:30px;
+      background:linear-gradient(160deg,#1D14A8 0%,#0E0857 55%,#060330 100%);color:#fff;text-align:center;min-height:100vh}
+    .quadro{max-width:660px;margin:0 auto;border:4px solid #FFD65A;border-radius:26px;padding:40px 34px;
+      background:rgba(255,255,255,0.05);box-shadow:0 0 40px rgba(255,214,90,.35), inset 0 0 30px rgba(255,214,90,.08);position:relative}
+    .quadro:before{content:'';position:absolute;inset:8px;border:1.5px solid rgba(255,214,90,.5);border-radius:19px;pointer-events:none}
+    img.logo{width:130px;height:130px;object-fit:contain;border-radius:24px;margin-bottom:6px;
+      filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))}
+    .fest{font-size:30px;letter-spacing:4px;margin:2px 0}
+    h1{font-family:'Lilita One',cursive;font-size:54px;margin:6px 0 0;color:#FFD65A;
+      text-shadow:0 4px 0 #8a6a00, 0 8px 22px rgba(0,0,0,.55);letter-spacing:2px}
+    h2.nome{font-family:'Lilita One',cursive;font-size:38px;margin:4px 0 16px;color:#fff;
+      text-shadow:0 3px 14px rgba(53,199,51,.55)}
+    .faixa{height:4px;width:70%;margin:10px auto 20px;border-radius:4px;
+      background:linear-gradient(90deg,transparent,#35C733,#FFD65A,#1E9BFF,transparent)}
+    .msg p{font-size:16.5px;line-height:1.75;margin:10px 0;color:#F2F0FF}
+    .msg p:nth-last-child(2){font-weight:800;letter-spacing:3px;color:#FFD65A;margin-top:22px}
+    .msg p:last-child{font-weight:600;color:#BFE3FF}
+    .data{margin-top:22px;font-size:12.5px;color:#9A93D9}
+    .nao-imprimir{text-align:center;margin-top:26px}
+    .nao-imprimir button{padding:13px 26px;font-size:16px;border-radius:12px;border:none;
+      background:#35C733;color:#fff;cursor:pointer;font-weight:800}
+    @media print{.nao-imprimir{display:none}body{padding:0}}
   </style></head><body>
   <div class="quadro">
-    <h1>🎉 RÁDIO ELEVA 🎉</h1>
-    <div class="msg">${msg.replace(/</g,'&lt;')}</div>
-    <div class="rodape">${new Date().toLocaleDateString('pt-BR')}</div>
+    <img class="logo" src="${LOGO}" onerror="this.style.display='none'">
+    <div class="fest">🎊 🎉 🎊</div>
+    <h1>PARABÉNS!</h1>
+    <h2 class="nome">${nomeG.toUpperCase()}</h2>
+    <div class="faixa"></div>
+    <div class="msg">${corpo}</div>
+    <div class="data">Rádio Eleva • ${new Date().toLocaleDateString('pt-BR')}</div>
   </div>
-  <p class="nao-imprimir" style="margin-top:24px"><button onclick="window.print()" style="padding:12px 24px;font-size:16px;border-radius:10px;border:none;background:#1B7A4B;color:#fff;cursor:pointer">🖨️ Salvar em PDF / Imprimir</button></p>
+  <p class="nao-imprimir"><button onclick="window.print()">📄 Salvar em PDF / Imprimir</button></p>
   </body></html>`);
   w.document.close();
 }
@@ -715,7 +747,7 @@ async function desenharPromos(){
     }catch(e){}
     html += `<div class="item" style="flex-wrap:wrap">
       ${p.imagem? `<img src="${p.imagem}" style="width:84px;height:36px;object-fit:cover;border-radius:8px">`:''}
-      <div class="info"><b>${p.pergunta} ${etiquetaAgenda(p)}</b>
+      <div class="info"><b>${p.nome||p.pergunta} ${etiquetaAgenda(p)}</b>
       <span>${p.opcao1} / ${p.opcao2} — <b>${total} participações</b></span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('promocoes',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini" onclick="verParticipacoes('${p.id}')">👥 Ver</button>
@@ -741,20 +773,20 @@ async function verParticipacoes(id){
   }catch(e){ box.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
 }
 async function criarPromocao(){
-  if(!prPergunta.value.trim() || !prOp1.value.trim() || !prOp2.value.trim()){
-    avisar('Preencha a pergunta e as duas opções de resposta.', true); return;
+  if(!prNome.value.trim() || !prPergunta.value.trim() || !prOp1.value.trim() || !prOp2.value.trim()){
+    avisar('Preencha o nome, a pergunta e as duas opções de resposta.', true); return;
   }
   try{
     let imagem = '';
     const arq = document.getElementById('prFoto').files[0];
     if(arq){ avisar('Enviando banner...'); imagem = await subirImagem(arq,'imagens'); }
     config.promocoes = config.promocoes || [];
-    const nova = { id:'p'+Date.now(), pergunta:prPergunta.value.trim(), opcao1:prOp1.value.trim(), opcao2:prOp2.value.trim(), regulamento:prRegulamento.value.trim(), imagem };
+    const nova = { id:'p'+Date.now(), nome:prNome.value.trim(), pergunta:prPergunta.value.trim(), opcao1:prOp1.value.trim(), opcao2:prOp2.value.trim(), regulamento:prRegulamento.value.trim(), imagem };
     if(prInicio.value) nova.publicar_em = prInicio.value;
     if(prFim.value) nova.expirar_em = prFim.value;
     config.promocoes.unshift(nova);
     await salvarConfig('Painel: promocao');
-    prPergunta.value=prOp1.value=prOp2.value=''; prRegulamento.value=''; prInicio.value=''; prFim.value=''; document.getElementById('prFoto').value='';
+    prNome.value=prPergunta.value=prOp1.value=prOp2.value=''; prRegulamento.value=''; prInicio.value=''; prFim.value=''; document.getElementById('prFoto').value='';
     desenharPromos(); avisar('Promoção publicada! 🎁');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
