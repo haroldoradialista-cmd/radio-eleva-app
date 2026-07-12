@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../servicos/auth_service.dart';
@@ -67,6 +68,7 @@ class _TelaChatState extends State<_TelaChat> {
   List<Map<String, dynamic>> _mensagens = [];
   bool _enviando = false;
   int _suspensoAte = 0; // epoch em milissegundos; 0 = livre
+  Timer? _timerSuspensao;
 
   String get _chatUrl => ConfigService.instancia.config.value.chatUrl;
   String get _baseRtdb => _chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
@@ -88,6 +90,7 @@ class _TelaChatState extends State<_TelaChat> {
         final ate = int.tryParse((d['ate'] ?? '0').toString()) ?? 0;
         if (mounted && ate > DateTime.now().millisecondsSinceEpoch) {
           setState(() => _suspensoAte = ate);
+          _iniciarRelogioSuspensao();
         }
       }
     } catch (_) {}
@@ -111,12 +114,37 @@ class _TelaChatState extends State<_TelaChat> {
         }),
       );
     } catch (_) {}
-    if (mounted) setState(() => _suspensoAte = ate);
+    if (mounted) {
+      setState(() => _suspensoAte = ate);
+      _iniciarRelogioSuspensao();
+    }
+  }
+
+  void _iniciarRelogioSuspensao() {
+    _timerSuspensao?.cancel();
+    _timerSuspensao = Timer.periodic(Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      if (_suspensoAte <= DateTime.now().millisecondsSinceEpoch) {
+        t.cancel();
+        setState(() => _suspensoAte = 0); // desbloqueio automático
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: CoresEleva.verdeEscuro,
+            duration: Duration(seconds: 4),
+            content: Text(
+                'Bem-vindo de volta! Seu acesso ao chat foi liberado ✅')));
+      } else {
+        setState(() {}); // atualiza o relógio regressivo
+      }
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _timerSuspensao?.cancel();
     _msg.dispose();
     _scroll.dispose();
     super.dispose();
@@ -180,21 +208,79 @@ class _TelaChatState extends State<_TelaChat> {
       final mm = volta.month.toString().padLeft(2, '0');
       final hh = volta.hour.toString().padLeft(2, '0');
       final mi = volta.minute.toString().padLeft(2, '0');
+      final resta = Duration(milliseconds: _suspensoAte - agora);
+      final rDias = resta.inDays;
+      final rHor = (resta.inHours % 24).toString().padLeft(2, '0');
+      final rMin = (resta.inMinutes % 60).toString().padLeft(2, '0');
+      final rSeg = (resta.inSeconds % 60).toString().padLeft(2, '0');
+      final relogio =
+          rDias > 0 ? '${rDias}d $rHor:$rMin:$rSeg' : '$rHor:$rMin:$rSeg';
+      final retaFinal = resta.inMinutes < 5;
       return Center(
         child: Padding(
           padding: EdgeInsets.all(30),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.block_rounded, size: 64, color: Colors.red.shade400),
+              Icon(
+                  retaFinal
+                      ? Icons.hourglass_bottom_rounded
+                      : Icons.block_rounded,
+                  size: 64,
+                  color: retaFinal
+                      ? CoresEleva.verde
+                      : Colors.red.shade400),
               SizedBox(height: 16),
-              Text('Acesso ao chat suspenso',
-                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+              Text(
+                  retaFinal
+                      ? 'Falta pouco para você voltar!'
+                      : 'Acesso ao chat suspenso',
+                  style:
+                      TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
               SizedBox(height: 10),
               Text(
-                'Detectamos o uso de linguagem imprópria. Seu acesso ao bate-papo foi suspenso automaticamente até $dd/$mm às $hh:$mi.',
+                retaFinal
+                    ? '⏳ Faltam menos de 5 minutos para você voltar a usar o chat. O acesso será liberado automaticamente!'
+                    : 'Detectamos o uso de linguagem imprópria. Seu acesso ao bate-papo foi suspenso até $dd/$mm às $hh:$mi e será liberado automaticamente.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: CoresEleva.brancoSuave, height: 1.5),
+              ),
+              SizedBox(height: 22),
+              Container(
+                padding:
+                    EdgeInsets.symmetric(horizontal: 26, vertical: 14),
+                decoration: BoxDecoration(
+                  color: CoresEleva.azulMedio,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                      color: retaFinal
+                          ? CoresEleva.verde
+                          : CoresEleva.dourado,
+                      width: 2),
+                ),
+                child: Column(
+                  children: [
+                    Text('LIBERAÇÃO EM',
+                        style: TextStyle(
+                            fontSize: 10,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.w800,
+                            color: CoresEleva.textoFraco)),
+                    SizedBox(height: 4),
+                    Text(
+                      relogio,
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                        color: retaFinal
+                            ? CoresEleva.verde
+                            : CoresEleva.dourado,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
