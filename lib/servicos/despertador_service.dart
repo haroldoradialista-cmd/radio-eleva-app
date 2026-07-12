@@ -70,19 +70,35 @@ class DespertadorService {
         ),
       );
 
+  static Future<void> _agendar(tz.TZDateTime quando,
+      {DateTimeComponents? repete}) async {
+    Future<void> tentar(AndroidScheduleMode modo) {
+      return _plugin.zonedSchedule(
+        _idAlarme,
+        '⏰ Bom dia! Hora de despertar',
+        'A Rádio Eleva já está no ar para você. Toque para ouvir! 🎶',
+        quando,
+        _detalhes,
+        androidScheduleMode: modo,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: repete,
+      );
+    }
+
+    try {
+      // Plano A: alarme exato (precisa da permissão "Alarmes e lembretes")
+      await tentar(AndroidScheduleMode.exactAllowWhileIdle);
+    } catch (_) {
+      // Plano B: alarme comum (dispara com pequena tolerância de minutos)
+      await tentar(AndroidScheduleMode.inexactAllowWhileIdle);
+    }
+  }
+
   /// Alarme único em data e hora específicas
   static Future<void> agendarUnico(DateTime quando) async {
     await iniciar();
-    await _plugin.zonedSchedule(
-      _idAlarme,
-      '⏰ Bom dia! Hora de despertar',
-      'A Rádio Eleva já está no ar para você. Toque para ouvir! 🎶',
-      tz.TZDateTime.from(quando, tz.local),
-      _detalhes,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+    await _agendar(tz.TZDateTime.from(quando, tz.local));
   }
 
   /// Alarme diário no mesmo horário (TODO DIA)
@@ -94,17 +110,7 @@ class DespertadorService {
     if (primeiro.isBefore(agora)) {
       primeiro = primeiro.add(Duration(days: 1));
     }
-    await _plugin.zonedSchedule(
-      _idAlarme,
-      '⏰ Bom dia! Hora de despertar',
-      'A Rádio Eleva já está no ar para você. Toque para ouvir! 🎶',
-      primeiro,
-      _detalhes,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+    await _agendar(primeiro, repete: DateTimeComponents.time);
   }
 
   static Future<void> cancelar() async {

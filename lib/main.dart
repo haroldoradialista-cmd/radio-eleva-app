@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'paginas/home_page.dart';
 import 'paginas/programacao_page.dart';
@@ -51,6 +52,13 @@ class RadioElevaApp extends StatelessWidget {
         return MaterialApp(
           title: 'Rádio Eleva',
           debugShowCheckedModeBanner: false,
+          locale: Locale('pt', 'BR'),
+          supportedLocales: [Locale('pt', 'BR')],
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           theme: temaEleva(),
           home: TelaPrincipal(),
         );

@@ -45,6 +45,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
       context: context,
       initialTime: _hora,
       helpText: 'Horário do despertador',
+      initialEntryMode: TimePickerEntryMode.input, // relógio digital
     );
     if (h != null) setState(() => _hora = h);
   }
@@ -62,6 +63,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
   }
 
   Future<void> _ativar() async {
+    try {
     await DespertadorService.pedirPermissoes();
     String resumo;
     if (_tipo == 'diario') {
@@ -102,17 +104,28 @@ class _DespertadorPageState extends State<DespertadorPage> {
           backgroundColor: CoresEleva.verdeEscuro,
           content: Text('⏰ Despertador ativado: $resumo')));
     }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.red.shade700,
+            content: Text(
+                'Não consegui ativar. Verifique a permissão "Alarmes e lembretes" nas configurações do app e tente de novo.')));
+      }
+    }
   }
 
   Future<void> _desativar() async {
-    await DespertadorService.cancelar();
+    try {
+      await DespertadorService.cancelar();
+    } catch (_) {}
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('desp_ativo', false);
+    await prefs.setString('desp_resumo', '');
     if (mounted) {
       setState(() => _ativo = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: CoresEleva.azulMedio,
-          content: Text('Despertador desativado.')));
+          content: Text('Despertador desativado. ✅')));
     }
   }
 
