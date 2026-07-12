@@ -73,31 +73,11 @@ cat > android/app/proguard-rules.pro <<'PROGUARD'
 }
 PROGUARD
 
+# Injeta a regra DENTRO do bloco release existente (sem criar novo buildTypes)
 if [ -f android/app/build.gradle.kts ]; then
-  cat >> android/app/build.gradle.kts <<'GRADLE'
-
-android {
-    buildTypes {
-        release {
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-}
-GRADLE
+  sed -i 's#signingConfig = signingConfigs.getByName("debug")#signingConfig = signingConfigs.getByName("debug")\n            proguardFiles(\n                getDefaultProguardFile("proguard-android-optimize.txt"),\n                "proguard-rules.pro"\n            )#' android/app/build.gradle.kts
 elif [ -f android/app/build.gradle ]; then
-  cat >> android/app/build.gradle <<'GRADLE'
-
-android {
-    buildTypes {
-        release {
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-}
-GRADLE
+  sed -i 's#signingConfig signingConfigs.debug#signingConfig signingConfigs.debug\n            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"#' android/app/build.gradle
 fi
 echo "Regras do compactador aplicadas (despertador protegido)!"
 
