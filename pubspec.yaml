@@ -1,7 +1,7 @@
 name: radio_eleva
 description: Aplicativo oficial da Radio Eleva
 publish_to: 'none'
-version: 2.2.1+29
+version: 2.2.2+30
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -20,7 +20,7 @@ dependencies:
   share_plus: ^10.0.2
   flutter_local_notifications: ^17.2.4
   timezone: ^0.9.4
-  flutter_timezone: ^2.1.0
+  flutter_timezone: ^3.0.1
   google_mobile_ads: ^5.2.0
 
 dev_dependencies:
