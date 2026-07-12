@@ -24,8 +24,9 @@ Future<void> main() async {
     androidNotificationChannelName: 'Rádio Eleva',
     androidNotificationOngoing: true,
   );
-  await NotificacoesService.iniciar();
-  await DespertadorService.iniciar();
+  // Tarefas secundárias em segundo plano: NUNCA seguram a abertura do app
+  NotificacoesService.iniciar().catchError((_) {});
+  DespertadorService.iniciar().catchError((_) {});
   ConfigService.instancia.carregar().then((_) {
     ConfigService.instancia.iniciarAutoAtualizacao();
     AnalyticsService.registrarAcesso();

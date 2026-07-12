@@ -22,8 +22,11 @@ class DespertadorService {
     }
     // Handoff: se o despertador nativo estiver tocando quando o app abre,
     // ele para na hora e o player principal assume — sem áudio duplo.
+    // (com prazo máximo: jamais segura a abertura do app)
     try {
-      await _canal.invokeMethod('parar');
+      await _canal
+          .invokeMethod('parar')
+          .timeout(Duration(seconds: 3));
     } catch (_) {}
   }
 
@@ -46,7 +49,7 @@ class DespertadorService {
     await _canal.invokeMethod('agendar', {
       'millis': quando.millisecondsSinceEpoch,
       'diario': diario,
-    });
+    }).timeout(Duration(seconds: 5));
   }
 
   /// Alarme único em data e hora específicas
@@ -64,10 +67,10 @@ class DespertadorService {
 
   static Future<void> cancelar() async {
     try {
-      await _canal.invokeMethod('cancelar');
+      await _canal.invokeMethod('cancelar').timeout(Duration(seconds: 3));
     } catch (_) {}
     try {
-      await _canal.invokeMethod('parar');
+      await _canal.invokeMethod('parar').timeout(Duration(seconds: 3));
     } catch (_) {}
   }
 }
