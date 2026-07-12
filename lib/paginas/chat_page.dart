@@ -281,10 +281,10 @@ class _TelaChatState extends State<_TelaChat> {
           margin: EdgeInsets.fromLTRB(12, 10, 12, 0),
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
-            color: CoresEleva.dourado.withOpacity(0.12),
+            color: CoresEleva.avisoFundo,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: CoresEleva.dourado.withOpacity(0.5), width: 1),
+                color: CoresEleva.dourado.withOpacity(0.6), width: 1),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,7 +297,8 @@ class _TelaChatState extends State<_TelaChat> {
                   style: TextStyle(
                       fontSize: 10.5,
                       height: 1.35,
-                      color: CoresEleva.brancoSuave),
+                      fontWeight: FontWeight.w600,
+                      color: CoresEleva.avisoTexto),
                 ),
               ),
             ],

@@ -37,11 +37,17 @@ class CoresEleva {
   static Color get branco =>
       escuro ? Colors.white : const Color(0xFF131046);
   static Color get brancoSuave =>
-      escuro ? const Color(0xFFE9E7FF) : const Color(0xFF2C2866);
+      escuro ? const Color(0xFFE9E7FF) : const Color(0xFF201C4E);
   static Color get textoFraco =>
-      escuro ? Colors.white60 : const Color(0xFF6A678F);
+      escuro ? Colors.white60 : const Color(0xFF474371);
   static Color get borda =>
-      escuro ? Colors.white24 : const Color(0x22131046);
+      escuro ? Colors.white24 : const Color(0x3D131046);
+  // Aviso destacado (ex.: aviso do chat público)
+  static Color get avisoFundo =>
+      escuro ? const Color(0xFFFFD65A).withOpacity(0.12)
+             : const Color(0xFFFFF1C9);
+  static Color get avisoTexto =>
+      escuro ? const Color(0xFFE9E7FF) : const Color(0xFF4A3800);
   static Color get navFundo =>
       escuro ? const Color(0xFF0A053F) : Colors.white;
 
