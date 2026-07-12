@@ -59,6 +59,48 @@ GRADLE
 fi
 echo "Desugaring configurado para o despertador!"
 
+# 5d. Lista de peças intocáveis do compactador (cura do "Missing type parameter")
+cat > android/app/proguard-rules.pro <<'PROGUARD'
+# Despertador (flutter_local_notifications) — não raspar as peças de gravação de alarmes
+-keep class com.dexterous.** { *; }
+-keep class com.google.gson.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+-keepclassmembers,allowobfuscation class * {
+  @com.google.gson.annotations.SerializedName <fields>;
+}
+PROGUARD
+
+if [ -f android/app/build.gradle.kts ]; then
+  cat >> android/app/build.gradle.kts <<'GRADLE'
+
+android {
+    buildTypes {
+        release {
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+}
+GRADLE
+elif [ -f android/app/build.gradle ]; then
+  cat >> android/app/build.gradle <<'GRADLE'
+
+android {
+    buildTypes {
+        release {
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+GRADLE
+fi
+echo "Regras do compactador aplicadas (despertador protegido)!"
+
 # 6pre. Android mínimo 23 (exigência do Google Mobile Ads)
 if [ -f android/app/build.gradle.kts ]; then
   sed -i 's#minSdk = flutter.minSdkVersion#minSdk = 23#' android/app/build.gradle.kts
