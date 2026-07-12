@@ -74,7 +74,18 @@
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783819631594_tarde_total_300kb.png"
     }
   ],
-  "enquetes": [],
+  "enquetes": [
+    {
+      "id": "e1783868828768",
+      "pergunta": "📖 À luz da Bíblia, um cristão pode consumir bebida alcoólica com moderação, sem cometer pecado?",
+      "opcoes": [
+        "Sim",
+        "Não"
+      ],
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783868825297_ChatGPTImage12dejul.de202612_06_28.png",
+      "publicar_em": "2026-07-12T12:08"
+    }
+  ],
   "promocoes": [
     {
       "id": "p1783816645723",
