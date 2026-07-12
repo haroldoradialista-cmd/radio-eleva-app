@@ -103,7 +103,7 @@
       "publicar_em": "2026-07-10T21:23"
     }
   ],
-  "chat_suspensao_horas": 24,
+  "chat_suspensao_horas": 0,
   "chat_palavras": [
     "porra",
     "merda",
@@ -243,5 +243,5 @@
     "arrombar",
     "encher o saco"
   ],
-  "chat_suspensao_minutos": 0
+  "chat_suspensao_minutos": 30
 }
