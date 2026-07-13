@@ -21,6 +21,8 @@ class _CapaMusicaState extends State<CapaMusica> {
   Timer? _debounce;
   String _ultimaBusca = '';
   String? _capaUrl;
+  String _musica = '';
+  String _interprete = '';
 
   @override
   void initState() {
@@ -29,6 +31,19 @@ class _CapaMusicaState extends State<CapaMusica> {
       final titulo = icy?.info?.title?.trim() ?? '';
       if (titulo.isEmpty || titulo == _ultimaBusca) return;
       _ultimaBusca = titulo;
+      // O padrão do streaming é "Intérprete - Música"
+      final partes = titulo.split(' - ');
+      if (mounted) {
+        setState(() {
+          if (partes.length >= 2) {
+            _interprete = partes.first.trim();
+            _musica = partes.sublist(1).join(' - ').trim();
+          } else {
+            _interprete = '';
+            _musica = titulo.trim();
+          }
+        });
+      }
       _debounce?.cancel();
       _debounce = Timer(Duration(milliseconds: 900), () => _buscar(titulo));
     });
@@ -86,22 +101,97 @@ class _CapaMusicaState extends State<CapaMusica> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(17),
-        child: url == null
-            ? Container(
-                color: CoresEleva.azulMedio,
-                padding: EdgeInsets.all(24),
-                child: Image.asset('assets/logo.png', fit: BoxFit.contain),
-              )
-            : Image.network(
-                url,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: CoresEleva.azulMedio,
-                  padding: EdgeInsets.all(24),
-                  child:
-                      Image.asset('assets/logo.png', fit: BoxFit.contain),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            url == null
+                ? Container(
+                    color: CoresEleva.azulMedio,
+                    padding: EdgeInsets.all(24),
+                    child:
+                        Image.asset('assets/logo.png', fit: BoxFit.contain),
+                  )
+                : Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: CoresEleva.azulMedio,
+                      padding: EdgeInsets.all(24),
+                      child: Image.asset('assets/logo.png',
+                          fit: BoxFit.contain),
+                    ),
+                  ),
+            // Faixa com o nome da música e do intérprete (estilo player)
+            if (_musica.isNotEmpty)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(12, 26, 12, 10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.72),
+                        Colors.black.withOpacity(0.88),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.music_note_rounded,
+                              size: 14, color: Color(0xFFFFD65A)),
+                          SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _musica,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                      blurRadius: 6,
+                                      color: Colors.black87)
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_interprete.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(left: 18, top: 1),
+                          child: Text(
+                            _interprete,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFE9E7FF),
+                              shadows: [
+                                Shadow(
+                                    blurRadius: 6, color: Colors.black87)
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
+          ],
+        ),
       ),
     );
   }
