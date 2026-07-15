@@ -189,6 +189,17 @@
         <div id="listaEnquetes"></div>
       </div>
       <div class="cartao">
+        <h2>🔴 Resultado da enquete — AO VIVO</h2>
+        <label>Enquete</label>
+        <select id="selResEnquete"></select>
+        <div class="grade2">
+          <div><label>🗓️ De (data e hora) — opcional</label><input type="datetime-local" id="resDe_enq"></div>
+          <div><label>🗓️ Até (data e hora) — opcional</label><input type="datetime-local" id="resAte_enq"></div>
+        </div>
+        <button class="botao" onclick="exibirResultadoEnquete()">📊 EXIBIR RESULTADO</button>
+        <p class="rotulo-secao">Abre o placar em nova janela com atualização automática a cada 10 segundos — acompanhe a votação do app em tempo real.</p>
+      </div>
+      <div class="cartao">
         <h2>📊 Relatório de cliques — Enquetes</h2>
         <label>Enquete</label>
         <select id="selRel_enquetes"><option value="__todos__">TODOS</option></select>
@@ -415,6 +426,15 @@
     <!-- VOTOS -->
     <section id="sec-votos" class="oculto">
       <div class="cartao">
+        <h2>📊 Relatório de pedidos musicais</h2>
+        <div class="grade2">
+          <div><label>🗓️ De (data e hora)</label><input type="datetime-local" id="relDe_pedidos"></div>
+          <div><label>🗓️ Até (data e hora)</label><input type="datetime-local" id="relAte_pedidos"></div>
+        </div>
+        <button class="botao" onclick="gerarRelatorioPedidos()">📊 GERAR RELATÓRIO DE PEDIDOS</button>
+        <p class="rotulo-secao">Abre em nova janela com: 🖨️ Imprimir • Word • Excel • PDF • JPEG • PNG</p>
+      </div>
+      <div class="cartao">
         <h2>Ranking de votação das músicas</h2>
         <p class="rotulo-secao">Escolha o período no calendário e gere o ranking real com base nos votos 👍/👎 dos ouvintes no player.</p>
         <div class="grade2">
@@ -492,6 +512,9 @@ async function carregarConfig(){
   const d = await gh('config.json?ref=main&t=' + Date.now());
   configSha = d.sha;
   config = JSON.parse(b64Decodificar(d.content.replace(/\n/g,'')));
+  // preenche os seletores dos relatórios de todas as abas
+  try{ preencherSeletoresRel(); }catch(e){}
+  try{ preencherSelResEnquete(); }catch(e){}
 }
 
 async function salvarConfig(mensagem){
@@ -1116,6 +1139,182 @@ async function gerarRelatorioGenerico(tipo){
     </body></html>`);
     w.document.close();
   }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+
+// ============ RELATORIO DE PEDIDOS MUSICAIS ============
+async function gerarRelatorioPedidos(){
+  try{
+    avisar('Gerando relatório de pedidos...');
+    const de = relDe_pedidos.value ? new Date(relDe_pedidos.value) : null;
+    const ate = relAte_pedidos.value ? new Date(relAte_pedidos.value) : null;
+    const r = await fetch(`${RTDB}/pedidos_musicais.json?t=${Date.now()}`);
+    const d = await r.json() || {};
+    let pedidos = Object.values(d).filter(p=>{
+      const q = p && p.quando ? new Date(p.quando) : null;
+      if(de && (!q || q < de)) return false;
+      if(ate && (!q || q > ate)) return false;
+      return true;
+    }).sort((a,b)=> (b.quando||'').localeCompare(a.quando||''));
+    const ranking = {};
+    pedidos.forEach(p=>{
+      const k = ((p.musica||'—') + (p.interprete? ' — '+p.interprete : '')).trim();
+      ranking[k] = (ranking[k]||0)+1;
+    });
+    const topo = Object.entries(ranking).sort((a,b)=>b[1]-a[1]);
+    const periodo = `${de? de.toLocaleString('pt-BR'):'início'} até ${ate? ate.toLocaleString('pt-BR'):'agora'}`;
+    const linhasRank = topo.map(([k,v],i)=>`<tr><td>${i+1}º</td><td>${k.replace(/</g,'&lt;')}</td><td>${v}</td></tr>`).join('') || '<tr><td colspan=3>Sem dados</td></tr>';
+    const linhasPed = pedidos.map(p=>`<tr><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td><td>${(p.nome||'—').replace(/</g,'&lt;')}</td><td>${(p.musica||'—').replace(/</g,'&lt;')}</td><td>${(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('') || '<tr><td colspan=4>Sem pedidos no período</td></tr>';
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>Relatório de Pedidos - Rádio Eleva</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#14203a;padding:26px}
+      .rel{max-width:780px;margin:0 auto;border:2px solid #E6B93F;border-radius:16px;padding:28px}
+      h1{color:#0D2B52;margin:4px 0} h2{color:#1B7A4B;font-size:16px;margin:20px 0 6px}
+      .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:12px}
+      .total{font-size:40px;font-weight:900;color:#1B7A4B;text-align:center;margin:14px 0}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}
+      th{background:#0D2B52;color:#fff}
+      .rodape{margin-top:18px;font-size:12px;color:#5a6a85;text-align:center}
+      .nao-imprimir{text-align:center;margin-top:20px}
+      .nao-imprimir button{padding:11px 14px;margin:4px;font-size:13.5px;border-radius:10px;border:none;cursor:pointer;color:#fff;font-weight:700}
+      @media print{.nao-imprimir{display:none}}
+    </style></head><body>
+    <div class="rel" id="rel">
+      <div class="topo">
+        <h1>📻 RÁDIO ELEVA</h1>
+        <div>Adore • Viva • Eleve</div>
+        <h2 style="margin-top:10px">RELATÓRIO DE PEDIDOS MUSICAIS</h2>
+        <div>Período: ${periodo}</div>
+      </div>
+      <div class="total">${pedidos.length} pedidos</div>
+      <h2>🏆 Ranking das músicas mais pedidas</h2>
+      <table><tr><th>#</th><th>Música — Intérprete</th><th>Pedidos</th></tr>${linhasRank}</table>
+      <h2>📋 Todos os pedidos do período</h2>
+      <table><tr><th>Quando</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th></tr>${linhasPed}</table>
+      <div class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva</div>
+    </div>
+    <div class="nao-imprimir">
+      <button style="background:#444" onclick="window.print()">🖨️ Imprimir</button>
+      <button style="background:#1B7A4B" onclick="window.print()">📄 PDF</button>
+      <button style="background:#2B579A" onclick="baixarWord()">📘 Word</button>
+      <button style="background:#0D2B52" onclick="baixarCSV()">📊 Excel</button>
+      <button style="background:#A97F10" onclick="baixarImg('jpeg')">🖼️ JPEG</button>
+      <button style="background:#7a4fb5" onclick="baixarImg('png')">🖼️ PNG</button>
+    </div>
+    <script>
+      const dados = ${JSON.stringify(pedidos)};
+      function baixarWord(){
+        const conteudo = '<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>' + document.getElementById('rel').outerHTML + '</body></html>';
+        const blob = new Blob(['\\ufeff'+conteudo], {type:'application/msword'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'relatorio_pedidos_eleva.doc'; a.click();
+      }
+      function baixarCSV(){
+        let csv = 'quando;ouvinte;musica;interprete\\n';
+        dados.forEach(p=>{ csv += [p.quando,p.nome,p.musica,p.interprete].map(x=>(x||'')).join(';')+'\\n'; });
+        const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'relatorio_pedidos_eleva.csv'; a.click();
+      }
+      function baixarImg(tipo){
+        html2canvas(document.getElementById('rel')).then(cv=>{
+          const a = document.createElement('a');
+          a.href = cv.toDataURL('image/'+tipo, 0.95);
+          a.download = 'relatorio_pedidos_eleva.'+(tipo==='jpeg'?'jpg':'png'); a.click();
+        });
+      }
+    <\/script>
+    </body></html>`);
+    w.document.close();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ============ PLACAR AO VIVO DA ENQUETE ============
+function preencherSelResEnquete(){
+  const sel = document.getElementById('selResEnquete');
+  if(!sel) return;
+  sel.innerHTML = (config.enquetes||[]).map(e=>`<option value="${e.id||e.pergunta}">${(e.pergunta||'Enquete').slice(0,60)}</option>`).join('') || '<option value="">Nenhuma enquete criada</option>';
+}
+function exibirResultadoEnquete(){
+  const id = document.getElementById('selResEnquete').value;
+  if(!id){ avisar('Crie uma enquete primeiro.', true); return; }
+  const enq = (config.enquetes||[]).find(e=>(e.id||e.pergunta)===id) || {};
+  const de = resDe_enq.value || '';
+  const ate = resAte_enq.value || '';
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Resultado ao vivo - Rádio Eleva</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);color:#fff;padding:26px;min-height:100vh;margin:0}
+    .placar{max-width:700px;margin:0 auto;border:2.5px solid #FFD65A;border-radius:20px;padding:30px;background:#ffffff0d}
+    h1{color:#FFD65A;text-align:center;margin:0 0 4px;font-size:22px}
+    .slogan{text-align:center;color:#BDB8F0;font-size:12px;margin-bottom:16px}
+    .pergunta{text-align:center;font-size:19px;font-weight:800;margin-bottom:4px}
+    .periodo{text-align:center;font-size:12px;color:#BDB8F0;margin-bottom:18px}
+    .total{text-align:center;font-size:44px;font-weight:900;color:#35C733;margin:10px 0 20px}
+    .opcao{margin:14px 0}
+    .rotulo{display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-bottom:5px}
+    .trilha{background:#ffffff22;border-radius:12px;height:30px;overflow:hidden}
+    .barra{height:100%;border-radius:12px;background:linear-gradient(90deg,#35C733,#1E9BFF);display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-weight:900;font-size:13px;transition:width .8s ease;min-width:34px}
+    .aovivo{text-align:center;margin-top:20px;font-size:12.5px;color:#9ef59d}
+    .pulso{display:inline-block;width:9px;height:9px;background:#ff4d4d;border-radius:50%;margin-right:6px;animation:p 1.2s infinite}
+    @keyframes p{0%,100%{opacity:1}50%{opacity:.25}}
+    .nao-imprimir{text-align:center;margin-top:18px}
+    .nao-imprimir button{padding:10px 18px;border:none;border-radius:10px;background:#1B7A4B;color:#fff;font-weight:800;cursor:pointer}
+    @media print{.nao-imprimir,.aovivo{display:none}body{background:#0E0857}}
+  </style></head><body>
+  <div class="placar">
+    <h1>📻 RÁDIO ELEVA — RESULTADO DA ENQUETE</h1>
+    <div class="slogan">Adore • Viva • Eleve</div>
+    <div class="pergunta">${(enq.pergunta||'').replace(/</g,'&lt;')}</div>
+    <div class="periodo" id="periodo"></div>
+    <div class="total" id="total">—</div>
+    <div id="opcoes"></div>
+    <div class="aovivo"><span class="pulso"></span>AO VIVO — atualiza a cada 10 segundos • última: <span id="ultima">—</span></div>
+    <div class="nao-imprimir"><button onclick="window.print()">📄 Salvar PDF</button></div>
+  </div>
+  <script>
+    const RTDB = '${RTDB}';
+    const ID = ${JSON.stringify(id)};
+    const ENQ = ${JSON.stringify(enq)};
+    const DE = ${JSON.stringify(de)};
+    const ATE = ${JSON.stringify(ate)};
+    const de = DE ? new Date(DE) : null;
+    const ate = ATE ? new Date(ATE) : null;
+    document.getElementById('periodo').textContent =
+      'Período: ' + (de? de.toLocaleString('pt-BR') : 'início') + ' até ' + (ate? ate.toLocaleString('pt-BR') : 'agora');
+    async function atualizar(){
+      try{
+        const r = await fetch(RTDB + '/enquete_cliques/' + encodeURIComponent(ID) + '.json?t=' + Date.now());
+        const d = await r.json() || {};
+        const votos = Object.values(d).filter(v=>{
+          const q = v && v.quando ? new Date(v.quando) : null;
+          if(de && (!q || q < de)) return false;
+          if(ate && (!q || q > ate)) return false;
+          return true;
+        });
+        const conta = {};
+        votos.forEach(v=>{ const o = v.opcao; conta[o] = (conta[o]||0)+1; });
+        const total = votos.length;
+        document.getElementById('total').textContent = total + (total===1? ' voto' : ' votos');
+        const chaves = Object.keys(conta).sort();
+        const nomes = (o)=> ENQ['opcao'+o] || ('Opção '+o);
+        document.getElementById('opcoes').innerHTML = (chaves.length? chaves : ['1','2']).map(o=>{
+          const v = conta[o]||0;
+          const pct = total? Math.round(v*100/total) : 0;
+          return '<div class="opcao"><div class="rotulo"><span>'+String(nomes(o)).replace(/</g,'&lt;')+'</span><span>'+v+' • '+pct+'%</span></div>'+
+                 '<div class="trilha"><div class="barra" style="width:'+Math.max(pct,4)+'%">'+pct+'%</div></div></div>';
+        }).join('');
+        document.getElementById('ultima').textContent = new Date().toLocaleTimeString('pt-BR');
+      }catch(e){}
+    }
+    atualizar();
+    setInterval(atualizar, 10000);
+  <\/script>
+  </body></html>`);
+  w.document.close();
 }
 
 // ================== ESTATISTICAS ==================
