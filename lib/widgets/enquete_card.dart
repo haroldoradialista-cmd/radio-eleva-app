@@ -18,18 +18,140 @@ class _EnqueteCardState extends State<EnqueteCard> {
   bool _jaVotou = false;
   String _idCarregado = '';
   bool _enviando = false;
+  int _minhaOpcao = -1;
+  Map<int, int> _parcial = {};
+  int _totalVotos = 0;
+  bool _carregandoParcial = false;
 
   String _baseRtdb(AppConfig cfg) =>
       cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
 
-  Future<void> _prepararEnquete(Map<String, dynamic> e) async {
+  Future<void> _prepararEnquete(Map<String, dynamic> e,
+      {bool encerrada = false}) async {
     final id = (e['id'] ?? '').toString();
     if (id == _idCarregado) return;
     _idCarregado = id;
     final prefs = await SharedPreferences.getInstance();
-    final votou = prefs.getInt('enquete_$id') != null;
-    if (mounted && votou != _jaVotou) setState(() => _jaVotou = votou);
+    final escolha = prefs.getInt('enquete_$id');
+    final votou = escolha != null;
     _jaVotou = votou;
+    _minhaOpcao = escolha ?? -1;
+    if (mounted) setState(() {});
+    if (votou || encerrada) _buscarParcial(id);
+  }
+
+  /// Busca a apuração dos votos (usada no resultado parcial e no encerrado)
+  Future<void> _buscarParcial(String id) async {
+    if (_carregandoParcial || id.isEmpty) return;
+    _carregandoParcial = true;
+    try {
+      final cfg = ConfigService.instancia.config.value;
+      final r = await http.get(Uri.parse(
+          '${_baseRtdb(cfg)}/enquete_votos/$id.json?t=${DateTime.now().millisecondsSinceEpoch}'));
+      final d = jsonDecode(r.body);
+      final contagem = <int, int>{};
+      var total = 0;
+      if (d is Map) {
+        d.forEach((_, v) {
+          if (v is Map && v['opcao'] != null) {
+            final o = int.tryParse(v['opcao'].toString());
+            if (o != null) {
+              contagem[o] = (contagem[o] ?? 0) + 1;
+              total++;
+            }
+          }
+        });
+      }
+      if (mounted) {
+        setState(() {
+          _parcial = contagem;
+          _totalVotos = total;
+        });
+      }
+    } catch (_) {}
+    _carregandoParcial = false;
+  }
+
+  /// Barras do resultado (parcial para quem votou, final quando encerrada)
+  Widget _barras(List<String> opcoes, {required bool encerrada}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...List.generate(opcoes.length, (i) {
+          final votos = _parcial[i] ?? 0;
+          final pct = _totalVotos > 0 ? (votos * 100 / _totalVotos) : 0.0;
+          final minha = i == _minhaOpcao;
+          return Padding(
+            padding: EdgeInsets.only(bottom: 7),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (minha)
+                      Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child: Icon(Icons.check_circle_rounded,
+                            size: 13, color: CoresEleva.verde),
+                      ),
+                    Expanded(
+                      child: Text(opcoes[i],
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight:
+                                  minha ? FontWeight.w800 : FontWeight.w600,
+                              color: minha
+                                  ? CoresEleva.verde
+                                  : CoresEleva.brancoSuave)),
+                    ),
+                    Text('$votos • ${pct.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: CoresEleva.dourado)),
+                  ],
+                ),
+                SizedBox(height: 3),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: _totalVotos > 0 ? pct / 100 : 0,
+                    minHeight: 8,
+                    backgroundColor: Colors.white24,
+                    valueColor: AlwaysStoppedAnimation(
+                        minha ? CoresEleva.verde : CoresEleva.dourado),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+        Row(
+          children: [
+            Text(
+                '$_totalVotos ${_totalVotos == 1 ? 'voto' : 'votos'}${encerrada ? ' • resultado final' : ' • parcial'}',
+                style: TextStyle(
+                    fontSize: 11, color: CoresEleva.textoFraco)),
+            Spacer(),
+            GestureDetector(
+              onTap: () => _buscarParcial(_idCarregado),
+              child: Row(
+                children: [
+                  Icon(Icons.refresh_rounded,
+                      size: 13, color: CoresEleva.dourado),
+                  SizedBox(width: 3),
+                  Text('ATUALIZAR',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: CoresEleva.dourado)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   Future<void> _votar(AppConfig cfg, Map<String, dynamic> e, int opcao) async {
@@ -52,6 +174,8 @@ class _EnqueteCardState extends State<EnqueteCard> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('enquete_$id', opcao);
       _jaVotou = true;
+      _minhaOpcao = opcao;
+      await _buscarParcial(id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           duration: Duration(seconds: 2),
@@ -70,11 +194,15 @@ class _EnqueteCardState extends State<EnqueteCard> {
       builder: (context, cfg, _) {
         if (cfg.chatUrl.isEmpty) return SizedBox.shrink();
         final ativas = filtrarAgendados(cfg.enquetes);
-        if (ativas.isEmpty) return SizedBox.shrink();
-        final e = ativas.first;
+        // Se não há enquete no ar, mostra o resultado da última encerrada
+        // que foi marcada no painel para exibir o resultado aos ouvintes.
+        final encerradas = filtrarEncerradasComResultado(cfg.enquetes);
+        final encerrada = ativas.isEmpty && encerradas.isNotEmpty;
+        if (ativas.isEmpty && encerradas.isEmpty) return SizedBox.shrink();
+        final e = ativas.isNotEmpty ? ativas.first : encerradas.last;
         final opcoes = List<String>.from(e['opcoes'] ?? []);
         if (opcoes.isEmpty) return SizedBox.shrink();
-        _prepararEnquete(e);
+        _prepararEnquete(e, encerrada: encerrada);
 
         return Container(
           margin: EdgeInsets.fromLTRB(14, 10, 14, 0),
@@ -102,9 +230,29 @@ class _EnqueteCardState extends State<EnqueteCard> {
                     ),
                   ),
                 ),
+              if (encerrada)
+                Padding(
+                  padding: EdgeInsets.only(bottom: 6),
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: CoresEleva.verde.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: CoresEleva.verde.withOpacity(0.6)),
+                    ),
+                    child: Text('🏁 ENQUETE ENCERRADA — RESULTADO FINAL',
+                        style: TextStyle(
+                            fontSize: 9.5,
+                            letterSpacing: 0.6,
+                            fontWeight: FontWeight.w900,
+                            color: CoresEleva.verde)),
+                  ),
+                ),
               Row(
                 children: [
-                  Icon(Icons.poll_rounded,
+                  Icon(encerrada ? Icons.emoji_events_rounded : Icons.poll_rounded,
                       color: CoresEleva.dourado, size: 18),
                   SizedBox(width: 6),
                   Expanded(
@@ -119,7 +267,9 @@ class _EnqueteCardState extends State<EnqueteCard> {
                 ],
               ),
               SizedBox(height: 8),
-              if (!_jaVotou)
+              if (encerrada)
+                _barras(opcoes, encerrada: true)
+              else if (!_jaVotou)
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
@@ -143,20 +293,27 @@ class _EnqueteCardState extends State<EnqueteCard> {
                   }),
                 )
               else
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.check_circle_rounded,
-                        color: CoresEleva.verde, size: 18),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Você já votou nesta enquete. Obrigado por participar! 🙌',
-                        style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: CoresEleva.brancoSuave),
-                      ),
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle_rounded,
+                            color: CoresEleva.verde, size: 16),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Você já votou. Obrigado por participar! 🙌',
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: CoresEleva.brancoSuave),
+                          ),
+                        ),
+                      ],
                     ),
+                    SizedBox(height: 8),
+                    _barras(opcoes, encerrada: false),
                   ],
                 ),
             ],

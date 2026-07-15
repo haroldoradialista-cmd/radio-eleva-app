@@ -129,6 +129,19 @@ List<Map<String, dynamic>> filtrarAgendados(List<Map<String, dynamic>> itens) {
   }).toList();
 }
 
+/// Enquetes que JÁ SAÍRAM DO AR e estão marcadas para exibir o
+/// resultado aos ouvintes (opção "exibir_resultado" do painel).
+List<Map<String, dynamic>> filtrarEncerradasComResultado(
+    List<Map<String, dynamic>> itens) {
+  final agora = DateTime.now();
+  return itens.where((i) {
+    if ((i['exibir_resultado'] ?? '').toString() != 'sim') return false;
+    final fim = DateTime.tryParse((i['expirar_em'] ?? '').toString());
+    if (fim == null) return false;
+    return agora.isAfter(fim);
+  }).toList();
+}
+
 const List<String> kOrdemDias = [
   'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'
 ];

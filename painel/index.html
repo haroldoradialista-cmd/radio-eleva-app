@@ -76,6 +76,16 @@
     <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarComSenha()">
     <button onclick="entrarComSenha()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
     <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none">Senha incorreta.</p>
+    <p style="margin-top:16px;font-size:12px"><a href="#" onclick="ajudaSenha();return false" style="color:#FFD65A;text-decoration:none">🔑 Esqueceu a senha? / Mudar senha</a></p>
+    <div id="ajudaSenha" style="display:none;margin-top:12px;background:#160f5c;border:1px solid #FFD65A66;border-radius:12px;padding:14px;text-align:left;font-size:12px;color:#E9E7FF;line-height:1.6">
+      <b style="color:#FFD65A">Recuperar ou mudar a senha</b><br><br>
+      A senha fica guardada no arquivo <b>painel/index.html</b> do repositório (linha com <b>SENHA_PAINEL</b>).<br><br>
+      <b>1.</b> Abra o GitHub → pasta <b>painel</b> → <b>index.html</b> → lápis ✏️<br>
+      <b>2.</b> Use <b>Ctrl+F</b> e procure por <b>SENHA_PAINEL</b><br>
+      <b>3.</b> A senha atual está entre aspas — leia ou troque por outra<br>
+      <b>4.</b> <b>Commit changes</b> e aguarde 2 minutos<br><br>
+      Precisa de ajuda? Escreva para <a href="mailto:radioelevagospel@gmail.com?subject=Painel%20Eleva%20-%20Recuperar%20senha" style="color:#35C733;font-weight:800">radioelevagospel@gmail.com</a>
+    </div>
   </div>
 </div>
 
@@ -189,17 +199,6 @@
         <div id="listaEnquetes"></div>
       </div>
       <div class="cartao">
-        <h2>🔴 Resultado da enquete — AO VIVO</h2>
-        <label>Enquete</label>
-        <select id="selResEnquete"></select>
-        <div class="grade2">
-          <div><label>🗓️ De (data e hora) — opcional</label><input type="datetime-local" id="resDe_enq"></div>
-          <div><label>🗓️ Até (data e hora) — opcional</label><input type="datetime-local" id="resAte_enq"></div>
-        </div>
-        <button class="botao" onclick="exibirResultadoEnquete()">📊 EXIBIR RESULTADO</button>
-        <p class="rotulo-secao">Abre o placar em nova janela com atualização automática a cada 10 segundos — acompanhe a votação do app em tempo real.</p>
-      </div>
-      <div class="cartao">
         <h2>📊 Relatório de cliques — Enquetes</h2>
         <label>Enquete</label>
         <select id="selRel_enquetes"><option value="__todos__">TODOS</option></select>
@@ -223,6 +222,11 @@
           <div><label>⏰ Entrar no ar em (opcional)</label><input type="datetime-local" id="eqInicio"></div>
           <div><label>⏰ Sair do ar em (opcional)</label><input type="datetime-local" id="eqFim"></div>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:6px">
+          <input type="checkbox" id="eqExibirResultado" checked style="width:18px;height:18px;cursor:pointer">
+          <span>📊 Exibir o resultado no app quando a enquete sair do ar</span>
+        </label>
+        <p class="rotulo-secao">Marcado: assim que passar do horário de "Sair do ar", os ouvintes veem o resultado final no lugar da enquete. Precisa ter o horário de saída preenchido.</p>
         <button class="botao" onclick="criarEnquete()">➕ Publicar enquete</button>
       </div>
     </section>
@@ -687,10 +691,11 @@ async function criarEnquete(){
   const nova = { id:'e'+Date.now(), pergunta:eqPergunta.value.trim(), opcoes, imagem:imagemEq };
   if(eqInicio.value) nova.publicar_em = eqInicio.value;
   if(eqFim.value) nova.expirar_em = eqFim.value;
+  if(document.getElementById('eqExibirResultado').checked && eqFim.value) nova.exibir_resultado = 'sim';
   config.enquetes.unshift(nova);
   try{
     await salvarConfig('Painel: enquete');
-    eqPergunta.value=eqOp1.value=eqOp2.value=eqOp3.value=eqOp4.value=''; eqInicio.value=''; eqFim.value=''; document.getElementById('eqFoto').value='';
+    eqPergunta.value=eqOp1.value=eqOp2.value=eqOp3.value=eqOp4.value=''; eqInicio.value=''; eqFim.value=''; document.getElementById('eqFoto').value=''; document.getElementById('eqExibirResultado').checked = true;
     desenharEnquetes(); avisar('Enquete publicada! ✅');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
@@ -1523,6 +1528,10 @@ async function gerarRelatorio(){
 
 // ================== LOGIN DO PAINEL ==================
 const SENHA_PAINEL = 'eleva@2026'; // <<< TROQUE AQUI a senha do painel
+function ajudaSenha(){
+  const a = document.getElementById('ajudaSenha');
+  a.style.display = a.style.display === 'none' ? 'block' : 'none';
+}
 function entrarComSenha(){
   const s = document.getElementById('senhaPainel').value;
   if(s === SENHA_PAINEL){
