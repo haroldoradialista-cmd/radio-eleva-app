@@ -73,11 +73,12 @@
   <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:34px 30px;max-width:360px;width:92%;text-align:center">
     <h1 style="color:#FFD65A;font-size:22px;margin-bottom:4px">📻 PAINEL ELEVA</h1>
     <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
-    <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarPainel()">
-    <button onclick="entrarPainel()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
+    <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarComSenha()">
+    <button onclick="entrarComSenha()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
     <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none">Senha incorreta.</p>
   </div>
 </div>
+
 
 <div class="topo">
   <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
@@ -106,7 +107,7 @@
     <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
-    <button class="aba" style="margin-left:auto;background:#7a1b1b;border-color:#ff9a9a" onclick="sairPainel()">🚪 Sair</button>
+    <button class="aba" style="margin-left:auto;background:#7a1b1b;border-color:#ff9a9a" onclick="sairDoPainel()">🚪 Sair</button>
     <button class="aba" data-aba="notif" onclick="trocarAba(this)">🔔 Notificações</button>
     <button class="aba" data-aba="stats" onclick="trocarAba(this)">📈 Estatísticas</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
@@ -744,15 +745,7 @@ function baixarParabensPDF(){
       background:#35C733;color:#fff;cursor:pointer;font-weight:800}
     @media print{.nao-imprimir{display:none}body{padding:0}}
   </style></head><body>
-<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:flex;align-items:center;justify-content:center">
-  <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:34px 30px;max-width:360px;width:92%;text-align:center">
-    <h1 style="color:#FFD65A;font-size:22px;margin-bottom:4px">📻 PAINEL ELEVA</h1>
-    <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
-    <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarPainel()">
-    <button onclick="entrarPainel()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
-    <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none">Senha incorreta.</p>
-  </div>
-</div>
+
   <div class="quadro">
     <img class="logo" src="${LOGO}" onerror="this.style.display='none'">
     <div class="fest">🎊 🎉 🎊</div>
@@ -1281,15 +1274,7 @@ async function gerarRelatorio(){
       .nao-imprimir button{padding:11px 18px;margin:0 6px;font-size:14px;border-radius:10px;border:none;cursor:pointer;color:#fff}
       @media print{.nao-imprimir{display:none}}
     </style></head><body>
-<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:flex;align-items:center;justify-content:center">
-  <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:34px 30px;max-width:360px;width:92%;text-align:center">
-    <h1 style="color:#FFD65A;font-size:22px;margin-bottom:4px">📻 PAINEL ELEVA</h1>
-    <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
-    <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarPainel()">
-    <button onclick="entrarPainel()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
-    <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none">Senha incorreta.</p>
-  </div>
-</div>
+
     <div class="rel" id="rel">
       <div class="topo">
         <h1>📻 RÁDIO ELEVA</h1>
@@ -1339,7 +1324,7 @@ async function gerarRelatorio(){
 
 // ================== LOGIN DO PAINEL ==================
 const SENHA_PAINEL = 'eleva@2026'; // <<< TROQUE AQUI a senha do painel
-function entrarPainel(){
+function entrarComSenha(){
   const s = document.getElementById('senhaPainel').value;
   if(s === SENHA_PAINEL){
     sessionStorage.setItem('painel_logado','sim');
@@ -1348,7 +1333,7 @@ function entrarPainel(){
     document.getElementById('erroLogin').style.display='block';
   }
 }
-function sairPainel(){
+function sairDoPainel(){
   sessionStorage.removeItem('painel_logado');
   location.reload();
 }
