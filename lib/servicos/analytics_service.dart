@@ -7,6 +7,7 @@ import 'config_service.dart';
 class AnalyticsService {
   static bool _registrado = false;
   static String cidade = '', estado = '', pais = '';
+  static String dispositivo = 'Android';
 
   static Future<void> registrarAcesso() async {
     if (_registrado) return;
@@ -48,8 +49,11 @@ class AnalyticsService {
   static Future<void> registrarEvento(
       String colecao, String id, Map<String, dynamic> extras) async {
     try {
+      final cfg = ConfigService.instancia.config.value;
+      if (cfg.chatUrl.isEmpty) return;
+      final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
       await http.post(
-        Uri.parse('$kRtdbUrl/$colecao/$id.json'),
+        Uri.parse('$base/$colecao/$id.json'),
         body: jsonEncode({
           ...extras,
           'cidade': cidade,
