@@ -42,4 +42,23 @@ class AnalyticsService {
       );
     } catch (_) {}
   }
+
+  /// Registra um clique/evento com a localização do ouvinte
+  /// (usado por notícias, enquetes e promoções para os relatórios)
+  static Future<void> registrarEvento(
+      String colecao, String id, Map<String, dynamic> extras) async {
+    try {
+      await http.post(
+        Uri.parse('$kRtdbUrl/$colecao/$id.json'),
+        body: jsonEncode({
+          ...extras,
+          'cidade': cidade,
+          'estado': estado,
+          'pais': pais,
+          'dispositivo': dispositivo,
+          'quando': DateTime.now().toIso8601String(),
+        }),
+      );
+    } catch (_) {}
+  }
 }

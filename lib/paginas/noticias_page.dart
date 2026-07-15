@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
+import '../servicos/analytics_service.dart';
 import '../widgets/anuncio_banner.dart';
 
 class NoticiasPage extends StatelessWidget {
@@ -56,7 +57,13 @@ class NoticiasPage extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => _abrir(context, n),
+        onTap: () {
+          AnalyticsService.registrarEvento('noticia_cliques',
+              (n['id'] ?? n['titulo'] ?? 'noticia').toString(), {
+            'titulo': (n['titulo'] ?? '').toString(),
+          });
+          _abrir(context, n);
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

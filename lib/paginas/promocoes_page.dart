@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
+import '../servicos/analytics_service.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/login_widget.dart';
 import 'pedidos_page.dart' show MaiusculasFormatter;
@@ -131,6 +132,10 @@ class _PromocoesPageState extends State<PromocoesPage> {
           'email': u.email,
           'uid': u.uid,
           'quando': DateTime.now().toIso8601String(),
+          'cidade': AnalyticsService.cidade,
+          'estado': AnalyticsService.estado,
+          'pais': AnalyticsService.pais,
+          'dispositivo': AnalyticsService.dispositivo,
         }),
       );
       final prefs = await SharedPreferences.getInstance();

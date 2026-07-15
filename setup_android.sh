@@ -199,6 +199,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Handler
@@ -218,6 +219,15 @@ class DespertadorAudioService : Service() {
             return START_NOT_STICKY
         }
         criarCanal()
+        // Despertar de verdade: canal de ALARME do celular em 85% do volume
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            val alvo = (maximo * 0.85f).toInt().coerceAtLeast(1)
+            if (am.getStreamVolume(AudioManager.STREAM_ALARM) < alvo) {
+                am.setStreamVolume(AudioManager.STREAM_ALARM, alvo, 0)
+            }
+        } catch (_: Exception) {}
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(4202, notificacao(),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)

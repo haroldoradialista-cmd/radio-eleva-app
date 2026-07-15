@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
+import '../servicos/analytics_service.dart';
 
 /// Cartão de enquete fixo na tela inicial (entre o banner e o player).
 /// Depois de votar, o ouvinte vê a confirmação — os resultados ficam no Painel.
@@ -32,6 +33,11 @@ class _EnqueteCardState extends State<EnqueteCard> {
   }
 
   Future<void> _votar(AppConfig cfg, Map<String, dynamic> e, int opcao) async {
+    AnalyticsService.registrarEvento(
+        'enquete_cliques', (e['id'] ?? 'enquete').toString(), {
+      'pergunta': (e['pergunta'] ?? '').toString(),
+      'opcao': opcao,
+    });
     if (_enviando || _jaVotou) return;
     setState(() => _enviando = true);
     final id = (e['id'] ?? '').toString();

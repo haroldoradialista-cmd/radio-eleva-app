@@ -69,6 +69,15 @@
 </style>
 </head>
 <body>
+<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:34px 30px;max-width:360px;width:92%;text-align:center">
+    <h1 style="color:#FFD65A;font-size:22px;margin-bottom:4px">📻 PAINEL ELEVA</h1>
+    <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
+    <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarPainel()">
+    <button onclick="entrarPainel()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
+    <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none">Senha incorreta.</p>
+  </div>
+</div>
 
 <div class="topo">
   <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
@@ -97,6 +106,7 @@
     <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
+    <button class="aba" style="margin-left:auto;background:#7a1b1b;border-color:#ff9a9a" onclick="sairPainel()">🚪 Sair</button>
     <button class="aba" data-aba="notif" onclick="trocarAba(this)">🔔 Notificações</button>
     <button class="aba" data-aba="stats" onclick="trocarAba(this)">📈 Estatísticas</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
@@ -136,6 +146,17 @@
     <!-- NOTICIAS -->
     <section id="sec-noticias" class="oculto">
       <div class="cartao">
+        <h2>📊 Relatório de cliques — Notícias</h2>
+        <label>Notícia</label>
+        <select id="selRel_noticias"><option value="__todos__">TODOS</option></select>
+        <div class="grade2">
+          <div><label>🗓️ De (data e hora)</label><input type="datetime-local" id="relDe_noticias"></div>
+          <div><label>🗓️ Até (data e hora)</label><input type="datetime-local" id="relAte_noticias"></div>
+        </div>
+        <button class="botao" onclick="gerarRelatorioGenerico('noticias')">📊 Gerar relatório</button>
+        <p class="rotulo-secao">Abre em nova janela com PDF, Excel e JPEG — com país, estado e cidade de cada clique.</p>
+      </div>
+      <div class="cartao">
         <h2>Notícias publicadas</h2>
         <div id="listaNoticias"></div>
       </div>
@@ -165,6 +186,17 @@
         <h2>Enquetes</h2>
         <p class="rotulo-secao">A enquete ativa aparece <b>fixa na tela inicial do app</b>, entre o banner e o player. Use o agendamento para programar quando entra e sai do ar.</p>
         <div id="listaEnquetes"></div>
+      </div>
+      <div class="cartao">
+        <h2>📊 Relatório de cliques — Enquetes</h2>
+        <label>Enquete</label>
+        <select id="selRel_enquetes"><option value="__todos__">TODOS</option></select>
+        <div class="grade2">
+          <div><label>🗓️ De (data e hora)</label><input type="datetime-local" id="relDe_enquetes"></div>
+          <div><label>🗓️ Até (data e hora)</label><input type="datetime-local" id="relAte_enquetes"></div>
+        </div>
+        <button class="botao" onclick="gerarRelatorioGenerico('enquetes')">📊 Gerar relatório</button>
+        <p class="rotulo-secao">Abre em nova janela com PDF, Excel e JPEG — com país, estado e cidade de cada clique.</p>
       </div>
       <div class="cartao">
         <h2>Nova enquete</h2>
@@ -214,6 +246,17 @@
           <button class="botao neutro" onclick="sorteioMsg.readOnly=false;sorteioMsg.focus();avisar('Pode editar a mensagem! ✏️')">✏️ Editar</button>
           <button class="botao" onclick="baixarParabensPDF()">📄 Baixar em PDF</button>
         </div>
+      </div>
+      <div class="cartao">
+        <h2>📊 Relatório de cliques — Promoções</h2>
+        <label>Promoção</label>
+        <select id="selRel_promocoes"><option value="__todos__">TODOS</option></select>
+        <div class="grade2">
+          <div><label>🗓️ De (data e hora)</label><input type="datetime-local" id="relDe_promocoes"></div>
+          <div><label>🗓️ Até (data e hora)</label><input type="datetime-local" id="relAte_promocoes"></div>
+        </div>
+        <button class="botao" onclick="gerarRelatorioGenerico('promocoes')">📊 Gerar relatório</button>
+        <p class="rotulo-secao">Abre em nova janela com PDF, Excel e JPEG — com país, estado e cidade de cada clique.</p>
       </div>
       <div class="cartao">
         <h2>Nova promoção</h2>
@@ -314,7 +357,15 @@
       </div>
       <div class="cartao">
         <h2>Mensagens do chat <button class="botao mini neutro" onclick="carregarChat()">🔄 Atualizar</button></h2>
+        <p class="rotulo-secao">Exibindo apenas as 30 mais recentes (para apagar alguma pontual). A faxina abaixo mantém o chat leve.</p>
         <div id="listaChat"><p class="rotulo-secao">Carregando...</p></div>
+        <div style="border-top:1px solid #ffffff22;margin-top:14px;padding-top:12px">
+          <h2>🧹 Faxina do chat</h2>
+          <p class="rotulo-secao">O chat guarda tudo desde sempre — sem faxina, fica quilométrico e pesado. O app dos ouvintes mostra só as últimas mensagens, então apagar as antigas não muda nada para eles.</p>
+          <button class="botao" onclick="faxinaChat(2)">🧹 Apagar com mais de 2 dias</button>
+          <button class="botao" onclick="faxinaChat(7)">🧹 Apagar com mais de 7 dias</button>
+          <button class="botao perigo" onclick="faxinaChat(0)">🗑️ Apagar TODO o chat</button>
+        </div>
       </div>
     </section>
 
@@ -693,6 +744,15 @@ function baixarParabensPDF(){
       background:#35C733;color:#fff;cursor:pointer;font-weight:800}
     @media print{.nao-imprimir{display:none}body{padding:0}}
   </style></head><body>
+<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:34px 30px;max-width:360px;width:92%;text-align:center">
+    <h1 style="color:#FFD65A;font-size:22px;margin-bottom:4px">📻 PAINEL ELEVA</h1>
+    <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
+    <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarPainel()">
+    <button onclick="entrarPainel()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
+    <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none">Senha incorreta.</p>
+  </div>
+</div>
   <div class="quadro">
     <img class="logo" src="${LOGO}" onerror="this.style.display='none'">
     <div class="fest">🎊 🎉 🎊</div>
@@ -902,7 +962,7 @@ async function loginModerador(){
 async function carregarChat(){
   const el = document.getElementById('listaChat');
   try{
-    const r = await fetch(`${RTDB}/chat.json?orderBy=%22%24key%22&limitToLast=100&t=${Date.now()}`);
+    const r = await fetch(`${RTDB}/chat.json?orderBy=%22%24key%22&limitToLast=30&t=${Date.now()}`);
     const d = await r.json();
     if(!d){ el.innerHTML='<p class="rotulo-secao">Nenhuma mensagem ainda.</p>'; return; }
     const chaves = Object.keys(d).sort().reverse();
@@ -922,6 +982,147 @@ async function apagarMsg(chave){
   const r = await fetch(`${RTDB}/chat/${chave}.json?auth=${modToken}`, { method:'DELETE' });
   if(r.ok){ avisar('Mensagem apagada.'); carregarChat(); }
   else avisar('Sem permissão. Confira as regras do banco.', true);
+}
+
+async function faxinaChat(dias){
+  if(!modToken){ avisar('Faça o login do moderador primeiro (acima).', true); return; }
+  const aviso = dias===0 ? 'Apagar TODAS as mensagens do chat?' : `Apagar todas as mensagens com mais de ${dias} dias?`;
+  if(!confirm(aviso + ' Essa ação não tem volta.')) return;
+  avisar('Fazendo a faxina...');
+  try{
+    if(dias === 0){
+      const r = await fetch(`${RTDB}/chat.json?auth=${modToken}`, { method:'DELETE' });
+      if(!r.ok) throw new Error('sem permissão');
+      avisar('Chat zerado! ✅'); carregarChat(); return;
+    }
+    const r = await fetch(`${RTDB}/chat.json?t=${Date.now()}`);
+    const d = await r.json() || {};
+    const limite = Date.now() - dias*24*3600*1000;
+    const antigas = Object.entries(d).filter(([k,m])=>{
+      const q = m && m.quando ? new Date(m.quando).getTime() : 0;
+      return q < limite;
+    }).map(([k])=>k);
+    if(!antigas.length){ avisar('Nada para apagar nesse período. ✅'); return; }
+    const pacote = {}; antigas.forEach(k=> pacote[k]=null);
+    const r2 = await fetch(`${RTDB}/chat.json?auth=${modToken}`, { method:'PATCH', body: JSON.stringify(pacote) });
+    if(!r2.ok) throw new Error('sem permissão');
+    avisar(`Faxina concluída: ${antigas.length} mensagens antigas apagadas! 🧹`);
+    carregarChat();
+  }catch(e){ avisar('Falhou: '+e.message+' (confira o login do moderador)', true); }
+}
+
+
+// ============ RELATORIOS GENERICOS (noticias, enquetes, promocoes) ============
+const REL_TIPOS = {
+  noticias:  { colecao:'noticia_cliques',      titulo:'CLIQUES EM NOTÍCIAS',      campoId:'__pai__', lista:()=>config.noticias||[],  nomeItem:(x)=>x.titulo||'Notícia', chaveItem:(x)=>x.id||x.titulo },
+  enquetes:  { colecao:'enquete_cliques',      titulo:'VOTOS EM ENQUETES',        campoId:'__pai__', lista:()=>config.enquetes||[],  nomeItem:(x)=>x.pergunta||'Enquete', chaveItem:(x)=>x.id||x.pergunta },
+  promocoes: { colecao:'promo_participacoes',  titulo:'PARTICIPAÇÕES EM PROMOÇÕES', campoId:'__pai__', lista:()=>config.promocoes||[], nomeItem:(x)=>x.nome||x.pergunta||'Promoção', chaveItem:(x)=>x.id }
+};
+function preencherSeletoresRel(){
+  Object.entries(REL_TIPOS).forEach(([tipo, def])=>{
+    const sel = document.getElementById('selRel_'+tipo);
+    if(!sel) return;
+    sel.innerHTML = '<option value="__todos__">TODOS</option>' +
+      def.lista().map(x=>`<option value="${def.chaveItem(x)}">${(def.nomeItem(x)||'').slice(0,60)}</option>`).join('');
+  });
+}
+async function gerarRelatorioGenerico(tipo){
+  const def = REL_TIPOS[tipo];
+  try{
+    avisar('Gerando relatório...');
+    const alvo = document.getElementById('selRel_'+tipo).value;
+    const de = document.getElementById('relDe_'+tipo).value ? new Date(document.getElementById('relDe_'+tipo).value) : null;
+    const ate = document.getElementById('relAte_'+tipo).value ? new Date(document.getElementById('relAte_'+tipo).value) : null;
+    const r = await fetch(`${RTDB}/${def.colecao}.json?t=${Date.now()}`);
+    const d = await r.json() || {};
+    // estrutura: colecao/{idDoItem}/{push} = evento
+    let eventos = [];
+    Object.entries(d).forEach(([idItem, filhos])=>{
+      if(filhos && typeof filhos === 'object'){
+        Object.values(filhos).forEach(ev=>{
+          if(ev && typeof ev === 'object') eventos.push({...ev, __item__: idItem});
+        });
+      }
+    });
+    const nomes = {};
+    def.lista().forEach(x=> nomes[def.chaveItem(x)] = def.nomeItem(x));
+    eventos = eventos.filter(ev=>{
+      if(alvo !== '__todos__' && ev.__item__ !== alvo) return false;
+      const q = ev.quando ? new Date(ev.quando) : null;
+      if(de && (!q || q < de)) return false;
+      if(ate && (!q || q > ate)) return false;
+      return true;
+    });
+    const conta = (campo)=>{
+      const m = {};
+      eventos.forEach(ev=>{ const k = campo==='__item__' ? (nomes[ev.__item__]||ev.__item__||'—') : (ev[campo]||'—'); m[k]=(m[k]||0)+1; });
+      return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+    };
+    const linhas = (pares)=> pares.map(([k,v])=>`<tr><td>${String(k).replace(/</g,'&lt;')}</td><td>${v}</td></tr>`).join('') || '<tr><td colspan=2>Sem dados</td></tr>';
+    const periodo = `${de? de.toLocaleString('pt-BR'):'início'} até ${ate? ate.toLocaleString('pt-BR'):'agora'}`;
+    const nomeAlvo = alvo==='__todos__' ? 'TODOS' : (nomes[alvo]||alvo);
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>Relatório - Rádio Eleva</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+    <style>
+      body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#14203a;padding:26px}
+      .rel{max-width:760px;margin:0 auto;border:2px solid #E6B93F;border-radius:16px;padding:28px}
+      h1{color:#0D2B52;margin:4px 0} h2{color:#1B7A4B;font-size:16px;margin:20px 0 6px}
+      .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:12px}
+      .total{font-size:40px;font-weight:900;color:#1B7A4B;text-align:center;margin:14px 0}
+      table{width:100%;border-collapse:collapse;font-size:13.5px}
+      th,td{border:1px solid #cfd8e6;padding:7px 10px;text-align:left}
+      th{background:#0D2B52;color:#fff}
+      .rodape{margin-top:18px;font-size:12px;color:#5a6a85;text-align:center}
+      .nao-imprimir{text-align:center;margin-top:20px}
+      .nao-imprimir button{padding:11px 18px;margin:0 6px;font-size:14px;border-radius:10px;border:none;cursor:pointer;color:#fff}
+      @media print{.nao-imprimir{display:none}}
+    </style></head><body>
+    <div class="rel" id="rel">
+      <div class="topo">
+        <h1>📻 RÁDIO ELEVA</h1>
+        <div>Adore • Viva • Eleve</div>
+        <h2 style="margin-top:10px">RELATÓRIO DE ${def.titulo}</h2>
+        <div><b>${nomeAlvo}</b> — Período: ${periodo}</div>
+      </div>
+      <div class="total">${eventos.length} registros</div>
+      <h2>Por item</h2>
+      <table><tr><th>Item</th><th>Total</th></tr>${linhas(conta('__item__'))}</table>
+      <h2>Por cidade</h2>
+      <table><tr><th>Cidade</th><th>Total</th></tr>${linhas(conta('cidade'))}</table>
+      <h2>Por estado</h2>
+      <table><tr><th>Estado</th><th>Total</th></tr>${linhas(conta('estado'))}</table>
+      <h2>Por país</h2>
+      <table><tr><th>País</th><th>Total</th></tr>${linhas(conta('pais'))}</table>
+      <h2>Por dispositivo</h2>
+      <table><tr><th>Dispositivo</th><th>Total</th></tr>${linhas(conta('dispositivo'))}</table>
+      <div class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva • Registros antigos podem não ter localização (—)</div>
+    </div>
+    <div class="nao-imprimir">
+      <button style="background:#1B7A4B" onclick="window.print()">📄 Salvar PDF</button>
+      <button style="background:#0D2B52" onclick="baixarCSV()">📊 Excel (CSV)</button>
+      <button style="background:#A97F10" onclick="baixarJPEG()">🖼️ JPEG</button>
+    </div>
+    <script>
+      const dados = ${JSON.stringify(eventos)};
+      function baixarCSV(){
+        let csv = 'item;quando;cidade;estado;pais;dispositivo\\n';
+        dados.forEach(c=>{ csv += [c.__item__,c.quando,c.cidade,c.estado,c.pais,c.dispositivo].map(x=>(x||'')).join(';')+'\\n'; });
+        const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'relatorio_eleva_${tipo}.csv'; a.click();
+      }
+      function baixarJPEG(){
+        html2canvas(document.getElementById('rel')).then(cv=>{
+          const a = document.createElement('a');
+          a.href = cv.toDataURL('image/jpeg', 0.95);
+          a.download = 'relatorio_eleva_${tipo}.jpg'; a.click();
+        });
+      }
+    <\/script>
+    </body></html>`);
+    w.document.close();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
 // ================== ESTATISTICAS ==================
@@ -1080,6 +1281,15 @@ async function gerarRelatorio(){
       .nao-imprimir button{padding:11px 18px;margin:0 6px;font-size:14px;border-radius:10px;border:none;cursor:pointer;color:#fff}
       @media print{.nao-imprimir{display:none}}
     </style></head><body>
+<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:34px 30px;max-width:360px;width:92%;text-align:center">
+    <h1 style="color:#FFD65A;font-size:22px;margin-bottom:4px">📻 PAINEL ELEVA</h1>
+    <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
+    <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarPainel()">
+    <button onclick="entrarPainel()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
+    <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none">Senha incorreta.</p>
+  </div>
+</div>
     <div class="rel" id="rel">
       <div class="topo">
         <h1>📻 RÁDIO ELEVA</h1>
@@ -1125,6 +1335,28 @@ async function gerarRelatorio(){
     </body></html>`);
     w.document.close();
   }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== LOGIN DO PAINEL ==================
+const SENHA_PAINEL = 'eleva@2026'; // <<< TROQUE AQUI a senha do painel
+function entrarPainel(){
+  const s = document.getElementById('senhaPainel').value;
+  if(s === SENHA_PAINEL){
+    sessionStorage.setItem('painel_logado','sim');
+    document.getElementById('telaLogin').style.display='none';
+  } else {
+    document.getElementById('erroLogin').style.display='block';
+  }
+}
+function sairPainel(){
+  sessionStorage.removeItem('painel_logado');
+  location.reload();
+}
+if(sessionStorage.getItem('painel_logado')==='sim'){
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const t = document.getElementById('telaLogin');
+    if(t) t.style.display='none';
+  });
 }
 
 // ================== MODERACAO ==================
