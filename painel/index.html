@@ -97,10 +97,21 @@
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px" onkeydown="if(event.key==='Enter')entrarComSenha()">
       <button onclick="entrarComSenha()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
       <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none"></p>
-      <div style="margin-top:16px;display:flex;gap:14px;justify-content:center;font-size:12px">
+      <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;font-size:12px;flex-wrap:wrap">
         <a href="#" onclick="mostrarCaixa('boxEsqueci');return false" style="color:#FFD65A;text-decoration:none">🔑 Esqueci a senha</a>
         <a href="#" onclick="mostrarCaixa('boxMudar');return false" style="color:#FFD65A;text-decoration:none">🔄 Mudar senha</a>
+        <a href="#" onclick="mostrarCaixa('boxNovo');return false" style="color:#35C733;text-decoration:none;font-weight:800">🆕 Primeiro acesso</a>
       </div>
+    </div>
+
+    <div id="boxNovo" style="display:none;text-align:left">
+      <h2 style="color:#35C733;font-size:15px;margin-bottom:6px">🆕 Primeiro acesso</h2>
+      <p style="color:#BDB8F0;font-size:12px;line-height:1.5;margin-bottom:10px">Use isto só se o painel disser que o seu e-mail ainda não tem senha. Crie a senha do painel aqui.</p>
+      <input type="email" id="novoEmail" placeholder="radioelevagospel@gmail.com" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
+      <input type="password" id="novaSenhaP" placeholder="Crie uma senha (mínimo 6 caracteres)" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px">
+      <button onclick="criarSenhaPainel()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:14px;cursor:pointer">🆕 CRIAR SENHA DO PAINEL</button>
+      <p id="msgNovo" style="font-size:12px;margin-top:10px;line-height:1.5"></p>
+      <p style="margin-top:12px;text-align:center"><a href="#" onclick="mostrarCaixa('boxLogin');return false" style="color:#BDB8F0;font-size:12px;text-decoration:none">← voltar</a></p>
     </div>
 
     <div id="boxEsqueci" style="display:none;text-align:left">
@@ -1647,36 +1658,83 @@ async function gerarRelatorio(){
 }
 
 // ================== LOGIN DO PAINEL (Firebase) ==================
+// Só estes e-mails podem entrar no painel (o app tem cadastro aberto
+// de ouvintes — sem esta trava, qualquer conta do app entraria aqui).
+const EMAILS_PAINEL = ['radioelevagospel@gmail.com'];
 function mostrarCaixa(qual){
-  ['boxLogin','boxEsqueci','boxMudar'].forEach(b=>{
+  ['boxLogin','boxEsqueci','boxMudar','boxNovo'].forEach(b=>{
     const el = document.getElementById(b);
     if(el) el.style.display = (b===qual) ? 'block' : 'none';
   });
 }
 async function entrarComSenha(){
-  const email = document.getElementById('loginEmail').value.trim();
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
   const senha = document.getElementById('loginSenha').value;
   const erro = document.getElementById('erroLogin');
   erro.style.display='none';
-  if(!email || !senha){ erro.textContent='Preencha e-mail e senha.'; erro.style.display='block'; return; }
+  if(!email || !senha){ erro.innerHTML='Preencha e-mail e senha.'; erro.style.display='block'; return; }
+  // trava de segurança: o app tem cadastro aberto de ouvintes, então só
+  // os e-mails da lista abaixo podem entrar no painel
+  if(!EMAILS_PAINEL.includes(email)){
+    erro.innerHTML = 'Este e-mail não tem permissão para o painel.';
+    erro.style.display='block'; return;
+  }
   try{
     const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREKEY}`,{
       method:'POST', body: JSON.stringify({ email, password:senha, returnSecureToken:true })
     });
     const d = await r.json();
     if(!r.ok){
-      erro.textContent = (d.error && d.error.message==='INVALID_LOGIN_CREDENTIALS') ? 'E-mail ou senha incorretos.' : 'Não foi possível entrar. Confira os dados.';
+      const cod = (d.error && d.error.message) || 'DESCONHECIDO';
+      let msg;
+      if(cod.includes('INVALID_LOGIN_CREDENTIALS') || cod.includes('INVALID_PASSWORD')) msg = 'Senha incorreta. Use "🔑 Esqueci a senha" para receber o link por e-mail.';
+      else if(cod.includes('EMAIL_NOT_FOUND')) msg = 'Este e-mail ainda não tem senha de painel. Toque em "🆕 Primeiro acesso" abaixo para criar.';
+      else if(cod.includes('TOO_MANY_ATTEMPTS')) msg = 'Muitas tentativas. Aguarde alguns minutos e tente de novo.';
+      else msg = 'Não foi possível entrar.';
+      erro.innerHTML = msg + '<br><small style="color:#BDB8F0;opacity:.8">código: '+cod+'</small>';
       erro.style.display='block'; return;
     }
-    // login válido: guarda a sessão e já habilita a moderação do chat
     modToken = d.idToken; modUid = d.localId;
     sessionStorage.setItem('painel_logado','sim');
     sessionStorage.setItem('painel_email', email);
     document.getElementById('telaLogin').style.display='none';
     const info = document.getElementById('uidInfo');
     if(info) info.innerHTML = '✅ Logado como <b>'+email+'</b> — código de moderador: <b style="color:var(--ouro)">'+modUid+'</b>';
-  }catch(e){ erro.textContent='Falha de conexão. Tente de novo.'; erro.style.display='block'; }
+  }catch(e){ erro.innerHTML='Falha de conexão. Tente de novo.'; erro.style.display='block'; }
 }
+
+/// Primeiro acesso: cria a senha do painel para o e-mail autorizado
+async function criarSenhaPainel(){
+  const email = document.getElementById('novoEmail').value.trim().toLowerCase();
+  const senha = document.getElementById('novaSenhaP').value;
+  const msg = document.getElementById('msgNovo');
+  if(!EMAILS_PAINEL.includes(email)){
+    msg.style.color='#ff9a9a'; msg.textContent='Este e-mail não tem permissão para o painel.'; return;
+  }
+  if(senha.length < 6){ msg.style.color='#ff9a9a'; msg.textContent='A senha precisa de pelo menos 6 caracteres.'; return; }
+  msg.style.color='#BDB8F0'; msg.textContent='Criando...';
+  try{
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREKEY}`,{
+      method:'POST', body: JSON.stringify({ email, password:senha, returnSecureToken:true })
+    });
+    const d = await r.json();
+    if(!r.ok){
+      const cod = (d.error && d.error.message) || '';
+      if(cod.includes('EMAIL_EXISTS')){
+        msg.style.color='#FFD65A';
+        msg.innerHTML = 'Este e-mail já tem conta. Use <b>🔑 Esqueci a senha</b> para definir uma nova pelo e-mail.';
+      } else {
+        msg.style.color='#ff9a9a';
+        msg.innerHTML = 'Não foi possível criar.<br><small>código: '+cod+'</small>';
+      }
+      return;
+    }
+    msg.style.color='#9ef59d';
+    msg.innerHTML = '✅ Senha criada! Volte e entre com ela.';
+    setTimeout(()=>mostrarCaixa('boxLogin'), 2200);
+  }catch(e){ msg.style.color='#ff9a9a'; msg.textContent='Falha de conexão.'; }
+}
+
 async function recuperarSenha(){
   const email = document.getElementById('recEmail').value.trim();
   const msg = document.getElementById('msgRec');
