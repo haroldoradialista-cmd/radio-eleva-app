@@ -506,9 +506,14 @@
         <p class="rotulo-secao" id="vtResumo" style="margin-top:10px"></p>
       </div>
       <div class="cartao">
-        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-          <button class="botao mini" id="btnTopMais" onclick="modoRanking='mais';desenharRanking()">👍 100 mais curtidas</button>
-          <button class="botao mini neutro" id="btnTopMenos" onclick="modoRanking='menos';desenharRanking()">👎 100 menos curtidas</button>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+          <b style="font-size:13px;color:var(--ouro)">🏆 RANKING DAS MÚSICAS</b>
+          <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="botao mini" style="background:#444" onclick="salvarRanking('imprimir')">🖨️ Imprimir</button>
+            <button class="botao mini" style="background:#2B579A" onclick="salvarRanking('word')">📘 Word</button>
+            <button class="botao mini" style="background:#0D2B52" onclick="salvarRanking('excel')">📊 Excel</button>
+            <button class="botao mini" style="background:#A97F10" onclick="salvarRanking('jpeg')">🖼️ JPEG</button>
+          </span>
         </div>
         <div id="listaVotos"><p class="rotulo-secao">Escolha o período e clique em Gerar ranking.</p></div>
       </div>
@@ -630,6 +635,9 @@ async function desenharBanners(){
       <img src="${b.imagem}">
       <div class="info"><b>Banner ${i+1} ${etiquetaAgenda(b)} • 👆 ${cliquesBanner[(b.id||b.imagem)]||0} cliques</b><span>${b.link||'sem link'}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemBanner(${i})" title="Trocar a imagem sem apagar">🔄</button>
+      ${estaForaDoAr(config.banners[${i}])
+        ? `<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem('banners',${i})" title="Voltar ao ar">▶️</button>`
+        : `<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem('banners',${i})" title="Finalizar agora (continua no painel)">⏹️</button>`}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('banners',${i})" title="Repetir este banner">🔁</button>
       <button class="botao mini perigo" onclick="removerBanner(${i})">🗑️</button>
     </div>`;
@@ -667,6 +675,9 @@ function desenharNoticias(){
       <div class="info"><b>${n.titulo} ${etiquetaAgenda(n)}</b><span>${n.data||''}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('noticias',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini neutro" onclick="editarNoticia(${i})">✏️</button>
+      ${estaForaDoAr(config.noticias[${i}])
+        ? `<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem('noticias',${i})" title="Voltar ao ar">▶️</button>`
+        : `<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem('noticias',${i})" title="Finalizar agora (continua no painel)">⏹️</button>`}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('noticias',${i})" title="Repetir esta notícia">🔁</button>
       <button class="botao mini perigo" onclick="removerNoticia(${i})">🗑️</button>
     </div>`;
@@ -735,6 +746,9 @@ async function desenharEnquetes(){
       <b>${e.pergunta} ${etiquetaAgenda(e)}</b>
       <span>${resultados}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('enquetes',${i})" title="Trocar imagem sem apagar">🔄</button>
+      ${estaForaDoAr(config.enquetes[${i}])
+        ? `<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem('enquetes',${i})" title="Voltar ao ar">▶️</button>`
+        : `<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem('enquetes',${i})" title="Finalizar agora (continua no painel)">⏹️</button>`}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('enquetes',${i})" title="Repetir esta enquete">🔁</button>
       <button class="botao mini perigo" onclick="removerEnquete(${i})">🗑️</button></div>`;
   }
@@ -893,6 +907,9 @@ async function desenharPromos(){
       <span>${p.opcao1} / ${p.opcao2} — <b>${total} participações</b></span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('promocoes',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini" onclick="verParticipacoes('${p.id}')">👥 Ver</button>
+      ${estaForaDoAr(config.promocoes[${i}])
+        ? `<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem('promocoes',${i})" title="Voltar ao ar">▶️</button>`
+        : `<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem('promocoes',${i})" title="Finalizar agora (continua no painel)">⏹️</button>`}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('promocoes',${i})" title="Repetir esta promoção">🔁</button>
       <button class="botao mini perigo" onclick="removerPromo(${i})">🗑️</button>
       <div id="part_${p.id}" style="display:none;width:100%;margin-top:8px"></div>
@@ -998,9 +1015,52 @@ function etiquetaAgenda(item){
   const agora = new Date();
   const ini = item.publicar_em ? new Date(item.publicar_em) : null;
   const fim = item.expirar_em ? new Date(item.expirar_em) : null;
+  if(item.finalizado === 'sim') return '⏹️<small style="color:#ff9a9a">finalizado</small>';
   if(ini && agora < ini) return '⏰<small style="color:#E6B93F">agendado</small>';
   if(fim && agora > fim) return '💤<small style="color:#9FB3CC">expirado</small>';
-  return '';
+  return '🟢<small style="color:#35C733">no ar</small>';
+}
+
+/// Está fora do ar? (finalizado pelo botão ou passou do prazo)
+function estaForaDoAr(item){
+  if(item.finalizado === 'sim') return true;
+  const fim = item.expirar_em ? new Date(item.expirar_em) : null;
+  return !!(fim && new Date() > fim);
+}
+
+// ============ FINALIZAR / VOLTAR AO AR ============
+const _listaDe = { banners:'banners', noticias:'noticias', enquetes:'enquetes', promocoes:'promocoes' };
+const _redesenhaDe = () => ({ banners:desenharBanners, noticias:desenharNoticias, enquetes:desenharEnquetes, promocoes:desenharPromos });
+const _nomeDe = { banners:'banner', noticias:'notícia', enquetes:'enquete', promocoes:'promoção' };
+
+async function finalizarItem(tipo, i){
+  const item = config[_listaDe[tipo]][i];
+  const nome = _nomeDe[tipo];
+  if(!confirm(`Finalizar esta ${nome} agora? Ela sai do ar no app, mas continua aqui no painel — você pode voltar com ela ou apagar quando quiser.`)) return;
+  item.finalizado = 'sim';
+  item.finalizado_em = new Date().toISOString();
+  // sai do ar no app: o horário de término passa a ser agora
+  item.expirar_em = new Date().toISOString().slice(0,16);
+  try{
+    await salvarConfig('Painel: ' + nome + ' finalizada');
+    _redesenhaDe()[tipo]();
+    avisar(`⏹️ ${nome.charAt(0).toUpperCase()+nome.slice(1)} finalizada! Continua guardada no painel.`);
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+async function voltarAoArItem(tipo, i){
+  const item = config[_listaDe[tipo]][i];
+  const nome = _nomeDe[tipo];
+  if(!confirm(`Voltar com esta ${nome} ao ar? Ela volta a aparecer no app agora, sem prazo para sair.`)) return;
+  delete item.finalizado;
+  delete item.finalizado_em;
+  delete item.expirar_em;
+  delete item.publicar_em;
+  try{
+    await salvarConfig('Painel: ' + nome + ' de volta ao ar');
+    _redesenhaDe()[tipo]();
+    avisar(`▶️ ${nome.charAt(0).toUpperCase()+nome.slice(1)} de volta ao ar!`);
+  }catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
 // ================== TEXTOS/REDES ==================
@@ -1772,7 +1832,6 @@ async function liberarSuspenso(uid){
 
 // ================== VOTOS ==================
 let votosBrutos = null;
-let modoRanking = 'mais';
 
 async function carregarVotos(){
   const el = document.getElementById('listaVotos');
@@ -1784,10 +1843,9 @@ async function carregarVotos(){
   }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar os votos.</p>'; }
 }
 
+let rankingAtual = [], rankingResumo = '';
 function desenharRanking(){
   const el = document.getElementById('listaVotos');
-  document.getElementById('btnTopMais').className  = 'botao mini' + (modoRanking==='mais' ? '' : ' neutro');
-  document.getElementById('btnTopMenos').className = 'botao mini' + (modoRanking==='menos' ? '' : ' neutro');
   if(!votosBrutos){ el.innerHTML = '<p class="rotulo-secao">Nenhum voto registrado ainda.</p>';
     document.getElementById('vtResumo').textContent=''; return; }
 
@@ -1814,14 +1872,67 @@ function desenharRanking(){
 
   if(!total){ el.innerHTML = '<p class="rotulo-secao">Nenhum voto nesse período.</p>'; return; }
 
-  const linhas = Object.entries(mapa)
-    .sort((a,b)=> modoRanking==='mais'
-        ? (b[1].like - a[1].like) || (a[1].dislike - b[1].dislike)
-        : (b[1].dislike - a[1].dislike) || (a[1].like - b[1].like))
-    .slice(0,100)
-    .map(([m,c],i)=>`<tr><td>${i+1}º</td><td>${m}</td><td>👍 ${c.like}</td><td>👎 ${c.dislike}</td><td>${c.like-c.dislike>0?'+':''}${c.like-c.dislike}</td></tr>`)
+  rankingAtual = Object.entries(mapa)
+    .sort((a,b)=> (b[1].like - a[1].like) || (a[1].dislike - b[1].dislike))
+    .map(([m,c],i)=>({ pos:i+1, musica:m, like:c.like, dislike:c.dislike, saldo:c.like-c.dislike }));
+  rankingResumo = `${total} votos ${periodo} • ${Object.keys(mapa).length} músicas`;
+  const linhas = rankingAtual
+    .map(r=>`<tr><td>${r.pos}º</td><td>${r.musica}</td><td>👍 ${r.like}</td><td>👎 ${r.dislike}</td><td>${r.saldo>0?'+':''}${r.saldo}</td></tr>`)
     .join('');
   el.innerHTML = `<table><tr><th>#</th><th>Música</th><th>Gostei</th><th>Não gostei</th><th>Saldo</th></tr>${linhas}</table>`;
+}
+
+// ===== salvar/imprimir o ranking =====
+function salvarRanking(formato){
+  if(!rankingAtual.length){ avisar('Gere o ranking do período primeiro.', true); return; }
+  if(formato === 'excel'){
+    let csv = 'posicao;musica;gostei;nao_gostei;saldo\n';
+    rankingAtual.forEach(r=>{ csv += [r.pos,r.musica,r.like,r.dislike,r.saldo].join(';')+'\n'; });
+    const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'ranking_musicas_eleva.csv'; a.click();
+    avisar('Ranking salvo em Excel (CSV)! 📊'); return;
+  }
+  const linhas = rankingAtual.map(r=>`<tr><td>${r.pos}º</td><td>${String(r.musica).replace(/</g,'&lt;')}</td><td>${r.like}</td><td>${r.dislike}</td><td>${r.saldo>0?'+':''}${r.saldo}</td></tr>`).join('');
+  const corpo = `<div class="rel" id="rel">
+      <div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
+      <h2 style="margin-top:10px">RANKING DE VOTAÇÃO DAS MÚSICAS</h2>
+      <div>${rankingResumo}</div></div>
+      <table><tr><th>#</th><th>Música</th><th>👍 Gostei</th><th>👎 Não gostei</th><th>Saldo</th></tr>${linhas}</table>
+      <div class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva</div>
+    </div>`;
+  const estilo = `<style>
+      body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#14203a;padding:24px}
+      .rel{max-width:760px;margin:0 auto;border:2px solid #E6B93F;border-radius:16px;padding:26px}
+      h1{color:#0D2B52;margin:4px 0} h2{color:#1B7A4B;font-size:16px;margin:14px 0 6px}
+      .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:12px;margin-bottom:14px}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}
+      th{background:#0D2B52;color:#fff}
+      .rodape{margin-top:16px;font-size:12px;color:#5a6a85;text-align:center}
+      .nao-imprimir{text-align:center;margin-top:18px}
+      @media print{.nao-imprimir{display:none}}
+    </style>`;
+  if(formato === 'word'){
+    const doc = '<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8">'+estilo+'</head><body>'+corpo+'</body></html>';
+    const blob = new Blob(['\ufeff'+doc], {type:'application/msword'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'ranking_musicas_eleva.doc'; a.click();
+    avisar('Ranking salvo em Word! 📘'); return;
+  }
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Ranking - Rádio Eleva</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+    ${estilo}</head><body>${corpo}
+    <div class="nao-imprimir">
+      <button style="padding:11px 18px;border:none;border-radius:10px;background:#1B7A4B;color:#fff;font-weight:800;cursor:pointer" onclick="window.print()">🖨️ Imprimir / PDF</button>
+      <button style="padding:11px 18px;border:none;border-radius:10px;background:#A97F10;color:#fff;font-weight:800;cursor:pointer;margin-left:8px" onclick="img()">🖼️ JPEG</button>
+    </div>
+    <script>
+      function img(){ html2canvas(document.getElementById('rel')).then(cv=>{ const a=document.createElement('a'); a.href=cv.toDataURL('image/jpeg',0.95); a.download='ranking_musicas_eleva.jpg'; a.click(); }); }
+      ${formato==='jpeg' ? 'window.addEventListener("load",()=>setTimeout(img,600));' : 'window.addEventListener("load",()=>setTimeout(()=>window.print(),400));'}
+    <\/script></body></html>`);
+  w.document.close();
 }
 
 let trocaTipo = '', trocaIdxG = -1;

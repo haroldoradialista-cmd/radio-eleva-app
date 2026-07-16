@@ -81,6 +81,28 @@ elif [ -f android/app/build.gradle ]; then
 fi
 echo "Regras do compactador aplicadas (despertador protegido)!"
 
+# 5d2. Som característico das notificações (som_eleva.mp3 na raiz do repo)
+# O ID do canal é derivado do PRÓPRIO ARQUIVO: trocou o som, o canal muda
+# sozinho — sem isso o Android continuaria tocando o som antigo para sempre.
+mkdir -p android/app/src/main/res/raw
+SOM_ORIGEM=""
+[ -f som_eleva.mp3 ] && SOM_ORIGEM="som_eleva.mp3"
+[ -z "$SOM_ORIGEM" ] && [ -f assets/som_eleva.mp3 ] && SOM_ORIGEM="assets/som_eleva.mp3"
+
+if [ -n "$SOM_ORIGEM" ]; then
+  cp "$SOM_ORIGEM" android/app/src/main/res/raw/som_eleva.mp3
+  ASSINATURA_SOM=$(md5sum "$SOM_ORIGEM" | cut -c1-8)
+  CANAL_SOM="eleva_som_${ASSINATURA_SOM}"
+  echo "Som da Eleva instalado! Canal: $CANAL_SOM (muda sozinho a cada troca de som)"
+else
+  CANAL_SOM="eleva_som_padrao"
+  echo "AVISO: som_eleva.mp3 nao encontrado - as notificacoes usarao o som padrao do celular."
+fi
+
+# grava o ID do canal no app (Dart) e no manifesto, sempre iguais
+sed -i "s/eleva_som_v2/${CANAL_SOM}/g" lib/servicos/notificacoes_service.dart
+sed -i "s#</application>#    <meta-data android:name=\"com.google.firebase.messaging.default_notification_channel_id\" android:value=\"${CANAL_SOM}\"/>\n    </application>#" "$M"
+
 # 5e. Despertador NATIVO: alarme de relógio + serviço de áudio em Kotlin
 KDIR="android/app/src/main/kotlin/br/com/radioeleva/radio_eleva"
 mkdir -p "$KDIR"
