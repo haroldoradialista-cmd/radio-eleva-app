@@ -74,20 +74,7 @@
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783819631594_tarde_total_300kb.png"
     }
   ],
-  "enquetes": [
-    {
-      "id": "e1784161250276",
-      "pergunta": "📖🍺 Você acredita que um cristão pode beber chope sem desagradar a Deus? 🤔",
-      "opcoes": [
-        "✅ SIM",
-        "❌ NÃO"
-      ],
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1784161245582_ChatGPTImage15dejul.de202621_18_05.png",
-      "publicar_em": "2026-07-15T21:20",
-      "expirar_em": "2026-07-15T21:24",
-      "exibir_resultado": "sim"
-    }
-  ],
+  "enquetes": [],
   "promocoes": [
     {
       "id": "p1783816645723",
