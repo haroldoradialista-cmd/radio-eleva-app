@@ -646,9 +646,7 @@ async function desenharBanners(){
       <img src="${b.imagem}">
       <div class="info"><b>Banner ${i+1} ${etiquetaAgenda(b)} • 👆 ${cliquesBanner[(b.id||b.imagem)]||0} cliques</b><span>${b.link||'sem link'}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemBanner(${i})" title="Trocar a imagem sem apagar">🔄</button>
-      ${estaForaDoAr(config.banners[${i}])
-        ? `<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem('banners',${i})" title="Voltar ao ar">▶️</button>`
-        : `<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem('banners',${i})" title="Finalizar agora (continua no painel)">⏹️</button>`}
+      ${botaoFinalizar('banners', i)}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('banners',${i})" title="Repetir este banner">🔁</button>
       <button class="botao mini perigo" onclick="removerBanner(${i})">🗑️</button>
     </div>`;
@@ -686,9 +684,7 @@ function desenharNoticias(){
       <div class="info"><b>${n.titulo} ${etiquetaAgenda(n)}</b><span>${n.data||''}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('noticias',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini neutro" onclick="editarNoticia(${i})">✏️</button>
-      ${estaForaDoAr(config.noticias[${i}])
-        ? `<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem('noticias',${i})" title="Voltar ao ar">▶️</button>`
-        : `<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem('noticias',${i})" title="Finalizar agora (continua no painel)">⏹️</button>`}
+      ${botaoFinalizar('noticias', i)}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('noticias',${i})" title="Repetir esta notícia">🔁</button>
       <button class="botao mini perigo" onclick="removerNoticia(${i})">🗑️</button>
     </div>`;
@@ -757,9 +753,7 @@ async function desenharEnquetes(){
       <b>${e.pergunta} ${etiquetaAgenda(e)}</b>
       <span>${resultados}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('enquetes',${i})" title="Trocar imagem sem apagar">🔄</button>
-      ${estaForaDoAr(config.enquetes[${i}])
-        ? `<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem('enquetes',${i})" title="Voltar ao ar">▶️</button>`
-        : `<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem('enquetes',${i})" title="Finalizar agora (continua no painel)">⏹️</button>`}
+      ${botaoFinalizar('enquetes', i)}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('enquetes',${i})" title="Repetir esta enquete">🔁</button>
       <button class="botao mini perigo" onclick="removerEnquete(${i})">🗑️</button></div>`;
   }
@@ -918,9 +912,7 @@ async function desenharPromos(){
       <span>${p.opcao1} / ${p.opcao2} — <b>${total} participações</b></span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('promocoes',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini" onclick="verParticipacoes('${p.id}')">👥 Ver</button>
-      ${estaForaDoAr(config.promocoes[${i}])
-        ? `<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem('promocoes',${i})" title="Voltar ao ar">▶️</button>`
-        : `<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem('promocoes',${i})" title="Finalizar agora (continua no painel)">⏹️</button>`}
+      ${botaoFinalizar('promocoes', i)}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('promocoes',${i})" title="Repetir esta promoção">🔁</button>
       <button class="botao mini perigo" onclick="removerPromo(${i})">🗑️</button>
       <div id="part_${p.id}" style="display:none;width:100%;margin-top:8px"></div>
@@ -1040,6 +1032,15 @@ function estaForaDoAr(item){
 }
 
 // ============ FINALIZAR / VOLTAR AO AR ============
+/// Devolve o HTML do botão ⏹️ Finalizar ou ▶️ Voltar ao ar
+function botaoFinalizar(tipo, i){
+  const lista = config[tipo] || [];
+  const item = lista[i] || {};
+  if(estaForaDoAr(item)){
+    return '<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem(\''+tipo+'\','+i+')" title="Voltar ao ar">▶️</button>';
+  }
+  return '<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem(\''+tipo+'\','+i+')" title="Finalizar agora (continua no painel)">⏹️</button>';
+}
 const _listaDe = { banners:'banners', noticias:'noticias', enquetes:'enquetes', promocoes:'promocoes' };
 const _redesenhaDe = () => ({ banners:desenharBanners, noticias:desenharNoticias, enquetes:desenharEnquetes, promocoes:desenharPromos });
 const _nomeDe = { banners:'banner', noticias:'notícia', enquetes:'enquete', promocoes:'promoção' };
