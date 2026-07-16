@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
 import '../servicos/analytics_service.dart';
@@ -15,8 +16,16 @@ class EnqueteCard extends StatefulWidget {
 }
 
 class _EnqueteCardState extends State<EnqueteCard> {
+  /// Chave do voto: quando há conta logada, o voto é DA CONTA
+  /// (outro e-mail no mesmo celular vota normalmente).
+  String _chaveVoto(String id) {
+    final u = AuthService.instancia.usuario.value;
+    return u == null ? 'enquete_$id' : 'enquete_${id}_${u.uid}';
+  }
+
   bool _jaVotou = false;
   String _idCarregado = '';
+  String _marcaCarregada = '';
   bool _enviando = false;
   int _minhaOpcao = -1;
   Map<int, int> _parcial = {};
@@ -29,10 +38,13 @@ class _EnqueteCardState extends State<EnqueteCard> {
   Future<void> _prepararEnquete(Map<String, dynamic> e,
       {bool encerrada = false}) async {
     final id = (e['id'] ?? '').toString();
-    if (id == _idCarregado) return;
+    final uid = AuthService.instancia.usuario.value?.uid ?? '';
+    final marca = '$id|$uid';
+    if (marca == _marcaCarregada) return;
     _idCarregado = id;
+    _marcaCarregada = marca;
     final prefs = await SharedPreferences.getInstance();
-    final escolha = prefs.getInt('enquete_$id');
+    final escolha = prefs.getInt(_chaveVoto(id));
     final votou = escolha != null;
     _jaVotou = votou;
     _minhaOpcao = escolha ?? -1;
@@ -169,10 +181,12 @@ class _EnqueteCardState extends State<EnqueteCard> {
         body: jsonEncode({
           'opcao': opcao,
           'quando': DateTime.now().toIso8601String(),
+          'uid': AuthService.instancia.usuario.value?.uid ?? '',
+          'email': AuthService.instancia.usuario.value?.email ?? '',
         }),
       );
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('enquete_$id', opcao);
+      await prefs.setInt(_chaveVoto(id), opcao);
       _jaVotou = true;
       _minhaOpcao = opcao;
       await _buscarParcial(id);
@@ -189,7 +203,9 @@ class _EnqueteCardState extends State<EnqueteCard> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<AppConfig>(
+    return ValueListenableBuilder<Usuario?>(
+      valueListenable: AuthService.instancia.usuario,
+      builder: (context, _usuario, __) => ValueListenableBuilder<AppConfig>(
       valueListenable: ConfigService.instancia.config,
       builder: (context, cfg, _) {
         if (cfg.chatUrl.isEmpty) return SizedBox.shrink();
@@ -320,6 +336,7 @@ class _EnqueteCardState extends State<EnqueteCard> {
           ),
         );
       },
+    ),
     );
   }
 }

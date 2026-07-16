@@ -16,10 +16,28 @@
   .topo img{width:42px;height:42px;border-radius:10px}
   .topo h1{font-size:18px;color:var(--branco)}
   .topo small{color:var(--ouro);display:block;font-size:11px;letter-spacing:1px}
-  .abas{display:flex;gap:4px;padding:10px 12px;overflow-x:auto;background:rgba(0,0,0,.25)}
-  .aba{padding:9px 16px;border-radius:20px;background:var(--navy2);color:var(--suave);border:1px solid transparent;cursor:pointer;white-space:nowrap;font-weight:700;font-size:13px}
+  /* ===== MENU LATERAL FIXO ===== */
+  .abas{position:fixed;top:0;left:0;bottom:0;width:196px;display:flex;flex-direction:column;gap:5px;
+        padding:14px 10px;background:var(--navy3);border-right:2px solid var(--ouro);overflow-y:auto;z-index:50}
+  .abas .marca{display:flex;align-items:center;gap:9px;padding:2px 6px 12px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}
+  .abas .marca img{width:34px;height:34px;border-radius:8px}
+  .abas .marca b{font-size:13.5px;color:var(--branco);display:block;line-height:1.2}
+  .abas .marca small{font-size:9px;color:var(--ouro);letter-spacing:.8px}
+  .aba{padding:10px 13px;border-radius:10px;background:transparent;color:var(--suave);border:1px solid transparent;
+       cursor:pointer;white-space:nowrap;font-weight:700;font-size:12.5px;text-align:left;width:100%;transition:background .15s}
+  .aba:hover{background:var(--navy2)}
   .aba.ativa{background:var(--verde2);color:#fff;border-color:var(--ouro)}
-  main{padding:16px;max-width:860px;margin:0 auto}
+  .aba.sair{margin-top:auto;background:#7a1b1b;color:#fff;border-color:#ff9a9a}
+  .topo{margin-left:196px}
+  main{padding:16px;max-width:860px;margin:0 auto;margin-left:196px}
+  @media(max-width:820px){
+    .abas{position:static;width:auto;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:2px solid var(--ouro)}
+    .abas .marca{display:none}
+    .aba{width:auto}
+    .aba.sair{margin-top:0;margin-left:auto}
+    .topo{margin-left:0}
+    main{margin-left:auto}
+  }
   .cartao{background:var(--navy2);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid rgba(255,255,255,.06)}
   .cartao h2{font-size:16px;color:var(--branco);margin-bottom:10px}
   label{display:block;font-size:12px;color:var(--ouro);font-weight:700;margin:10px 0 4px}
@@ -69,22 +87,40 @@
 </style>
 </head>
 <body>
-<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:flex;align-items:center;justify-content:center">
-  <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:34px 30px;max-width:360px;width:92%;text-align:center">
-    <h1 style="color:#FFD65A;font-size:22px;margin-bottom:4px">📻 PAINEL ELEVA</h1>
+<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:flex;align-items:center;justify-content:center;overflow:auto;padding:20px">
+  <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:32px 28px;max-width:380px;width:100%;text-align:center">
+    <h1 style="color:#FFD65A;font-size:22px;margin-bottom:2px">📻 PAINEL ELEVA</h1>
     <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
-    <input type="password" id="senhaPainel" placeholder="Senha do painel" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:15px;text-align:center" onkeydown="if(event.key==='Enter')entrarComSenha()">
-    <button onclick="entrarComSenha()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
-    <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none">Senha incorreta.</p>
-    <p style="margin-top:16px;font-size:12px"><a href="#" onclick="ajudaSenha();return false" style="color:#FFD65A;text-decoration:none">🔑 Esqueceu a senha? / Mudar senha</a></p>
-    <div id="ajudaSenha" style="display:none;margin-top:12px;background:#160f5c;border:1px solid #FFD65A66;border-radius:12px;padding:14px;text-align:left;font-size:12px;color:#E9E7FF;line-height:1.6">
-      <b style="color:#FFD65A">Recuperar ou mudar a senha</b><br><br>
-      A senha fica guardada no arquivo <b>painel/index.html</b> do repositório (linha com <b>SENHA_PAINEL</b>).<br><br>
-      <b>1.</b> Abra o GitHub → pasta <b>painel</b> → <b>index.html</b> → lápis ✏️<br>
-      <b>2.</b> Use <b>Ctrl+F</b> e procure por <b>SENHA_PAINEL</b><br>
-      <b>3.</b> A senha atual está entre aspas — leia ou troque por outra<br>
-      <b>4.</b> <b>Commit changes</b> e aguarde 2 minutos<br><br>
-      Precisa de ajuda? Escreva para <a href="mailto:radioelevagospel@gmail.com?subject=Painel%20Eleva%20-%20Recuperar%20senha" style="color:#35C733;font-weight:800">radioelevagospel@gmail.com</a>
+
+    <div id="boxLogin">
+      <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
+      <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px" onkeydown="if(event.key==='Enter')entrarComSenha()">
+      <button onclick="entrarComSenha()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
+      <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none"></p>
+      <div style="margin-top:16px;display:flex;gap:14px;justify-content:center;font-size:12px">
+        <a href="#" onclick="mostrarCaixa('boxEsqueci');return false" style="color:#FFD65A;text-decoration:none">🔑 Esqueci a senha</a>
+        <a href="#" onclick="mostrarCaixa('boxMudar');return false" style="color:#FFD65A;text-decoration:none">🔄 Mudar senha</a>
+      </div>
+    </div>
+
+    <div id="boxEsqueci" style="display:none;text-align:left">
+      <h2 style="color:#FFD65A;font-size:15px;margin-bottom:6px">🔑 Recuperar senha</h2>
+      <p style="color:#BDB8F0;font-size:12px;line-height:1.5;margin-bottom:10px">Enviaremos um link de recuperação para o seu e-mail. Abra o link, escolha a nova senha e volte para entrar.</p>
+      <input type="email" id="recEmail" placeholder="radioelevagospel@gmail.com" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px">
+      <button onclick="recuperarSenha()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:14px;cursor:pointer">📧 ENVIAR LINK POR E-MAIL</button>
+      <p id="msgRec" style="font-size:12px;margin-top:10px;line-height:1.5"></p>
+      <p style="margin-top:12px;text-align:center"><a href="#" onclick="mostrarCaixa('boxLogin');return false" style="color:#BDB8F0;font-size:12px;text-decoration:none">← voltar</a></p>
+    </div>
+
+    <div id="boxMudar" style="display:none;text-align:left">
+      <h2 style="color:#FFD65A;font-size:15px;margin-bottom:6px">🔄 Mudar senha</h2>
+      <p style="color:#BDB8F0;font-size:12px;line-height:1.5;margin-bottom:10px">Confirme a senha atual e escolha a nova. A troca vale para todos os lugares onde você usa o painel.</p>
+      <input type="email" id="mudEmail" placeholder="E-mail" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
+      <input type="password" id="mudSenhaAtual" placeholder="Senha atual" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
+      <input type="password" id="mudSenhaNova" placeholder="Nova senha (mínimo 6 caracteres)" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px">
+      <button onclick="mudarSenha()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:14px;cursor:pointer">🔄 TROCAR SENHA AGORA</button>
+      <p id="msgMud" style="font-size:12px;margin-top:10px;line-height:1.5"></p>
+      <p style="margin-top:12px;text-align:center"><a href="#" onclick="mostrarCaixa('boxLogin');return false" style="color:#BDB8F0;font-size:12px;text-decoration:none">← voltar</a></p>
     </div>
   </div>
 </div>
@@ -109,6 +145,11 @@
 <!-- ===== PAINEL ===== -->
 <div id="painel" class="oculto">
   <div class="abas">
+    <div class="marca">
+      <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
+      <div><b>Painel Eleva</b><small>ADORE • VIVA • ELEVE</small>    <button class="aba sair" onclick="sairDoPainel()">🚪 Sair</button>
+  </div>
+    </div>
     <button class="aba ativa" data-aba="banners" onclick="trocarAba(this)">🖼️ Banners</button>
     <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
     <button class="aba" data-aba="enquetes" onclick="trocarAba(this)">📊 Enquetes</button>
@@ -117,7 +158,6 @@
     <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
-    <button class="aba" style="margin-left:auto;background:#7a1b1b;border-color:#ff9a9a" onclick="sairDoPainel()">🚪 Sair</button>
     <button class="aba" data-aba="notif" onclick="trocarAba(this)">🔔 Notificações</button>
     <button class="aba" data-aba="stats" onclick="trocarAba(this)">📈 Estatísticas</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
@@ -150,6 +190,10 @@
           <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="bnInicio"></div>
           <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="bnFim"></div>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
+          <input type="checkbox" id="rep_banners" checked style="width:17px;height:17px;cursor:pointer">
+          <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados do banner anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
+        </label>
         <button class="botao" onclick="adicionarBanner()">➕ Adicionar banner</button>
       </div>
     </section>
@@ -186,6 +230,10 @@
           <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="ntInicio"></div>
           <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="ntFim"></div>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
+          <input type="checkbox" id="rep_noticias" checked style="width:17px;height:17px;cursor:pointer">
+          <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados da notícia anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
+        </label>
         <button class="botao" onclick="salvarNoticia()">💾 Publicar notícia</button>
         <button class="botao neutro" id="btnCancelarEdicao" onclick="cancelarEdicao()" style="display:none">Cancelar edição</button>
       </div>
@@ -227,6 +275,10 @@
           <span>📊 Exibir o resultado no app quando a enquete sair do ar</span>
         </label>
         <p class="rotulo-secao">Marcado: assim que passar do horário de "Sair do ar", os ouvintes veem o resultado final no lugar da enquete. Precisa ter o horário de saída preenchido.</p>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
+          <input type="checkbox" id="rep_enquetes" checked style="width:17px;height:17px;cursor:pointer">
+          <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados da enquete anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
+        </label>
         <button class="botao" onclick="criarEnquete()">➕ Publicar enquete</button>
       </div>
     </section>
@@ -288,6 +340,10 @@
           <div><label>⏰ Início (opcional)</label><input type="datetime-local" id="prInicio"></div>
           <div><label>⏰ Término (opcional)</label><input type="datetime-local" id="prFim"></div>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
+          <input type="checkbox" id="rep_promocoes" checked style="width:17px;height:17px;cursor:pointer">
+          <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados da promoção anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
+        </label>
         <button class="botao" onclick="criarPromocao()">➕ Publicar promoção</button>
       </div>
     </section>
@@ -574,6 +630,7 @@ async function desenharBanners(){
       <img src="${b.imagem}">
       <div class="info"><b>Banner ${i+1} ${etiquetaAgenda(b)} • 👆 ${cliquesBanner[(b.id||b.imagem)]||0} cliques</b><span>${b.link||'sem link'}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemBanner(${i})" title="Trocar a imagem sem apagar">🔄</button>
+      <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('banners',${i})" title="Repetir este banner">🔁</button>
       <button class="botao mini perigo" onclick="removerBanner(${i})">🗑️</button>
     </div>`;
   });
@@ -610,6 +667,7 @@ function desenharNoticias(){
       <div class="info"><b>${n.titulo} ${etiquetaAgenda(n)}</b><span>${n.data||''}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('noticias',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini neutro" onclick="editarNoticia(${i})">✏️</button>
+      <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('noticias',${i})" title="Repetir esta notícia">🔁</button>
       <button class="botao mini perigo" onclick="removerNoticia(${i})">🗑️</button>
     </div>`;
   });
@@ -677,6 +735,7 @@ async function desenharEnquetes(){
       <b>${e.pergunta} ${etiquetaAgenda(e)}</b>
       <span>${resultados}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('enquetes',${i})" title="Trocar imagem sem apagar">🔄</button>
+      <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('enquetes',${i})" title="Repetir esta enquete">🔁</button>
       <button class="botao mini perigo" onclick="removerEnquete(${i})">🗑️</button></div>`;
   }
   el.innerHTML = html;
@@ -834,6 +893,7 @@ async function desenharPromos(){
       <span>${p.opcao1} / ${p.opcao2} — <b>${total} participações</b></span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('promocoes',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini" onclick="verParticipacoes('${p.id}')">👥 Ver</button>
+      <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('promocoes',${i})" title="Repetir esta promoção">🔁</button>
       <button class="botao mini perigo" onclick="removerPromo(${i})">🗑️</button>
       <div id="part_${p.id}" style="display:none;width:100%;margin-top:8px"></div>
     </div>`;
@@ -1526,32 +1586,144 @@ async function gerarRelatorio(){
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
-// ================== LOGIN DO PAINEL ==================
-const SENHA_PAINEL = 'eleva@2026'; // <<< TROQUE AQUI a senha do painel
-function ajudaSenha(){
-  const a = document.getElementById('ajudaSenha');
-  a.style.display = a.style.display === 'none' ? 'block' : 'none';
+// ================== LOGIN DO PAINEL (Firebase) ==================
+function mostrarCaixa(qual){
+  ['boxLogin','boxEsqueci','boxMudar'].forEach(b=>{
+    const el = document.getElementById(b);
+    if(el) el.style.display = (b===qual) ? 'block' : 'none';
+  });
 }
-function entrarComSenha(){
-  const s = document.getElementById('senhaPainel').value;
-  if(s === SENHA_PAINEL){
+async function entrarComSenha(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const erro = document.getElementById('erroLogin');
+  erro.style.display='none';
+  if(!email || !senha){ erro.textContent='Preencha e-mail e senha.'; erro.style.display='block'; return; }
+  try{
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREKEY}`,{
+      method:'POST', body: JSON.stringify({ email, password:senha, returnSecureToken:true })
+    });
+    const d = await r.json();
+    if(!r.ok){
+      erro.textContent = (d.error && d.error.message==='INVALID_LOGIN_CREDENTIALS') ? 'E-mail ou senha incorretos.' : 'Não foi possível entrar. Confira os dados.';
+      erro.style.display='block'; return;
+    }
+    // login válido: guarda a sessão e já habilita a moderação do chat
+    modToken = d.idToken; modUid = d.localId;
     sessionStorage.setItem('painel_logado','sim');
+    sessionStorage.setItem('painel_email', email);
     document.getElementById('telaLogin').style.display='none';
-  } else {
-    document.getElementById('erroLogin').style.display='block';
+    const info = document.getElementById('uidInfo');
+    if(info) info.innerHTML = '✅ Logado como <b>'+email+'</b> — código de moderador: <b style="color:var(--ouro)">'+modUid+'</b>';
+  }catch(e){ erro.textContent='Falha de conexão. Tente de novo.'; erro.style.display='block'; }
+}
+async function recuperarSenha(){
+  const email = document.getElementById('recEmail').value.trim();
+  const msg = document.getElementById('msgRec');
+  if(!email){ msg.style.color='#ff9a9a'; msg.textContent='Digite o e-mail cadastrado.'; return; }
+  msg.style.color='#BDB8F0'; msg.textContent='Enviando...';
+  try{
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREKEY}`,{
+      method:'POST', body: JSON.stringify({ requestType:'PASSWORD_RESET', email })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error((d.error&&d.error.message)||'falha');
+    msg.style.color='#9ef59d';
+    msg.innerHTML = '✅ Link enviado para <b>'+email+'</b>. Abra o e-mail (confira também o spam), defina a nova senha e volte para entrar.';
+  }catch(e){
+    msg.style.color='#ff9a9a';
+    msg.textContent = (e.message==='EMAIL_NOT_FOUND') ? 'E-mail não cadastrado no painel.' : 'Não foi possível enviar agora. Tente de novo.';
+  }
+}
+async function mudarSenha(){
+  const email = document.getElementById('mudEmail').value.trim();
+  const atual = document.getElementById('mudSenhaAtual').value;
+  const nova = document.getElementById('mudSenhaNova').value;
+  const msg = document.getElementById('msgMud');
+  if(!email || !atual || !nova){ msg.style.color='#ff9a9a'; msg.textContent='Preencha todos os campos.'; return; }
+  if(nova.length < 6){ msg.style.color='#ff9a9a'; msg.textContent='A nova senha precisa de pelo menos 6 caracteres.'; return; }
+  msg.style.color='#BDB8F0'; msg.textContent='Trocando...';
+  try{
+    const r1 = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREKEY}`,{
+      method:'POST', body: JSON.stringify({ email, password:atual, returnSecureToken:true })
+    });
+    const d1 = await r1.json();
+    if(!r1.ok) throw new Error('SENHA_ATUAL');
+    const r2 = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FIREKEY}`,{
+      method:'POST', body: JSON.stringify({ idToken:d1.idToken, password:nova, returnSecureToken:true })
+    });
+    const d2 = await r2.json();
+    if(!r2.ok) throw new Error((d2.error&&d2.error.message)||'falha');
+    msg.style.color='#9ef59d';
+    msg.innerHTML = '✅ Senha trocada! Agora entre com a nova senha.';
+    setTimeout(()=>mostrarCaixa('boxLogin'), 2500);
+  }catch(e){
+    msg.style.color='#ff9a9a';
+    msg.textContent = (e.message==='SENHA_ATUAL') ? 'A senha atual está incorreta.' : 'Não foi possível trocar agora. Tente de novo.';
   }
 }
 function sairDoPainel(){
   sessionStorage.removeItem('painel_logado');
+  sessionStorage.removeItem('painel_email');
+  modToken=''; modUid='';
   location.reload();
 }
-if(sessionStorage.getItem('painel_logado')==='sim'){
-  document.addEventListener('DOMContentLoaded', ()=>{
-    const t = document.getElementById('telaLogin');
-    if(t) t.style.display='none';
-  });
+
+
+// ============ REPETIR POSTAGENS (banners, notícias, enquetes, promoções) ============
+function _v(id, valor){ const el = document.getElementById(id); if(el) el.value = valor || ''; }
+function _dt(valor){ return (valor||'').slice(0,16); }
+function repetirItem(tipo, i){
+  const manter = document.getElementById('rep_'+tipo).checked;
+  const item = (tipo==='banners' ? config.banners : tipo==='noticias' ? config.noticias
+              : tipo==='enquetes' ? config.enquetes : config.promocoes)[i] || {};
+  const aba = tipo==='promocoes' ? 'promos' : tipo;
+  const botao = document.querySelector('.aba[data-aba="'+aba+'"]');
+  if(botao) trocarAba(botao);
+
+  if(tipo==='banners'){
+    _v('linkBanner', manter ? item.link : '');
+    _v('bnInicio',''); _v('bnFim','');
+    document.getElementById('arqBanner').value='';
+    avisar(manter ? '🔁 Dados do banner copiados! Escolha a nova imagem e publique.' : '🔁 Formulário de banner em branco, pronto para o novo.');
+  }
+  else if(tipo==='noticias'){
+    if(typeof idxEdicao !== 'undefined') idxEdicao = -1;
+    _v('ntTitulo', manter ? item.titulo : '');
+    _v('ntResumo', manter ? item.resumo : '');
+    _v('ntTexto',  manter ? item.texto  : '');
+    _v('ntData',   manter ? item.data   : '');
+    _v('ntLink',   manter ? item.link   : '');
+    _v('ntInicio',''); _v('ntFim','');
+    const t = document.getElementById('tituloFormNoticia'); if(t) t.textContent = 'Nova notícia';
+    const c = document.getElementById('btnCancelarEdicao'); if(c) c.style.display='none';
+    avisar(manter ? '🔁 Dados da notícia copiados! Ajuste e publique.' : '🔁 Formulário de notícia em branco.');
+  }
+  else if(tipo==='enquetes'){
+    const op = item.opcoes || [];
+    _v('eqPergunta', manter ? item.pergunta : '');
+    _v('eqOp1', manter ? op[0] : ''); _v('eqOp2', manter ? op[1] : '');
+    _v('eqOp3', manter ? op[2] : ''); _v('eqOp4', manter ? op[3] : '');
+    _v('eqInicio',''); _v('eqFim','');
+    document.getElementById('eqFoto').value='';
+    const cx = document.getElementById('eqExibirResultado');
+    if(cx) cx.checked = manter ? (item.exibir_resultado === 'sim') : true;
+    avisar(manter ? '🔁 Dados da enquete copiados! Defina o novo período e publique.' : '🔁 Formulário de enquete em branco.');
+  }
+  else {
+    _v('prNome',        manter ? item.nome : '');
+    _v('prPergunta',    manter ? item.pergunta : '');
+    _v('prOp1',         manter ? item.opcao1 : '');
+    _v('prOp2',         manter ? item.opcao2 : '');
+    _v('prRegulamento', manter ? item.regulamento : '');
+    _v('prInicio',''); _v('prFim','');
+    const f = document.getElementById('prFoto'); if(f) f.value='';
+    avisar(manter ? '🔁 Dados da promoção copiados! Defina o novo período e publique.' : '🔁 Formulário de promoção em branco.');
+  }
+  window.scrollTo({ top: document.body.scrollHeight, behavior:'smooth' });
 }
 
+// ================== MODERACAO ==================
 // ================== MODERACAO ==================
 function preencherModeracao(){
   cfSuspHoras.value = (config.chat_suspensao_horas === undefined || config.chat_suspensao_horas === null) ? 24 : config.chat_suspensao_horas;
