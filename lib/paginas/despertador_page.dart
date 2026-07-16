@@ -15,6 +15,8 @@ class _DespertadorPageState extends State<DespertadorPage> {
   DateTime? _data;
   bool _ativo = false;
   String _resumo = '';
+  int _volume = 85; // volume do despertar (% do canal de alarme)
+  bool _telaCheiaOk = true;
 
   @override
   void initState() {
@@ -23,6 +25,9 @@ class _DespertadorPageState extends State<DespertadorPage> {
   }
 
   Future<void> _carregar() async {
+    DespertadorService.podeTelaCheia().then((ok) {
+      if (mounted) setState(() => _telaCheiaOk = ok);
+    });
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
@@ -34,6 +39,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
       final d = prefs.getString('desp_data') ?? '';
       _data = d.isEmpty ? null : DateTime.tryParse(d);
       _resumo = prefs.getString('desp_resumo') ?? '';
+      _volume = prefs.getInt('desp_volume') ?? 85;
     });
   }
 
@@ -192,6 +198,8 @@ class _DespertadorPageState extends State<DespertadorPage> {
     await prefs.setInt('desp_min', _hora.minute);
     await prefs.setString('desp_data', _data?.toIso8601String() ?? '');
     await prefs.setString('desp_resumo', resumo);
+    await prefs.setInt('desp_volume', _volume);
+    await prefs.setInt('desp_sonecas', 0); // as 3 sonecas voltam a valer
     if (mounted) {
       setState(() {
         _ativo = true;
@@ -303,7 +311,137 @@ class _DespertadorPageState extends State<DespertadorPage> {
           valor: _fmtHora(_hora),
           aoTocar: _escolherHora,
         ),
-        SizedBox(height: 16),
+        if (!_telaCheiaOk)
+          Container(
+            margin: EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: Colors.red.shade900.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.red.shade300, width: 1.4),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded,
+                        color: Colors.red.shade200, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Falta uma permissão para o despertador acordar você',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: Colors.red.shade100),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Sem ela, o alarme só manda uma notificação em vez de abrir a tela com os botões de adiar e parar.',
+                  style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.4,
+                      color: CoresEleva.brancoSuave),
+                ),
+                SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await DespertadorService.abrirPermissaoTelaCheia();
+                      await Future.delayed(Duration(seconds: 1));
+                      final ok = await DespertadorService.podeTelaCheia();
+                      if (mounted) setState(() => _telaCheiaOk = ok);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade400,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 11),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22)),
+                      textStyle: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w800),
+                    ),
+                    child: Text('🔓 LIBERAR AGORA'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        SizedBox(height: 4),
+
+        // ===== VOLUME DO DESPERTAR =====
+        Container(
+          margin: EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.fromLTRB(14, 10, 14, 4),
+          decoration: BoxDecoration(
+            color: CoresEleva.azulMedio,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: CoresEleva.borda),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                      _volume <= 35
+                          ? Icons.volume_mute_rounded
+                          : _volume <= 70
+                              ? Icons.volume_down_rounded
+                              : Icons.volume_up_rounded,
+                      color: CoresEleva.dourado,
+                      size: 20),
+                  SizedBox(width: 8),
+                  Text('Volume do despertar',
+                      style: TextStyle(
+                          fontSize: 12.5, color: CoresEleva.textoFraco)),
+                  Spacer(),
+                  Text('$_volume%',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: CoresEleva.dourado)),
+                ],
+              ),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: CoresEleva.dourado,
+                  inactiveTrackColor: Colors.white24,
+                  thumbColor: CoresEleva.dourado,
+                  overlayColor: CoresEleva.dourado.withOpacity(0.15),
+                  trackHeight: 4,
+                ),
+                child: Slider(
+                  value: _volume.toDouble(),
+                  min: 20,
+                  max: 100,
+                  divisions: 16,
+                  onChanged: (v) => setState(() => _volume = v.round()),
+                  onChangeEnd: (v) async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setInt('desp_volume', v.round());
+                  },
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(left: 2, bottom: 6),
+                child: Text(
+                  'O celular ajusta o volume do alarme sozinho na hora de despertar. Durante o despertar, dá para abaixar pelo botão 🔉 da notificação ou pelas teclas de volume.',
+                  style: TextStyle(
+                      fontSize: 10.5,
+                      height: 1.4,
+                      color: CoresEleva.textoFraco),
+                ),
+              ),
+            ],
+          ),
+        ),
 
         SizedBox(
           width: double.infinity,
@@ -332,7 +470,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
                 Border.all(color: CoresEleva.dourado.withOpacity(0.6)),
           ),
           child: Text(
-            'ℹ️ Na hora marcada, a tela do celular acende com a Rádio Eleva e a música começa a tocar. Permita tudo o que o app pedir ao ativar. IMPORTANTE: se no horário chegar apenas a notificação (sem a rádio abrir sozinha), ative a permissão de tela cheia: Configurações → Aplicativos → Rádio Eleva → Notificações → "Tela cheia" (ou "Acesso especial → Notificações de tela cheia"). Com ela ligada, o despertador acorda você com a rádio tocando. É preciso internet no horário do alarme.',
+            '😴 SONECA: na hora do alarme, a tela acende (mesmo bloqueada) com os botões grandes ADIAR 5 MINUTOS (até 3 vezes), a barra de volume e PARAR — sem precisar desbloquear o celular.\n\nℹ️ Na hora marcada, a tela do celular acende com a Rádio Eleva e a música começa a tocar. Permita tudo o que o app pedir ao ativar. IMPORTANTE: se no horário chegar apenas a notificação (sem a rádio abrir sozinha), ative a permissão de tela cheia: Configurações → Aplicativos → Rádio Eleva → Notificações → "Tela cheia" (ou "Acesso especial → Notificações de tela cheia"). Com ela ligada, o despertador acorda você com a rádio tocando. É preciso internet no horário do alarme.',
             style: TextStyle(
                 fontSize: 11.5,
                 height: 1.45,

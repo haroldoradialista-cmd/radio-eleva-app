@@ -65,6 +65,26 @@ class DespertadorService {
     await _gravarAlarme(primeiro, true);
   }
 
+  /// Android 14+: a tela cheia do alarme exige permissão especial
+  static Future<bool> podeTelaCheia() async {
+    try {
+      final r = await _canal
+          .invokeMethod('podeTelaCheia')
+          .timeout(Duration(seconds: 3));
+      return r == true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static Future<void> abrirPermissaoTelaCheia() async {
+    try {
+      await _canal
+          .invokeMethod('abrirPermissaoTelaCheia')
+          .timeout(Duration(seconds: 3));
+    } catch (_) {}
+  }
+
   static Future<void> cancelar() async {
     try {
       await _canal.invokeMethod('cancelar').timeout(Duration(seconds: 3));

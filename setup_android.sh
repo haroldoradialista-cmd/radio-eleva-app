@@ -137,9 +137,221 @@ class MainActivity : AudioServiceActivity() {
                     stopService(Intent(this, DespertadorAudioService::class.java))
                     result.success(true)
                 }
+                "podeTelaCheia" -> {
+                    // Android 14+: precisa da permissão de notificação em tela cheia
+                    var pode = true
+                    if (android.os.Build.VERSION.SDK_INT >= 34) {
+                        try {
+                            val nm = getSystemService(android.app.NotificationManager::class.java)
+                            pode = nm.canUseFullScreenIntent()
+                        } catch (e: Exception) { pode = true }
+                    }
+                    result.success(pode)
+                }
+                "abrirPermissaoTelaCheia" -> {
+                    try {
+                        val i = if (android.os.Build.VERSION.SDK_INT >= 34)
+                            Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
+                                .setData(android.net.Uri.parse("package:" + packageName))
+                        else
+                            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                .setData(android.net.Uri.parse("package:" + packageName))
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(i)
+                        result.success(true)
+                    } catch (e: Exception) { result.success(false) }
+                }
                 else -> result.notImplemented()
             }
         }
+    }
+}
+KOTLIN
+
+cat > "$KDIR/DespertadorAlarmeActivity.kt" <<'KOTLIN'
+package br.com.radioeleva.radio_eleva
+
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.media.AudioManager
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.SeekBar
+import android.widget.TextView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/// Tela do despertador tocando. Aparece SOBRE a tela de bloqueio,
+/// acende o visor e permite adiar/abaixar/parar SEM desbloquear.
+class DespertadorAlarmeActivity : Activity() {
+    private val alca = Handler(Looper.getMainLooper())
+    private var relogio: TextView? = null
+
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        // aparecer com o celular bloqueado e acender a tela
+        if (Build.VERSION.SDK_INT >= 27) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+        )
+        volumeControlStream = AudioManager.STREAM_ALARM
+        setContentView(montarTela())
+        tique()
+    }
+
+    private fun prefs() =
+        getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+
+    private fun enviar(acao: String) {
+        val i = Intent(this, DespertadorAudioService::class.java)
+        i.action = acao
+        try {
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(i) else startService(i)
+        } catch (_: Exception) {}
+    }
+
+    private fun tique() {
+        alca.postDelayed(object : Runnable {
+            override fun run() {
+                relogio?.text = SimpleDateFormat("HH:mm", Locale("pt", "BR")).format(Date())
+                alca.postDelayed(this, 10000)
+            }
+        }, 10000)
+    }
+
+    private fun botao(texto: String, cor: String, aoTocar: () -> Unit): Button {
+        val bt = Button(this)
+        bt.text = texto
+        bt.textSize = 17f
+        bt.setTextColor(Color.WHITE)
+        bt.isAllCaps = false
+        val fundo = GradientDrawable()
+        fundo.cornerRadius = dp(32).toFloat()
+        fundo.setColor(Color.parseColor(cor))
+        bt.background = fundo
+        bt.setPadding(dp(16), dp(22), dp(16), dp(22))
+        val lp = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        lp.topMargin = dp(14)
+        bt.layoutParams = lp
+        bt.setOnClickListener { aoTocar() }
+        return bt
+    }
+
+    private fun montarTela(): View {
+        val raiz = LinearLayout(this)
+        raiz.orientation = LinearLayout.VERTICAL
+        raiz.gravity = Gravity.CENTER
+        raiz.setBackgroundColor(Color.parseColor("#0E0857"))
+        raiz.setPadding(dp(26), dp(36), dp(26), dp(36))
+
+        val titulo = TextView(this)
+        titulo.text = "⏰ BOM DIA!"
+        titulo.textSize = 30f
+        titulo.setTextColor(Color.parseColor("#FFD65A"))
+        titulo.gravity = Gravity.CENTER
+        raiz.addView(titulo)
+
+        val hora = TextView(this)
+        hora.text = SimpleDateFormat("HH:mm", Locale("pt", "BR")).format(Date())
+        hora.textSize = 68f
+        hora.setTextColor(Color.WHITE)
+        hora.gravity = Gravity.CENTER
+        relogio = hora
+        raiz.addView(hora)
+
+        val sub = TextView(this)
+        sub.text = "A Rádio Eleva está tocando para você\nAdore • Viva • Eleve"
+        sub.textSize = 14f
+        sub.setTextColor(Color.parseColor("#BDB8F0"))
+        sub.gravity = Gravity.CENTER
+        sub.setPadding(0, dp(6), 0, dp(18))
+        raiz.addView(sub)
+
+        // ===== VOLUME (sem desbloquear) =====
+        val rotVol = TextView(this)
+        rotVol.text = "🔉 Volume do despertador"
+        rotVol.textSize = 13f
+        rotVol.setTextColor(Color.parseColor("#E9E7FF"))
+        raiz.addView(rotVol)
+
+        val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val barra = SeekBar(this)
+        barra.max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+        barra.progress = am.getStreamVolume(AudioManager.STREAM_ALARM)
+        barra.setPadding(dp(4), dp(10), dp(4), dp(10))
+        barra.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(s: SeekBar?, valor: Int, doUsuario: Boolean) {
+                if (doUsuario) {
+                    try {
+                        am.setStreamVolume(AudioManager.STREAM_ALARM,
+                            valor.coerceAtLeast(0), 0)
+                        enviar("VOLUME_" + valor)
+                    } catch (_: Exception) {}
+                }
+            }
+            override fun onStartTrackingTouch(s: SeekBar?) {}
+            override fun onStopTrackingTouch(s: SeekBar?) {}
+        })
+        raiz.addView(barra)
+
+        // ===== ADIAR 5 MINUTOS (até 3 vezes) =====
+        val usadas = prefs().getLong("flutter.desp_sonecas", 0L).toInt()
+        val restam = 3 - usadas
+        if (restam > 0) {
+            raiz.addView(botao(
+                "😴  ADIAR 5 MINUTOS   (" + restam + " restante" + (if (restam == 1) "" else "s") + ")",
+                "#1B7A4B") {
+                enviar("SONECA"); finish()
+            })
+        } else {
+            val aviso = TextView(this)
+            aviso.text = "🌅 Sonecas esgotadas — hora de levantar!"
+            aviso.textSize = 13f
+            aviso.setTextColor(Color.parseColor("#FFD65A"))
+            aviso.gravity = Gravity.CENTER
+            aviso.setPadding(0, dp(14), 0, 0)
+            raiz.addView(aviso)
+        }
+
+        raiz.addView(botao("⏹️  PARAR O DESPERTADOR", "#7a1b1b") {
+            enviar("PARAR"); finish()
+        })
+
+        raiz.addView(botao("📻  ABRIR A RÁDIO ELEVA", "#1D14A8") {
+            try {
+                val i = Intent(this, MainActivity::class.java)
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(i)
+            } catch (_: Exception) {}
+            finish()
+        })
+        return raiz
+    }
+
+    override fun onDestroy() {
+        alca.removeCallbacksAndMessages(null)
+        super.onDestroy()
     }
 }
 KOTLIN
@@ -157,16 +369,24 @@ import java.util.Calendar
 
 class DespertadorReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val ehSoneca = intent.getBooleanExtra("soneca", false)
+        val prefs = context.getSharedPreferences(
+            "FlutterSharedPreferences", Context.MODE_PRIVATE)
+
+        // Alarme "de verdade" (não soneca): zera o contador de sonecas
+        if (!ehSoneca) {
+            prefs.edit().putLong("flutter.desp_sonecas", 0L).apply()
+        }
+
         val servico = Intent(context, DespertadorAudioService::class.java)
         if (Build.VERSION.SDK_INT >= 26) {
             context.startForegroundService(servico)
         } else {
             context.startService(servico)
         }
-        // TODO DIA: grava sozinho o alarme de amanhã no mesmo horário
-        val prefs = context.getSharedPreferences(
-            "FlutterSharedPreferences", Context.MODE_PRIVATE)
-        if (prefs.getString("flutter.desp_tipo", "") == "diario") {
+
+        // TODO DIA: grava sozinho o alarme de amanhã (nunca a partir da soneca)
+        if (!ehSoneca && prefs.getString("flutter.desp_tipo", "") == "diario") {
             val h = prefs.getLong("flutter.desp_hora", 7L).toInt()
             val m = prefs.getLong("flutter.desp_min", 0L).toInt()
             val cal = Calendar.getInstance().apply {
@@ -183,26 +403,30 @@ class DespertadorReceiver : BroadcastReceiver() {
     companion object {
         private const val CODIGO = 4201
 
-        private fun pendente(context: Context): PendingIntent {
+        private fun pendente(context: Context, ehSoneca: Boolean): PendingIntent {
             val i = Intent(context, DespertadorReceiver::class.java)
+            i.putExtra("soneca", ehSoneca)
             return PendingIntent.getBroadcast(
                 context, CODIGO, i,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
 
-        fun agendar(context: Context, millis: Long, diario: Boolean) {
+        fun agendar(context: Context, millis: Long, diario: Boolean,
+                    ehSoneca: Boolean = false) {
             val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val abrirApp = PendingIntent.getActivity(
                 context, CODIGO,
                 Intent(context, MainActivity::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             am.setAlarmClock(
-                AlarmManager.AlarmClockInfo(millis, abrirApp), pendente(context))
+                AlarmManager.AlarmClockInfo(millis, abrirApp),
+                pendente(context, ehSoneca))
         }
 
         fun cancelar(context: Context) {
             val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            am.cancel(pendente(context))
+            am.cancel(pendente(context, false))
+            am.cancel(pendente(context, true))
         }
     }
 }
@@ -227,45 +451,141 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class DespertadorAudioService : Service() {
     private var player: MediaPlayer? = null
     private val alca = Handler(Looper.getMainLooper())
     private var passo = 0
+    private var volumeApp = 1.0f          // volume do player (0..1)
+
+    companion object {
+        const val MAX_SONECAS = 3         // adiar no máximo 3 vezes
+        const val MIN_SONECA = 5          // 5 minutos por soneca
+        const val ID_NOTIF = 4202
+        const val ID_AVISO = 4203
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun prefs() =
+        getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == "PARAR") {
-            stopSelf()
-            return START_NOT_STICKY
-        }
         criarCanal()
-        // Despertar de verdade: canal de ALARME do celular em 85% do volume
-        try {
-            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            val alvo = (maximo * 0.85f).toInt().coerceAtLeast(1)
-            if (am.getStreamVolume(AudioManager.STREAM_ALARM) < alvo) {
-                am.setStreamVolume(AudioManager.STREAM_ALARM, alvo, 0)
-            }
-        } catch (_: Exception) {}
+        // O Android exige entrar em foreground logo de cara, em qualquer caso
         if (Build.VERSION.SDK_INT >= 29) {
-            startForeground(4202, notificacao(),
+            startForeground(ID_NOTIF, notificacao(),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
         } else {
-            startForeground(4202, notificacao())
+            startForeground(ID_NOTIF, notificacao())
         }
+        val acao = intent?.action ?: ""
+        when {
+            acao == "PARAR" -> {
+                prefs().edit().putLong("flutter.desp_sonecas", 0L).apply()
+                stopSelf(); return START_NOT_STICKY
+            }
+            acao == "SONECA" -> { soneca(); return START_NOT_STICKY }
+            acao == "VOLUME" -> { abaixarVolume(); return START_NOT_STICKY }
+            acao.startsWith("VOLUME_") -> {   // barra da tela de alarme
+                val v = acao.removePrefix("VOLUME_").toIntOrNull()
+                if (v != null) ajustarPeloSistema(v)
+                return START_NOT_STICKY
+            }
+        }
+        ajustarVolumeSistema()
+        abrirTelaAlarme()   // tela cheia sobre o bloqueio
         tocar()
         alca.postDelayed({ stopSelf() }, 20L * 60L * 1000L)
         return START_NOT_STICKY
     }
 
+    /// Abre a tela do alarme por cima do bloqueio (como o relógio do celular)
+    private fun abrirTelaAlarme() {
+        try {
+            val i = Intent(this, DespertadorAlarmeActivity::class.java)
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                       Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                       Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+            startActivity(i)
+        } catch (_: Exception) {}
+    }
+
+    /// A barra de volume da tela mexe também no volume do player
+    private fun ajustarPeloSistema(nivel: Int) {
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            volumeApp = if (maximo > 0) (nivel.toFloat() / maximo).coerceIn(0.02f, 1f) else 1f
+            player?.setVolume(volumeApp, volumeApp)
+        } catch (_: Exception) {}
+    }
+
+    // ===== VOLUME =====
+    /// Coloca o canal de alarme no volume escolhido pelo ouvinte no app
+    private fun ajustarVolumeSistema() {
+        try {
+            val pct = prefs().getLong("flutter.desp_volume", 85L).toInt().coerceIn(10, 100)
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            val alvo = (maximo * pct / 100f).toInt().coerceAtLeast(1)
+            am.setStreamVolume(AudioManager.STREAM_ALARM, alvo, 0)
+        } catch (_: Exception) {}
+    }
+
+    /// Botão 🔉 da notificação: abaixa o som sem sair da cama
+    private fun abaixarVolume() {
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_LOWER, 0)
+        } catch (_: Exception) {}
+        volumeApp = (volumeApp - 0.25f).coerceAtLeast(0.10f)
+        try { player?.setVolume(volumeApp, volumeApp) } catch (_: Exception) {}
+    }
+
+    // ===== SONECA =====
+    private fun soneca() {
+        val usadas = prefs().getLong("flutter.desp_sonecas", 0L).toInt()
+        if (usadas >= MAX_SONECAS) {
+            avisar("🌅 Sonecas esgotadas", "Você já adiou $MAX_SONECAS vezes. Bom dia!")
+            stopSelf(); return
+        }
+        val nova = usadas + 1
+        prefs().edit().putLong("flutter.desp_sonecas", nova.toLong()).apply()
+        val quando = System.currentTimeMillis() + MIN_SONECA * 60L * 1000L
+        DespertadorReceiver.agendar(this, quando, false, true)
+        val hora = SimpleDateFormat("HH:mm", Locale("pt", "BR")).format(Date(quando))
+        val restam = MAX_SONECAS - nova
+        avisar("😴 Soneca de $MIN_SONECA minutos",
+            if (restam > 0) "A Rádio Eleva volta às $hora — você ainda pode adiar $restam ${if (restam == 1) "vez" else "vezes"}."
+            else "Última soneca! A Rádio Eleva volta às $hora e não adia mais. 🌅")
+        stopSelf()
+    }
+
+    private fun avisar(titulo: String, texto: String) {
+        try {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val b = if (Build.VERSION.SDK_INT >= 26)
+                Notification.Builder(this, "despertador_som")
+            else
+                @Suppress("DEPRECATION") Notification.Builder(this)
+            nm.notify(ID_AVISO, b.setContentTitle(titulo)
+                .setContentText(texto)
+                .setStyle(Notification.BigTextStyle().bigText(texto))
+                .setSmallIcon(applicationInfo.icon)
+                .setAutoCancel(true)
+                .setTimeoutAfter(MIN_SONECA * 60L * 1000L)
+                .build())
+        } catch (_: Exception) {}
+    }
+
+    // ===== ÁUDIO =====
     private fun tocar() {
         try {
-            val prefs = getSharedPreferences(
-                "FlutterSharedPreferences", Context.MODE_PRIVATE)
-            val url = prefs.getString("flutter.desp_stream", null)
+            val url = prefs().getString("flutter.desp_stream", null)
                 ?: "https://sv16.hdradios.net:8516/stream"
             player = MediaPlayer().apply {
                 setAudioAttributes(
@@ -290,13 +610,13 @@ class DespertadorAudioService : Service() {
         }
     }
 
-    // O som nasce baixinho e cresce em 30 segundos
+    /// O som nasce baixinho e cresce em 30s, respeitando o botão de volume
     private fun fade() {
         passo = 0
         val rampa = object : Runnable {
             override fun run() {
                 passo++
-                val v = (passo / 30f).coerceIn(0.03f, 1f)
+                val v = (passo / 30f).coerceIn(0.03f, 1f) * volumeApp
                 try { player?.setVolume(v, v) } catch (_: Exception) {}
                 if (passo < 30) alca.postDelayed(this, 1000)
             }
@@ -311,33 +631,54 @@ class DespertadorAudioService : Service() {
                 "despertador_som", "Despertador tocando",
                 NotificationManager.IMPORTANCE_HIGH)
             canal.setSound(null, null)
+            canal.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             nm.createNotificationChannel(canal)
         }
     }
 
+    private fun acao(nome: String, codigo: Int): PendingIntent {
+        val i = Intent(this, DespertadorAudioService::class.java)
+        i.action = nome
+        return PendingIntent.getService(this, codigo, i,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
+
     private fun notificacao(): Notification {
-        val abrir = PendingIntent.getActivity(
-            this, 1, Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val pararIntent = Intent(this, DespertadorAudioService::class.java)
-        pararIntent.action = "PARAR"
-        val parar = PendingIntent.getService(
-            this, 2, pararIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val usadas = prefs().getLong("flutter.desp_sonecas", 0L).toInt()
+        val restam = MAX_SONECAS - usadas
         val b = if (Build.VERSION.SDK_INT >= 26)
             Notification.Builder(this, "despertador_som")
         else
             @Suppress("DEPRECATION") Notification.Builder(this)
-        return b.setContentTitle("⏰ Bom dia! A Rádio Eleva está despertando você")
-            .setContentText("Toque para abrir o app — o som cresce aos poucos")
+        // full screen intent: o Android abre a TELA DO ALARME sozinho,
+        // mesmo com o celular bloqueado
+        val telaCheia = PendingIntent.getActivity(
+            this, 9,
+            Intent(this, DespertadorAlarmeActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        b.setContentTitle("⏰ Bom dia! A Rádio Eleva está despertando você")
+            .setContentText(
+                if (restam > 0) "Adie $MIN_SONECA min (restam $restam) • abaixe o som • ou pare"
+                else "Última chamada — sonecas esgotadas 🌅")
             .setSmallIcon(applicationInfo.icon)
-            .setContentIntent(abrir)
+            .setContentIntent(telaCheia)
+            .setFullScreenIntent(telaCheia, true)
+            .setCategory(Notification.CATEGORY_ALARM)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOngoing(true)
-            .addAction(
-                Notification.Action.Builder(
-                    Icon.createWithResource(this, android.R.drawable.ic_media_pause),
-                    "PARAR", parar).build())
-            .build()
+        if (restam > 0) {
+            b.addAction(Notification.Action.Builder(
+                Icon.createWithResource(this, android.R.drawable.ic_menu_recent_history),
+                "😴 +$MIN_SONECA MIN", acao("SONECA", 2)).build())
+        }
+        b.addAction(Notification.Action.Builder(
+            Icon.createWithResource(this, android.R.drawable.ic_lock_silent_mode),
+            "🔉 VOLUME", acao("VOLUME", 3)).build())
+        b.addAction(Notification.Action.Builder(
+            Icon.createWithResource(this, android.R.drawable.ic_media_pause),
+            "⏹️ PARAR", acao("PARAR", 4)).build())
+        return b.build()
     }
 
     override fun onDestroy() {
