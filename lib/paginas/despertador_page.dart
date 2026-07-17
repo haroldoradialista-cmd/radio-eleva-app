@@ -15,8 +15,8 @@ class _DespertadorPageState extends State<DespertadorPage> {
   DateTime? _data;
   bool _ativo = false;
   String _resumo = '';
-  int _volume = 85; // volume do despertar (% do canal de alarme)
-  bool _telaCheiaOk = true;
+  Map<String, bool> _perms = {};
+  bool _testando = false;
 
   @override
   void initState() {
@@ -25,9 +25,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
   }
 
   Future<void> _carregar() async {
-    DespertadorService.podeTelaCheia().then((ok) {
-      if (mounted) setState(() => _telaCheiaOk = ok);
-    });
+    _verificarPermissoes();
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
@@ -39,8 +37,89 @@ class _DespertadorPageState extends State<DespertadorPage> {
       final d = prefs.getString('desp_data') ?? '';
       _data = d.isEmpty ? null : DateTime.tryParse(d);
       _resumo = prefs.getString('desp_resumo') ?? '';
-      _volume = prefs.getInt('desp_volume') ?? 85;
     });
+  }
+
+  Future<void> _verificarPermissoes() async {
+    final m = await DespertadorService.statusPermissoes();
+    if (mounted) setState(() => _perms = m);
+  }
+
+  Future<void> _testar() async {
+    setState(() => _testando = true);
+    try {
+      await DespertadorService.testarAgora();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: Duration(seconds: 9),
+          backgroundColor: CoresEleva.verdeEscuro,
+          content: Text(
+              '⏰ Teste ativado! BLOQUEIE A TELA agora — em 10 segundos o despertador deve acordar o celular.'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.red.shade700,
+            content: Text('Não consegui testar: $e')));
+      }
+    }
+    if (mounted) setState(() => _testando = false);
+  }
+
+  Widget _linhaPerm(String chave, String titulo, String porque) {
+    final ok = _perms[chave] ?? true;
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(ok ? Icons.check_circle_rounded : Icons.error_rounded,
+              size: 18, color: ok ? CoresEleva.verde : Colors.red.shade300),
+          SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(titulo,
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: ok
+                            ? CoresEleva.brancoSuave
+                            : Colors.red.shade100)),
+                if (!ok)
+                  Text(porque,
+                      style: TextStyle(
+                          fontSize: 10.5,
+                          height: 1.35,
+                          color: CoresEleva.textoFraco)),
+              ],
+            ),
+          ),
+          if (!ok)
+            GestureDetector(
+              onTap: () async {
+                await DespertadorService.abrirPermissao(chave);
+                await Future.delayed(Duration(seconds: 1));
+                _verificarPermissoes();
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade400,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('LIBERAR',
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white)),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   String _fmtHora(TimeOfDay h) =>
@@ -198,7 +277,6 @@ class _DespertadorPageState extends State<DespertadorPage> {
     await prefs.setInt('desp_min', _hora.minute);
     await prefs.setString('desp_data', _data?.toIso8601String() ?? '');
     await prefs.setString('desp_resumo', resumo);
-    await prefs.setInt('desp_volume', _volume);
     await prefs.setInt('desp_sonecas', 0); // as 3 sonecas voltam a valer
     if (mounted) {
       setState(() {
@@ -311,137 +389,81 @@ class _DespertadorPageState extends State<DespertadorPage> {
           valor: _fmtHora(_hora),
           aoTocar: _escolherHora,
         ),
-        if (!_telaCheiaOk)
-          Container(
-            margin: EdgeInsets.only(bottom: 12),
-            padding: EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              color: Colors.red.shade900.withOpacity(0.35),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.red.shade300, width: 1.4),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: Colors.red.shade200, size: 20),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Falta uma permissão para o despertador acordar você',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: Colors.red.shade100),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Sem ela, o alarme só manda uma notificação em vez de abrir a tela com os botões de adiar e parar.',
-                  style: TextStyle(
-                      fontSize: 11.5,
-                      height: 1.4,
-                      color: CoresEleva.brancoSuave),
-                ),
-                SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await DespertadorService.abrirPermissaoTelaCheia();
-                      await Future.delayed(Duration(seconds: 1));
-                      final ok = await DespertadorService.podeTelaCheia();
-                      if (mounted) setState(() => _telaCheiaOk = ok);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade400,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 11),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22)),
-                      textStyle: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w800),
-                    ),
-                    child: Text('🔓 LIBERAR AGORA'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        SizedBox(height: 4),
-
-        // ===== VOLUME DO DESPERTAR =====
+        // ===== PERMISSÕES DO DESPERTADOR =====
         Container(
           margin: EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.fromLTRB(14, 10, 14, 4),
+          padding: EdgeInsets.fromLTRB(14, 12, 14, 8),
           decoration: BoxDecoration(
             color: CoresEleva.azulMedio,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: CoresEleva.borda),
+            border: Border.all(
+                color: _perms.values.every((v) => v)
+                    ? CoresEleva.borda
+                    : Colors.red.shade300,
+                width: _perms.values.every((v) => v) ? 1 : 1.5),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                      _volume <= 35
-                          ? Icons.volume_mute_rounded
-                          : _volume <= 70
-                              ? Icons.volume_down_rounded
-                              : Icons.volume_up_rounded,
-                      color: CoresEleva.dourado,
-                      size: 20),
-                  SizedBox(width: 8),
-                  Text('Volume do despertar',
+                  Icon(Icons.shield_rounded,
+                      size: 18, color: CoresEleva.dourado),
+                  SizedBox(width: 6),
+                  Text('Permissões do despertador',
                       style: TextStyle(
-                          fontSize: 12.5, color: CoresEleva.textoFraco)),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: CoresEleva.branco)),
                   Spacer(),
-                  Text('$_volume%',
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
-                          color: CoresEleva.dourado)),
+                  GestureDetector(
+                    onTap: _verificarPermissoes,
+                    child: Icon(Icons.refresh_rounded,
+                        size: 18, color: CoresEleva.dourado),
+                  ),
                 ],
               ),
-              SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: CoresEleva.dourado,
-                  inactiveTrackColor: Colors.white24,
-                  thumbColor: CoresEleva.dourado,
-                  overlayColor: CoresEleva.dourado.withOpacity(0.15),
-                  trackHeight: 4,
+              SizedBox(height: 10),
+              _linhaPerm('notificacao', 'Notificações',
+                  'Sem ela o alarme não consegue tocar nem aparecer.'),
+              _linhaPerm('alarme', 'Alarmes e lembretes',
+                  'Sem ela o despertador não toca na hora exata.'),
+              _linhaPerm('telacheia', 'Notificações em tela cheia',
+                  'Sem ela a tela não acende com os botões de adiar e parar.'),
+              _linhaPerm('bateria', 'Sem economia de bateria',
+                  'A economia pode segurar o alarme e atrasar o despertar.'),
+              if (_perms.values.every((v) => v) && _perms.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(top: 2, bottom: 4),
+                  child: Text('Tudo liberado — pode dormir tranquilo! 🌙',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: CoresEleva.verde)),
                 ),
-                child: Slider(
-                  value: _volume.toDouble(),
-                  min: 20,
-                  max: 100,
-                  divisions: 16,
-                  onChanged: (v) => setState(() => _volume = v.round()),
-                  onChangeEnd: (v) async {
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setInt('desp_volume', v.round());
-                  },
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(left: 2, bottom: 6),
-                child: Text(
-                  'O celular ajusta o volume do alarme sozinho na hora de despertar. Durante o despertar, dá para abaixar pelo botão 🔉 da notificação ou pelas teclas de volume.',
-                  style: TextStyle(
-                      fontSize: 10.5,
-                      height: 1.4,
-                      color: CoresEleva.textoFraco),
-                ),
-              ),
             ],
           ),
         ),
+
+        // ===== TESTE RÁPIDO =====
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _testando ? null : _testar,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: CoresEleva.dourado,
+              side: BorderSide(color: CoresEleva.dourado, width: 1.4),
+              padding: EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(26)),
+              textStyle:
+                  TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+            ),
+            icon: Icon(Icons.play_circle_outline_rounded, size: 20),
+            label: Text('🔔 TESTAR DESPERTADOR (10 SEGUNDOS)'),
+          ),
+        ),
+        SizedBox(height: 12),
 
         SizedBox(
           width: double.infinity,

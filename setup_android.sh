@@ -8,7 +8,7 @@ flutter create --org br.com.radioeleva --project-name radio_eleva --platforms an
 M=android/app/src/main/AndroidManifest.xml
 
 # 2. Permissões (internet, áudio em segundo plano e notificações)
-sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>\n    <uses-permission android:name="android.permission.VIBRATE"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <application#' "$M"
+sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>\n    <uses-permission android:name="android.permission.VIBRATE"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <application#' "$M"
 
 # 3. Serviço de áudio (notificação com play/pause e tocar com tela desligada)
 sed -i 's#</application>#    <service android:name="com.ryanheise.audioservice.AudioService" android:foregroundServiceType="mediaPlayback" android:exported="true">\n            <intent-filter>\n                <action android:name="android.media.browse.MediaBrowserService"/>\n            </intent-filter>\n        </service>\n        <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MEDIA_BUTTON"/>\n            </intent-filter>\n        </receiver>\n    </application>#' "$M"
@@ -137,6 +137,77 @@ class MainActivity : AudioServiceActivity() {
                     stopService(Intent(this, DespertadorAudioService::class.java))
                     result.success(true)
                 }
+                "statusPermissoes" -> {
+                    val m = HashMap<String, Boolean>()
+                    // notificação (Android 13+)
+                    var notif = true
+                    if (android.os.Build.VERSION.SDK_INT >= 33) {
+                        notif = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                                android.content.pm.PackageManager.PERMISSION_GRANTED
+                    }
+                    m["notificacao"] = notif
+                    // alarme exato (Android 12+)
+                    var alarme = true
+                    if (android.os.Build.VERSION.SDK_INT >= 31) {
+                        try {
+                            val am = getSystemService(android.app.AlarmManager::class.java)
+                            alarme = am.canScheduleExactAlarms()
+                        } catch (e: Exception) {}
+                    }
+                    m["alarme"] = alarme
+                    // tela cheia (Android 14+)
+                    var fsi = true
+                    if (android.os.Build.VERSION.SDK_INT >= 34) {
+                        try {
+                            val nm = getSystemService(android.app.NotificationManager::class.java)
+                            fsi = nm.canUseFullScreenIntent()
+                        } catch (e: Exception) {}
+                    }
+                    m["telacheia"] = fsi
+                    // economia de bateria
+                    var bateria = true
+                    try {
+                        val pm = getSystemService(android.os.PowerManager::class.java)
+                        bateria = pm.isIgnoringBatteryOptimizations(packageName)
+                    } catch (e: Exception) {}
+                    m["bateria"] = bateria
+                    result.success(m)
+                }
+                "abrirPermissao" -> {
+                    val qual = call.argument<String>("qual") ?: ""
+                    try {
+                        val pac = android.net.Uri.parse("package:" + packageName)
+                        val i = when (qual) {
+                            "notificacao" ->
+                                Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                            "alarme" ->
+                                Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).setData(pac)
+                            "telacheia" ->
+                                Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).setData(pac)
+                            "bateria" ->
+                                Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).setData(pac)
+                            else ->
+                                Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(pac)
+                        }
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(i)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        try {
+                            val i2 = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                .setData(android.net.Uri.parse("package:" + packageName))
+                            i2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            startActivity(i2)
+                        } catch (e2: Exception) {}
+                        result.success(false)
+                    }
+                }
+                "testarAgora" -> {
+                    val quando = System.currentTimeMillis() + 10000
+                    DespertadorReceiver.agendar(this, quando, false, false)
+                    result.success(true)
+                }
                 "podeTelaCheia" -> {
                     // Android 14+: precisa da permissão de notificação em tela cheia
                     var pode = true
@@ -187,7 +258,6 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.SeekBar
 import android.widget.TextView
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -287,33 +357,6 @@ class DespertadorAlarmeActivity : Activity() {
         sub.gravity = Gravity.CENTER
         sub.setPadding(0, dp(6), 0, dp(18))
         raiz.addView(sub)
-
-        // ===== VOLUME (sem desbloquear) =====
-        val rotVol = TextView(this)
-        rotVol.text = "🔉 Volume do despertador"
-        rotVol.textSize = 13f
-        rotVol.setTextColor(Color.parseColor("#E9E7FF"))
-        raiz.addView(rotVol)
-
-        val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val barra = SeekBar(this)
-        barra.max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-        barra.progress = am.getStreamVolume(AudioManager.STREAM_ALARM)
-        barra.setPadding(dp(4), dp(10), dp(4), dp(10))
-        barra.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(s: SeekBar?, valor: Int, doUsuario: Boolean) {
-                if (doUsuario) {
-                    try {
-                        am.setStreamVolume(AudioManager.STREAM_ALARM,
-                            valor.coerceAtLeast(0), 0)
-                        enviar("VOLUME_" + valor)
-                    } catch (_: Exception) {}
-                }
-            }
-            override fun onStartTrackingTouch(s: SeekBar?) {}
-            override fun onStopTrackingTouch(s: SeekBar?) {}
-        })
-        raiz.addView(barra)
 
         // ===== ADIAR 5 MINUTOS (até 3 vezes) =====
         val usadas = prefs().getLong("flutter.desp_sonecas", 0L).toInt()
@@ -459,7 +502,6 @@ class DespertadorAudioService : Service() {
     private var player: MediaPlayer? = null
     private val alca = Handler(Looper.getMainLooper())
     private var passo = 0
-    private var volumeApp = 1.0f          // volume do player (0..1)
 
     companion object {
         const val MAX_SONECAS = 3         // adiar no máximo 3 vezes
@@ -489,12 +531,6 @@ class DespertadorAudioService : Service() {
                 stopSelf(); return START_NOT_STICKY
             }
             acao == "SONECA" -> { soneca(); return START_NOT_STICKY }
-            acao == "VOLUME" -> { abaixarVolume(); return START_NOT_STICKY }
-            acao.startsWith("VOLUME_") -> {   // barra da tela de alarme
-                val v = acao.removePrefix("VOLUME_").toIntOrNull()
-                if (v != null) ajustarPeloSistema(v)
-                return START_NOT_STICKY
-            }
         }
         ajustarVolumeSistema()
         abrirTelaAlarme()   // tela cheia sobre o bloqueio
@@ -514,36 +550,14 @@ class DespertadorAudioService : Service() {
         } catch (_: Exception) {}
     }
 
-    /// A barra de volume da tela mexe também no volume do player
-    private fun ajustarPeloSistema(nivel: Int) {
-        try {
-            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            volumeApp = if (maximo > 0) (nivel.toFloat() / maximo).coerceIn(0.02f, 1f) else 1f
-            player?.setVolume(volumeApp, volumeApp)
-        } catch (_: Exception) {}
-    }
-
-    // ===== VOLUME =====
     /// Coloca o canal de alarme no volume escolhido pelo ouvinte no app
     private fun ajustarVolumeSistema() {
         try {
-            val pct = prefs().getLong("flutter.desp_volume", 85L).toInt().coerceIn(10, 100)
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            val alvo = (maximo * pct / 100f).toInt().coerceAtLeast(1)
+            val alvo = (maximo * 0.80f).toInt().coerceAtLeast(1)  // padrão: 80%
             am.setStreamVolume(AudioManager.STREAM_ALARM, alvo, 0)
         } catch (_: Exception) {}
-    }
-
-    /// Botão 🔉 da notificação: abaixa o som sem sair da cama
-    private fun abaixarVolume() {
-        try {
-            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_LOWER, 0)
-        } catch (_: Exception) {}
-        volumeApp = (volumeApp - 0.25f).coerceAtLeast(0.10f)
-        try { player?.setVolume(volumeApp, volumeApp) } catch (_: Exception) {}
     }
 
     // ===== SONECA =====
@@ -616,7 +630,7 @@ class DespertadorAudioService : Service() {
         val rampa = object : Runnable {
             override fun run() {
                 passo++
-                val v = (passo / 30f).coerceIn(0.03f, 1f) * volumeApp
+                val v = (passo / 30f).coerceIn(0.03f, 1f)
                 try { player?.setVolume(v, v) } catch (_: Exception) {}
                 if (passo < 30) alca.postDelayed(this, 1000)
             }
@@ -672,9 +686,6 @@ class DespertadorAudioService : Service() {
                 Icon.createWithResource(this, android.R.drawable.ic_menu_recent_history),
                 "😴 +$MIN_SONECA MIN", acao("SONECA", 2)).build())
         }
-        b.addAction(Notification.Action.Builder(
-            Icon.createWithResource(this, android.R.drawable.ic_lock_silent_mode),
-            "🔉 VOLUME", acao("VOLUME", 3)).build())
         b.addAction(Notification.Action.Builder(
             Icon.createWithResource(this, android.R.drawable.ic_media_pause),
             "⏹️ PARAR", acao("PARAR", 4)).build())

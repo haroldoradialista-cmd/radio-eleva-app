@@ -65,6 +65,32 @@ class DespertadorService {
     await _gravarAlarme(primeiro, true);
   }
 
+  /// Estado de cada permissão que o despertador precisa
+  static Future<Map<String, bool>> statusPermissoes() async {
+    try {
+      final r = await _canal
+          .invokeMethod('statusPermissoes')
+          .timeout(Duration(seconds: 4));
+      return Map<String, bool>.from(r as Map);
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Abre direto a tela de configuração daquela permissão
+  static Future<void> abrirPermissao(String qual) async {
+    try {
+      await _canal
+          .invokeMethod('abrirPermissao', {'qual': qual})
+          .timeout(Duration(seconds: 4));
+    } catch (_) {}
+  }
+
+  /// Dispara um alarme de teste daqui a 10 segundos
+  static Future<void> testarAgora() async {
+    await _canal.invokeMethod('testarAgora').timeout(Duration(seconds: 4));
+  }
+
   /// Android 14+: a tela cheia do alarme exige permissão especial
   static Future<bool> podeTelaCheia() async {
     try {
