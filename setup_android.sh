@@ -8,7 +8,7 @@ flutter create --org br.com.radioeleva --project-name radio_eleva --platforms an
 M=android/app/src/main/AndroidManifest.xml
 
 # 2. Permissões (internet, áudio em segundo plano e notificações)
-sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>\n    <uses-permission android:name="android.permission.VIBRATE"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <application#' "$M"
+sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>\n    <uses-permission android:name="android.permission.VIBRATE"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n    <application#' "$M"
 
 # 3. Serviço de áudio (notificação com play/pause e tocar com tela desligada)
 sed -i 's#</application>#    <service android:name="com.ryanheise.audioservice.AudioService" android:foregroundServiceType="mediaPlayback" android:exported="true">\n            <intent-filter>\n                <action android:name="android.media.browse.MediaBrowserService"/>\n            </intent-filter>\n        </service>\n        <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MEDIA_BUTTON"/>\n            </intent-filter>\n        </receiver>\n    </application>#' "$M"
@@ -164,6 +164,14 @@ class MainActivity : AudioServiceActivity() {
                         } catch (e: Exception) {}
                     }
                     m["telacheia"] = fsi
+                    // sobreposição (garante a tela do alarme sobre o bloqueio)
+                    var sobrepor = true
+                    try {
+                        if (android.os.Build.VERSION.SDK_INT >= 23) {
+                            sobrepor = android.provider.Settings.canDrawOverlays(this)
+                        }
+                    } catch (e: Exception) {}
+                    m["sobreposicao"] = sobrepor
                     // economia de bateria
                     var bateria = true
                     try {
@@ -185,6 +193,8 @@ class MainActivity : AudioServiceActivity() {
                                 Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).setData(pac)
                             "telacheia" ->
                                 Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).setData(pac)
+                            "sobreposicao" ->
+                                Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION).setData(pac)
                             "bateria" ->
                                 Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).setData(pac)
                             else ->
@@ -312,7 +322,7 @@ class DespertadorAlarmeActivity : Activity() {
     private fun botao(texto: String, cor: String, aoTocar: () -> Unit): Button {
         val bt = Button(this)
         bt.text = texto
-        bt.textSize = 17f
+        bt.textSize = 18f
         bt.setTextColor(Color.WHITE)
         bt.isAllCaps = false
         val fundo = GradientDrawable()
@@ -362,11 +372,14 @@ class DespertadorAlarmeActivity : Activity() {
         val usadas = prefs().getLong("flutter.desp_sonecas", 0L).toInt()
         val restam = 3 - usadas
         if (restam > 0) {
-            raiz.addView(botao(
-                "😴  ADIAR 5 MINUTOS   (" + restam + " restante" + (if (restam == 1) "" else "s") + ")",
+            val adiar = botao(
+                "😴  ADIAR 5 MINUTOS\n(" + restam + " restante" + (if (restam == 1) "" else "s") + ")",
                 "#1B7A4B") {
                 enviar("SONECA"); finish()
-            })
+            }
+            adiar.textSize = 22f
+            adiar.setPadding(dp(16), dp(30), dp(16), dp(30))
+            raiz.addView(adiar)
         } else {
             val aviso = TextView(this)
             aviso.text = "🌅 Sonecas esgotadas — hora de levantar!"

@@ -428,8 +428,10 @@ class _DespertadorPageState extends State<DespertadorPage> {
                   'Sem ela o alarme não consegue tocar nem aparecer.'),
               _linhaPerm('alarme', 'Alarmes e lembretes',
                   'Sem ela o despertador não toca na hora exata.'),
-              _linhaPerm('telacheia', 'Notificações em tela cheia',
-                  'Sem ela a tela não acende com os botões de adiar e parar.'),
+              _linhaPerm('telacheia', 'Notificações em tela cheia ⭐',
+                  'ESSENCIAL: é ela que acende a tela com o botão ADIAR no meio. Sem ela, o alarme só notifica.'),
+              _linhaPerm('sobreposicao', 'Aparecer sobre outros apps ⭐',
+                  'ESSENCIAL: garante a tela de adiar mesmo com o celular bloqueado.'),
               _linhaPerm('bateria', 'Sem economia de bateria',
                   'A economia pode segurar o alarme e atrasar o despertar.'),
               if (_perms.values.every((v) => v) && _perms.isNotEmpty)
