@@ -16,7 +16,6 @@ class _DespertadorPageState extends State<DespertadorPage> {
   bool _ativo = false;
   String _resumo = '';
   Map<String, bool> _perms = {};
-  bool _testando = false;
 
   @override
   void initState() {
@@ -43,28 +42,6 @@ class _DespertadorPageState extends State<DespertadorPage> {
   Future<void> _verificarPermissoes() async {
     final m = await DespertadorService.statusPermissoes();
     if (mounted) setState(() => _perms = m);
-  }
-
-  Future<void> _testar() async {
-    setState(() => _testando = true);
-    try {
-      await DespertadorService.testarAgora();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          duration: Duration(seconds: 9),
-          backgroundColor: CoresEleva.verdeEscuro,
-          content: Text(
-              '⏰ Teste ativado! BLOQUEIE A TELA agora — em 10 segundos o despertador deve acordar o celular.'),
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.red.shade700,
-            content: Text('Não consegui testar: $e')));
-      }
-    }
-    if (mounted) setState(() => _testando = false);
   }
 
   Widget _linhaPerm(String chave, String titulo, String porque) {
@@ -432,8 +409,26 @@ class _DespertadorPageState extends State<DespertadorPage> {
                   'ESSENCIAL: é ela que acende a tela com o botão ADIAR no meio. Sem ela, o alarme só notifica.'),
               _linhaPerm('sobreposicao', 'Aparecer sobre outros apps ⭐',
                   'ESSENCIAL: garante a tela de adiar mesmo com o celular bloqueado.'),
-              _linhaPerm('bateria', 'Sem economia de bateria',
-                  'A economia pode segurar o alarme e atrasar o despertar.'),
+              _linhaPerm('bateria', 'Economia de bateria DESLIGADA ⭐',
+                  'IMPORTANTE: mantenha a economia de bateria DESLIGADA para este app. Com ela ligada, o celular segura o alarme e o despertador pode atrasar ou nem tocar.'),
+              if (_perms['bateria'] == false)
+                Container(
+                  margin: EdgeInsets.only(top: 4, bottom: 6),
+                  padding: EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade900.withOpacity(0.35),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.red.shade300),
+                  ),
+                  child: Text(
+                    '🔋 Ao tocar em LIBERAR, o Android pergunta se pode ignorar a economia de bateria para a Rádio Eleva: responda PERMITIR. Nunca ative "economia de bateria" ou "colocar o app em suspensão" para este app — é isso que faz o despertador falhar.',
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        height: 1.45,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red.shade100),
+                  ),
+                ),
               if (_perms.values.every((v) => v) && _perms.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.only(top: 2, bottom: 4),
@@ -446,26 +441,6 @@ class _DespertadorPageState extends State<DespertadorPage> {
             ],
           ),
         ),
-
-        // ===== TESTE RÁPIDO =====
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _testando ? null : _testar,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: CoresEleva.dourado,
-              side: BorderSide(color: CoresEleva.dourado, width: 1.4),
-              padding: EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26)),
-              textStyle:
-                  TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
-            ),
-            icon: Icon(Icons.play_circle_outline_rounded, size: 20),
-            label: Text('🔔 TESTAR DESPERTADOR (10 SEGUNDOS)'),
-          ),
-        ),
-        SizedBox(height: 12),
 
         SizedBox(
           width: double.infinity,
@@ -494,7 +469,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
                 Border.all(color: CoresEleva.dourado.withOpacity(0.6)),
           ),
           child: Text(
-            '😴 SONECA: na hora do alarme, a tela acende (mesmo bloqueada) com os botões grandes ADIAR 5 MINUTOS (até 3 vezes), a barra de volume e PARAR — sem precisar desbloquear o celular.\n\nℹ️ Na hora marcada, a tela do celular acende com a Rádio Eleva e a música começa a tocar. Permita tudo o que o app pedir ao ativar. IMPORTANTE: se no horário chegar apenas a notificação (sem a rádio abrir sozinha), ative a permissão de tela cheia: Configurações → Aplicativos → Rádio Eleva → Notificações → "Tela cheia" (ou "Acesso especial → Notificações de tela cheia"). Com ela ligada, o despertador acorda você com a rádio tocando. É preciso internet no horário do alarme.',
+            '😴 Na hora do alarme, a tela acende (mesmo bloqueada) com a logo da rádio, a hora, a saudação do momento e um versículo de motivação — mais os botões grandes ADIAR 5 MINUTOS (até 3 vezes) e PARAR, sem precisar desbloquear o celular. O som sobe suavemente até 80%.\n\nℹ️ Na hora marcada, a tela do celular acende com a Rádio Eleva e a música começa a tocar. Permita tudo o que o app pedir ao ativar. IMPORTANTE: se no horário chegar apenas a notificação (sem a rádio abrir sozinha), ative a permissão de tela cheia: Configurações → Aplicativos → Rádio Eleva → Notificações → "Tela cheia" (ou "Acesso especial → Notificações de tela cheia"). Com ela ligada, o despertador acorda você com a rádio tocando. É preciso internet no horário do alarme.',
             style: TextStyle(
                 fontSize: 11.5,
                 height: 1.45,

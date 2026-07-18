@@ -29,6 +29,23 @@ KOTLIN
 # 5b. Despertador: receptores de alarme (disparam mesmo com o app fechado)
 sed -i 's#</application>#    <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" android:exported="false"/>\n        <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="false">\n            <intent-filter>\n                <action android:name="android.intent.action.BOOT_COMPLETED"/>\n                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>\n                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n            </intent-filter>\n        </receiver>\n        <receiver android:name="br.com.radioeleva.radio_eleva.DespertadorReceiver" android:exported="false"/>\n        <service android:name="br.com.radioeleva.radio_eleva.DespertadorAudioService" android:exported="false" android:foregroundServiceType="mediaPlayback"/>\n    </application>#' "$M"
 
+# 5b1. Logo da rádio para a tela do despertador
+mkdir -p android/app/src/main/res/drawable
+if [ -f assets/logo.png ]; then
+  cp assets/logo.png android/app/src/main/res/drawable/logo_eleva.png
+  echo "Logo instalada na tela do despertador."
+fi
+
+# 5b1b. Versículos do despertador (arquivo versiculos.txt na raiz do repo)
+mkdir -p android/app/src/main/res/raw
+if [ -f versiculos.txt ]; then
+  cp versiculos.txt android/app/src/main/res/raw/versiculos.txt
+  QTD=$(grep -v '^#' versiculos.txt | grep -c '|' || echo 0)
+  echo "Versículos instalados no despertador: $QTD"
+else
+  echo "AVISO: versiculos.txt nao encontrado - o despertador usara o banco reserva embutido."
+fi
+
 # 5b2. Tela do alarme (aparece sobre o bloqueio) — registro no manifesto
 sed -i 's#</application>#    <activity android:name="br.com.radioeleva.radio_eleva.DespertadorAlarmeActivity" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true" android:excludeFromRecents="true" android:launchMode="singleTask" android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.NoActionBar"/>\n    </application>#' "$M"
 
@@ -277,6 +294,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import java.text.SimpleDateFormat
@@ -288,6 +306,96 @@ import java.util.Locale
 class DespertadorAlarmeActivity : Activity() {
     private val alca = Handler(Looper.getMainLooper())
     private var relogio: TextView? = null
+
+    companion object {
+        /// Banco RESERVA (usado só se o versiculos.txt não estiver no repositório)
+        val VERSICULOS = arrayOf(
+            "Tudo posso naquele que me fortalece|Filipenses 4:13",
+            "O Senhor é o meu pastor; nada me faltará|Salmos 23:1",
+            "Não temas, porque eu sou contigo; não te assombres, porque eu sou o teu Deus; eu te fortaleço, e te ajudo|Isaías 41:10",
+            "Esforça-te, e tem bom ânimo; não temas, nem te espantes, porque o Senhor teu Deus é contigo por onde quer que andares|Josué 1:9",
+            "Os que esperam no Senhor renovarão as suas forças; subirão com asas como águias; correrão, e não se cansarão|Isaías 40:31",
+            "Entrega o teu caminho ao Senhor; confia nele, e ele o fará|Salmos 37:5",
+            "Todas as coisas contribuem juntamente para o bem daqueles que amam a Deus|Romanos 8:28",
+            "Se Deus é por nós, quem será contra nós?|Romanos 8:31",
+            "Em todas estas coisas somos mais que vencedores, por aquele que nos amou|Romanos 8:37",
+            "O choro pode durar uma noite, mas a alegria vem pela manhã|Salmos 30:5",
+            "Este é o dia que fez o Senhor; regozijemo-nos, e alegremo-nos nele|Salmos 118:24",
+            "As misericórdias do Senhor renovam-se cada manhã; grande é a tua fidelidade|Lamentações 3:22-23",
+            "Deleita-te também no Senhor, e ele te concederá os desejos do teu coração|Salmos 37:4",
+            "Eu bem sei os pensamentos que tenho a vosso respeito: pensamentos de paz, e não de mal, para vos dar o fim que esperais|Jeremias 29:11",
+            "O Senhor é a minha luz e a minha salvação; a quem temerei?|Salmos 27:1",
+            "Buscai primeiro o reino de Deus, e a sua justiça, e todas estas coisas vos serão acrescentadas|Mateus 6:33",
+            "Lançando sobre ele toda a vossa ansiedade, porque ele tem cuidado de vós|1 Pedro 5:7",
+            "O Senhor pelejará por vós, e vós vos calareis|Êxodo 14:14",
+            "Bem-aventurado o homem que confia no Senhor, e cuja esperança é o Senhor|Jeremias 17:7",
+            "Alegrai-vos sempre no Senhor; outra vez digo: alegrai-vos|Filipenses 4:4",
+            "A alegria do Senhor é a vossa força|Neemias 8:10",
+            "Confia no Senhor de todo o teu coração, e não te estribes no teu próprio entendimento|Provérbios 3:5",
+            "Reconhece-o em todos os teus caminhos, e ele endireitará as tuas veredas|Provérbios 3:6",
+            "Deus não nos deu o espírito de temor, mas de fortaleza, e de amor, e de moderação|2 Timóteo 1:7",
+            "Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia|Salmos 46:1",
+            "Ainda que eu andasse pelo vale da sombra da morte, não temeria mal algum, porque tu estás comigo|Salmos 23:4",
+            "Espera no Senhor, anima-te, e ele fortalecerá o teu coração|Salmos 27:14",
+            "Clama a mim, e responder-te-ei, e anunciar-te-ei coisas grandes e firmes que não sabes|Jeremias 33:3",
+            "As coisas que são impossíveis aos homens são possíveis a Deus|Lucas 18:27",
+            "Se tu podes crer, tudo é possível ao que crê|Marcos 9:23",
+            "Sede fortes e corajosos; não temais, porque o Senhor teu Deus é o que vai contigo|Deuteronômio 31:6",
+            "O justo florescerá como a palmeira; crescerá como o cedro no Líbano|Salmos 92:12",
+            "Ele dá força ao cansado, e multiplica as forças ao que não tem nenhum vigor|Isaías 40:29",
+            "Os que semeiam em lágrimas segarão com alegria|Salmos 126:5",
+            "Não nos cansemos de fazer o bem, porque a seu tempo ceifaremos, se não houvermos desfalecido|Gálatas 6:9",
+            "O Senhor te abençoe e te guarde; o Senhor faça resplandecer o seu rosto sobre ti|Números 6:24-25",
+            "Grandes coisas fez o Senhor por nós, e por isso estamos alegres|Salmos 126:3",
+            "Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei|Mateus 11:28",
+            "A paz vos deixo, a minha paz vos dou; não se turbe o vosso coração, nem se atemorize|João 14:27",
+            "Eis que estou convosco todos os dias, até a consumação dos séculos|Mateus 28:20",
+            "Maior é o que está em vós do que o que está no mundo|1 João 4:4",
+            "Nenhuma arma forjada contra ti prosperará|Isaías 54:17",
+            "O Senhor é bom, é uma fortaleza no dia da angústia, e conhece os que confiam nele|Naum 1:7",
+            "Bendize, ó minha alma, ao Senhor, e não te esqueças de nenhum de seus benefícios|Salmos 103:2",
+            "Provai e vede que o Senhor é bom; bem-aventurado o homem que nele confia|Salmos 34:8",
+            "Muitas são as aflições do justo, mas o Senhor o livra de todas|Salmos 34:19",
+            "Eu me deitei e dormi; acordei, porque o Senhor me sustentou|Salmos 3:5",
+            "Pela manhã ouvirás a minha voz, ó Senhor; pela manhã apresentarei a ti a minha oração|Salmos 5:3",
+            "Eu, porém, cantarei a tua força; pela manhã louvarei com alegria a tua misericórdia|Salmos 59:16",
+            "Faze-me ouvir a tua benignidade pela manhã, pois em ti confio|Salmos 143:8",
+            "O Senhor é a força da minha vida; de quem me recearei?|Salmos 27:1",
+            "Tu és o meu esconderijo; tu me preservas da angústia e me cercas de alegres cantos de livramento|Salmos 32:7",
+            "Contigo desbarato exércitos; com o meu Deus salto muralhas|Salmos 18:29",
+            "O Senhor é o meu rochedo, e o meu lugar forte, e o meu libertador|Salmos 18:2",
+            "Os olhos do Senhor estão sobre os justos, e os seus ouvidos atentos ao seu clamor|Salmos 34:15",
+            "Os passos de um homem bom são confirmados pelo Senhor, e ele deleita-se no seu caminho|Salmos 37:23",
+            "Ainda que eu caia, levantar-me-ei; se morar nas trevas, o Senhor será a minha luz|Miqueias 7:8",
+            "Sete vezes cairá o justo, e se levantará|Provérbios 24:16",
+            "A vereda dos justos é como a luz da aurora, que vai brilhando mais e mais até ser dia perfeito|Provérbios 4:18",
+            "Alegrai-vos na esperança, sede pacientes na tribulação, perseverai na oração|Romanos 12:12",
+            "Combati o bom combate, acabei a carreira, guardei a fé|2 Timóteo 4:7",
+            "Prossigo para o alvo, pelo prêmio da soberana vocação de Deus em Cristo Jesus|Filipenses 3:14",
+            "Se alguém está em Cristo, nova criatura é: as coisas velhas já passaram; eis que tudo se fez novo|2 Coríntios 5:17",
+            "A minha graça te basta, porque o meu poder se aperfeiçoa na fraqueza|2 Coríntios 12:9",
+            "Porque andamos por fé, e não por vista|2 Coríntios 5:7",
+            "Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu|Eclesiastes 3:1",
+            "Louvai ao Senhor, porque ele é bom, porque a sua benignidade dura para sempre|Salmos 107:1",
+            "O Senhor aperfeiçoará o que me diz respeito|Salmos 138:8",
+            "O meu socorro vem do Senhor, que fez o céu e a terra|Salmos 121:2",
+            "O Senhor guardará a tua entrada e a tua saída, desde agora e para sempre|Salmos 121:8",
+            "Deus é o que me cinge de força e aperfeiçoa o meu caminho|Salmos 18:32",
+            "Aquietai-vos, e sabei que eu sou Deus|Salmos 46:10",
+            "A esperança não traz confusão, porque o amor de Deus está derramado em nossos corações|Romanos 5:5",
+            "Cantai ao Senhor um cântico novo, porque fez maravilhas|Salmos 98:1",
+            "Lâmpada para os meus pés é a tua palavra, e luz para o meu caminho|Salmos 119:105",
+            "Sê forte, e tem bom ânimo; espera no Senhor|Salmos 27:14",
+            "Ele te sustentará; nunca permitirá que o justo seja abalado|Salmos 55:22",
+            "O Senhor é compassivo e misericordioso, longânimo e grande em benignidade|Salmos 103:8",
+            "Melhor é o fim das coisas do que o princípio delas|Eclesiastes 7:8",
+            "Deus é fiel, e não permitirá que sejais tentados acima do que podeis|1 Coríntios 10:13",
+            "Deitar-me-ei e dormirei em paz, porque só tu, Senhor, me fazes habitar em segurança|Salmos 4:8",
+            "Aquele que começou a boa obra em vós há de completá-la|Filipenses 1:6",
+            "O nome do Senhor é torre forte; para ela corre o justo, e está seguro|Provérbios 18:10"
+        )
+    }
+
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
@@ -348,35 +456,97 @@ class DespertadorAlarmeActivity : Activity() {
         return bt
     }
 
+    /// Lê os versículos de res/raw/versiculos.txt (arquivo do repositório).
+    /// Se faltar, usa o banco reserva embutido.
+    private fun carregarVersiculos(): List<String> {
+        try {
+            val id = resources.getIdentifier("versiculos", "raw", packageName)
+            if (id != 0) {
+                val linhas = resources.openRawResource(id).bufferedReader()
+                    .readLines()
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains("|") }
+                if (linhas.size >= 5) return linhas
+            }
+        } catch (_: Exception) {}
+        return VERSICULOS.toList()
+    }
+
+    /// Saudação conforme a hora: madrugada/manhã, tarde ou noite
+    private fun saudacao(): String {
+        val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        return when {
+            h < 12 -> "BOM DIA!"
+            h < 18 -> "BOA TARDE!"
+            else -> "BOA NOITE!"
+        }
+    }
+
+    private fun emojiSaudacao(): String {
+        val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        return when {
+            h < 12 -> "☀️"
+            h < 18 -> "🌤️"
+            else -> "🌙"
+        }
+    }
+
     private fun montarTela(): View {
         val raiz = LinearLayout(this)
         raiz.orientation = LinearLayout.VERTICAL
         raiz.gravity = Gravity.CENTER
         raiz.setBackgroundColor(Color.parseColor("#0E0857"))
-        raiz.setPadding(dp(26), dp(36), dp(26), dp(36))
+        raiz.setPadding(dp(24), dp(28), dp(24), dp(28))
 
-        val titulo = TextView(this)
-        titulo.text = "⏰ BOM DIA!"
-        titulo.textSize = 30f
-        titulo.setTextColor(Color.parseColor("#FFD65A"))
-        titulo.gravity = Gravity.CENTER
-        raiz.addView(titulo)
+        // ===== LOGO DA RÁDIO =====
+        try {
+            val logo = ImageView(this)
+            val id = resources.getIdentifier("logo_eleva", "drawable", packageName)
+            if (id != 0) logo.setImageResource(id)
+            else logo.setImageDrawable(packageManager.getApplicationIcon(packageName))
+            val lp = LinearLayout.LayoutParams(dp(96), dp(96))
+            lp.bottomMargin = dp(6)
+            logo.layoutParams = lp
+            raiz.addView(logo)
+        } catch (_: Exception) {}
 
+        // ===== HORA =====
         val hora = TextView(this)
         hora.text = SimpleDateFormat("HH:mm", Locale("pt", "BR")).format(Date())
-        hora.textSize = 68f
+        hora.textSize = 62f
         hora.setTextColor(Color.WHITE)
         hora.gravity = Gravity.CENTER
         relogio = hora
         raiz.addView(hora)
 
-        val sub = TextView(this)
-        sub.text = "A Rádio Eleva está tocando para você\nAdore • Viva • Eleve"
-        sub.textSize = 14f
-        sub.setTextColor(Color.parseColor("#BDB8F0"))
-        sub.gravity = Gravity.CENTER
-        sub.setPadding(0, dp(6), 0, dp(18))
-        raiz.addView(sub)
+        // ===== SAUDAÇÃO (conforme o horário) =====
+        val ola = TextView(this)
+        ola.text = emojiSaudacao() + " " + saudacao()
+        ola.textSize = 28f
+        ola.setTextColor(Color.parseColor("#FFD65A"))
+        ola.gravity = Gravity.CENTER
+        ola.setPadding(0, dp(2), 0, dp(10))
+        raiz.addView(ola)
+
+        // ===== VERSÍCULO MOTIVACIONAL (sorteado a cada despertar) =====
+        val banco = carregarVersiculos()
+        val sorteado = banco[java.util.Random().nextInt(banco.size)]
+        val partes = sorteado.split("|")
+        val verso = TextView(this)
+        verso.text = "\u201C" + partes[0] + "\u201D"
+        verso.textSize = 15f
+        verso.setTextColor(Color.parseColor("#E9E7FF"))
+        verso.gravity = Gravity.CENTER
+        verso.setLineSpacing(dp(3).toFloat(), 1f)
+        raiz.addView(verso)
+
+        val ref = TextView(this)
+        ref.text = partes[1]
+        ref.textSize = 13f
+        ref.setTextColor(Color.parseColor("#35C733"))
+        ref.gravity = Gravity.CENTER
+        ref.setPadding(0, dp(4), 0, dp(14))
+        raiz.addView(ref)
 
         // ===== ADIAR 5 MINUTOS (até 3 vezes) =====
         val usadas = prefs().getLong("flutter.desp_sonecas", 0L).toInt()
@@ -388,7 +558,7 @@ class DespertadorAlarmeActivity : Activity() {
                 enviar("SONECA"); finish()
             }
             adiar.textSize = 22f
-            adiar.setPadding(dp(16), dp(30), dp(16), dp(30))
+            adiar.setPadding(dp(16), dp(28), dp(16), dp(28))
             raiz.addView(adiar)
         } else {
             val aviso = TextView(this)
@@ -396,7 +566,7 @@ class DespertadorAlarmeActivity : Activity() {
             aviso.textSize = 13f
             aviso.setTextColor(Color.parseColor("#FFD65A"))
             aviso.gravity = Gravity.CENTER
-            aviso.setPadding(0, dp(14), 0, 0)
+            aviso.setPadding(0, dp(10), 0, 0)
             raiz.addView(aviso)
         }
 

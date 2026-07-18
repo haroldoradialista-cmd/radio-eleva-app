@@ -1,0 +1,814 @@
+# ============================================================
+# VERSICULOS DO DESPERTADOR DA RADIO ELEVA
+# Um por linha, no formato:   texto|referencia
+# Linhas que comecam com # sao ignoradas.
+# Pode acrescentar, editar ou apagar a vontade: basta subir o
+# arquivo de novo no GitHub e compilar.
+# Traducao: Joao Ferreira de Almeida (dominio publico)
+# ============================================================
+Eu me deito e durmo; acordo, pois o Senhor me sustenta.|Salmos 3:5
+Provai, e vede que o Senhor é bom; bem-aventurado o homem que nele se refugia.|Salmos 34:8
+Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.|Salmos 37:5
+Este é o dia que o Senhor fez; regozijemo-nos, e alegremo-nos nele.|Salmos 118:24
+O meu socorro vem do Senhor, que fez os céus e a terra.|Salmos 121:2
+Reconhece-o em todos os teus caminhos, e ele endireitará as tuas veredas.|Provérbios 3:6
+O Senhor teu Deus está no meio de ti, poderoso para te salvar; ele se deleitará em ti com alegria; renovar-te-á no seu amor, regozijar-se-á em ti com júbilo.|Sofonias 3:17
+Regozijai-vos sempre no Senhor; outra vez digo, regozijai-vos.|Filipenses 4:4
+Eu farei de ti uma grande nação; abençoar-te-ei, e engrandecerei o teu nome; e tu, sê uma bênção.|Gênesis 12:2
+Abençoarei aos que te abençoarem, e amaldiçoarei àquele que te amaldiçoar; e em ti serão benditas todas as famílias da terra.|Gênesis 12:3
+Dize, peço-te, que és minha irmã, para que me vá bem por tua causa, e que viva a minha alma em atenção a ti.|Gênesis 12:13
+Eu endurecerei o coração de Faraó, e ele os perseguirá; glorificar-me-ei em Faraó, e em todo o seu exército; e saberão os egípcios que eu sou o Senhor. E eles fizeram assim.|Êxodo 14:4
+Eis que eu endurecerei o coração dos egípcios, e estes entrarão atrás deles; e glorificar-me-ei em Faraó e em todo o seu exército, nos seus carros e nos seus cavaleiros.|Êxodo 14:17
+O Senhor é a minha força, e o meu cântico; ele se tem tornado a minha salvação; é ele o meu Deus, portanto o louvarei; é o Deus de meu pai, por isso o exaltarei.|Êxodo 15:2
+Na tua beneficência guiaste o povo que remiste; na tua força o conduziste à tua santa habitação.|Êxodo 15:13
+Os povos ouviram e estremeceram; dores apoderaram-se dos a habitantes da Filístia.|Êxodo 15:14
+Eis que eu envio um anjo adiante de ti, para guardar-te pelo caminho, e conduzir-te ao lugar que te tenho preparado.|Êxodo 23:20
+Por todos os dias do seu nazireado será santo ao Senhor.|Números 6:8
+Guardarás, pois, os mandamentos, os estatutos e os preceitos que eu hoje te ordeno, para os cumprires.|Deuteronômio 7:11
+Bendito serás na cidade, e bendito serás no campo.|Deuteronômio 28:3
+Bendito o fruto do teu ventre, e o fruto do teu solo, e o fruto dos teus animais, e as crias das tuas vacas e das tuas ovelhas.|Deuteronômio 28:4
+Bendito serás quando entrares, e bendito serás quando saíres.|Deuteronômio 28:6
+O Senhor mandará que a bênção esteja contigo nos teus celeiros e em tudo a que puseres a tua mão; e te abençoará na terra que o Senhor teu Deus te dá.|Deuteronômio 28:8
+O Senhor te confirmará para si por povo santo, como te jurou, se guardares os mandamentos do Senhor teu Deus e andares nos seus caminhos.|Deuteronômio 28:9
+Assim todos os povos da terra verão que és chamado pelo nome do Senhor, e terão temor de ti.|Deuteronômio 28:10
+Estarão sobre ti por sinal e por maravilha, como também sobre a tua descendência para sempre.|Deuteronômio 28:46
+Pela manhã dirás: Ah! quem me dera ver a tarde; E à tarde dirás: Ah! quem me dera ver a manhã! pelo pasmo que terás em teu coração, e pelo que verás com os teus olhos.|Deuteronômio 28:67
+O Senhor, pois, é aquele que vai adiante de ti; ele será contigo, não te deixará, nem te desamparará. Não temas, nem te espantes.|Deuteronômio 31:8
+Esforça-te, e tem bom ânimo, porque tu farás a este povo herdar a terra que jurei a seus pais lhes daria.|Josué 1:6
+O Senhor vos dê que acheis descanso cada uma em casa de seu marido. Quando as beijou, porém, levantaram a voz e choraram.|Rute 1:9
+Voltai, filhas minhas; ide-vos, porque já sou velha demais para me casar. Ainda quando eu dissesse: Tenho esperança; ainda que esta noite tivesse marido e ainda viesse a ter filhos.|Rute 1:12
+Vendo Noêmi que de todo estava resolvida a ir com ela, deixou de lhe falar nisso.|Rute 1:18
+Louvai ao Senhor, invocai o seu nome; fazei conhecidos entre os povos os seus feitos.|1 Crônicas 16:8
+Gloriai-vos no seu santo nome; alegre-se o coração dos que buscam ao Senhor.|1 Crônicas 16:10
+Buscai ao Senhor e a sua força; buscai a sua face continuamente.|1 Crônicas 16:11
+Publicai entre as nações a sua gloria, entre todos os povos as suas maravilhas.|1 Crônicas 16:24
+Diante dele há honra e majestade; há força e alegria no seu lugar.|1 Crônicas 16:27
+Tributai ao Senhor, ó famílias dos povos, tributai ao Senhor glória e força.|1 Crônicas 16:28
+Tributai ao Senhor a glória devida ao seu nome; trazei presentes, e vinde perante ele; adorai ao Senhor vestidos de trajes santos.|1 Crônicas 16:29
+Alegre-se o céu, e regozije-se a terra; e diga-se entre as nações: O Senhor reina.|1 Crônicas 16:31
+Dai graças ao Senhor, porque ele é bom; porque a sua benignidade dura para sempre.|1 Crônicas 16:34
+Bendito seja o Senhor Deus de Israel, de eternidade a eternidade. Então todo o povo disse: Amém! e louvou ao Senhor.|1 Crônicas 16:36
+Tanto riquezas como honra vêm de ti, tu dominas sobre tudo, e na tua mão há força e poder; na tua mão está o engrandecer e o dar força a tudo.|1 Crônicas 29:12
+Ó Senhor, Deus nosso, toda esta abundância, que preparamos para te edificar uma casa ao teu santo nome, vem da tua mão, e é toda tua.|1 Crônicas 29:16
+Agora estarão abertos os meus olhos e atentos os meus ouvidos à oração que se fizer neste lugar.|2 Crônicas 7:15
+Ao quarto dia eles se ajuntaram no vale de Beraca; pois ali louvaram ao Senhor. Por isso aquele lugar é chamado o vale de Beraca, até o dia de hoje.|2 Crônicas 20:26
+Assim o reino de Jeosafá ficou em paz; pois que o seu Deus lhe deu repouso ao redor.|2 Crônicas 20:30
+E, levantando-se no seu lugar, leram no livro da lei do Senhor seu Deus, uma quarta parte do dia; e outra quarta parte fizeram confissão, e adoraram ao Senhor seu Deus.|Neemias 9:3
+Além disso tu os guiaste de dia por uma coluna de nuvem e de noite por uma coluna de fogo, para os alumiares no caminho por onde haviam de ir.|Neemias 9:12
+Além disso lhes deste reinos e povos, que lhes repartiste em porções; assim eles possuíram a terra de Siom, a saber; a terra do rei de Hesbom, e a terra de Ogue, rei de Basã.|Neemias 9:22
+Com a minha voz clamo ao Senhor, e ele do seu santo monte me responde.|Salmos 3:4
+A salvação vem do Senhor; sobre o teu povo seja a tua bênção.|Salmos 3:8
+Oferecei sacrifícios de justiça, e confiai no Senhor.|Salmos 4:5
+Muitos dizem: Quem nos mostrará o bem? Levanta, Senhor, sobre nós a luz do teu rosto.|Salmos 4:6
+Puseste no meu coração mais alegria do que a deles no tempo em que se lhes multiplicam o trigo e o vinho.|Salmos 4:7
+Em paz me deitarei e dormirei, porque só tu, Senhor, me fazes habitar em segurança.|Salmos 4:8
+Atende à voz do meu clamor, Rei meu e Deus meu, pois é a ti que oro.|Salmos 5:2
+Pela manhã ouves a minha voz, ó Senhor; pela manhã te apresento a minha oração, e vigio.|Salmos 5:3
+Ó Senhor, Senhor nosso, quão admirável é o teu nome em toda a terra, tu que puseste a tua glória dos céus!|Salmos 8:1
+Eu te louvarei, Senhor, de todo o meu coração; contarei todas as tuas maravilhas.|Salmos 9:1
+Sustentaste o meu direito e a minha causa; tu te assentaste no tribunal, julgando justamente.|Salmos 9:4
+Cantai louvores ao Senhor, que habita em Sião; anunciai entre os povos os seus feitos.|Salmos 9:11
+Quanto aos santos que estão na terra, eles são os ilustres nos quais está todo o meu prazer.|Salmos 16:3
+Tu, Senhor, és a porção da minha herança e do meu cálice; tu és o sustentáculo do meu quinhão.|Salmos 16:5
+Tu me farás conhecer a vereda da vida; na tua presença há plenitude de alegria; à tua mão direita há delícias perpetuamente.|Salmos 16:11
+O Senhor é a minha rocha, a minha fortaleza e o meu libertador; o meu Deus, o meu rochedo, em quem me refúgio; o meu escudo, a força da minha salvação, e o meu alto refúgio.|Salmos 18:2
+Despediu as suas setas, e os espalhou; multiplicou raios, e os perturbou.|Salmos 18:14
+Do alto estendeu o braço e me tomou; tirou-me das muitas águas.|Salmos 18:16
+Para com o benigno te mostras benigno, e para com o homem perfeito te mostras perfeito.|Salmos 18:25
+Quanto a Deus, o seu caminho é perfeito; a promessa do Senhor é provada; ele é um escudo para todos os que nele confiam.|Salmos 18:30
+Atravesso-os, de modo que nunca mais se podem levantar; caem debaixo dos meus pés.|Salmos 18:38
+Pelo que, ó Senhor, te louvarei entre as nações, e entoarei louvores ao teu nome.|Salmos 18:49
+Os céus proclamam a glória de Deus e o firmamento anuncia a obra das suas mãos.|Salmos 19:1
+A lei do Senhor é perfeita, e refrigera a alma; o testemunho do Senhor é fiel, e dá sabedoria aos simples.|Salmos 19:7
+Os preceitos do Senhor são retos, e alegram o coração; o mandamento do Senhor é puro, e alumia os olhos.|Salmos 19:8
+Sejam agradáveis as palavras da minha boca e a meditação do meu coração perante a tua face, Senhor, Rocha minha e Redentor meu!|Salmos 19:14
+Envie-te socorro do seu santuário, e te sustenha de Sião.|Salmos 20:2
+Conceda-te conforme o desejo do teu coração, e cumpra todo o teu desígnio.|Salmos 20:4
+Nós nos alegraremos pela tua salvação, e em nome do nosso Deus arvoraremos pendões; satisfaça o Senhor todas as tuas petições.|Salmos 20:5
+Agora sei que o Senhor salva o seu ungido; ele lhe responderá lá do seu santo céu, com a força salvadora da sua destra.|Salmos 20:6
+Salva-nos, Senhor; ouça-nos o Rei quando clamarmos.|Salmos 20:9
+Na tua força, ó Senhor, o rei se alegra; e na tua salvação quão grandemente se regozija!|Salmos 21:1
+Vida te pediu, e lha deste, longura de dias para sempre e eternamente.|Salmos 21:4
+Grande é a sua glória pelo teu socorro; de honra e de majestade o revestes.|Salmos 21:5
+Sim, tu o fazes para sempre abençoado; tu o enches de gozo na tua presença.|Salmos 21:6
+Exalta-te, Senhor, na tua força; então cantaremos e louvaremos o teu poder.|Salmos 21:13
+Deitar-me faz em pastos verdejantes; guia-me mansamente a águas tranqüilas.|Salmos 23:2
+Refrigera a minha alma; guia-me nas veredas da justiça por amor do seu nome.|Salmos 23:3
+Certamente que a bondade e a misericórdia me seguirão todos os dias da minha vida, e habitarei na casa do Senhor por longos dias.|Salmos 23:6
+Este receberá do Senhor uma bênção, e a justiça do Deus da sua salvação.|Salmos 24:5
+Tal é a geração daqueles que o buscam, daqueles que buscam a tua face, ó Deus de Jacó.|Salmos 24:6
+Levantai, ó portas, as vossas cabeças; levantai-vos, ó entradas eternas, e entrará o Rei da Glória.|Salmos 24:7
+Quem é o Rei da Glória? O Senhor forte e poderoso, o Senhor poderoso na batalha.|Salmos 24:8
+Quem é esse Rei da Glória? O Senhor dos exércitos; ele é o Rei da Glória.|Salmos 24:10
+Uma coisa pedi ao Senhor, e a buscarei: que possa morar na casa do Senhor todos os dias da minha vida, para contemplar a formosura do Senhor, e inquirir no seu templo.|Salmos 27:4
+Quando disseste: Buscai o meu rosto; o meu coração te disse a ti: O teu rosto, Senhor, buscarei.|Salmos 27:8
+Ensina-me, ó Senhor, o teu caminho, e guia-me por uma vereda plana, por causa dos que me espreitam.|Salmos 27:11
+Creio que hei de ver a bondade do Senhor na terra dos viventes.|Salmos 27:13
+Espera tu pelo Senhor; anima-te, e fortalece o teu coração; espera, pois, pelo Senhor.|Salmos 27:14
+Ouve a voz das minhas súplicas, quando a ti clamo, quando levanto as minhas mãos para o teu santo templo.|Salmos 28:2
+Retribui-lhes segundo as suas obras e segundo a malícia dos seus feitos; dá-lhes conforme o que fizeram as suas mãos; retribui-lhes o que eles merecem.|Salmos 28:4
+Bendito seja o Senhor, porque ouviu a voz das minhas súplicas.|Salmos 28:6
+O Senhor é a minha força e o meu escudo; nele confiou o meu coração, e fui socorrido; pelo que o meu coração salta de prazer, e com o meu cântico o louvarei.|Salmos 28:7
+O Senhor é a força do seu povo; ele é a fortaleza salvadora para o seu ungido.|Salmos 28:8
+Salva o teu povo, e abençoa a tua herança; apascenta-os e exalta-os para sempre.|Salmos 28:9
+Tributai ao Senhor, ó filhos dos poderosos, tributai ao Senhor glória e força.|Salmos 29:1
+Tributai ao Senhor a glória devida ao seu nome; adorai o Senhor vestidos de trajes santos.|Salmos 29:2
+A voz do Senhor ouve-se sobre as águas; o Deus da glória troveja; o Senhor está sobre as muitas águas.|Salmos 29:3
+A voz do Senhor é poderosa; a voz do Senhor é cheia de majestade.|Salmos 29:4
+A voz do Senhor faz as corças dar à luz, e desnuda as florestas; e no seu templo todos dizem: Glória!|Salmos 29:9
+O Senhor dará força ao seu povo; o Senhor abençoará o seu povo com paz.|Salmos 29:11
+Cantai louvores ao Senhor, vós que sois seus santos, e louvai o seu santo nome.|Salmos 30:4
+Quanto a mim, dizia eu na minha prosperidade: Jamais serei abalado.|Salmos 30:6
+Tu, Senhor, pelo teu favor fizeste que a minha montanha permanecesse forte; ocultaste o teu rosto, e fiquei conturbado.|Salmos 30:7
+Inclina para mim os teus ouvidos, livra-me depressa! Sê para mim uma rocha de refúgio, uma casa de defesa que me salve!|Salmos 31:2
+Tira-me do laço que me armaram, pois tu és o meu refúgio.|Salmos 31:4
+Nas tuas mãos entrego o meu espírito; tu me remiste, ó Senhor, Deus da verdade.|Salmos 31:5
+Faze resplandecer o teu rosto sobre o teu servo; salva-me por tua bondade.|Salmos 31:16
+Oh! quão grande é a tua bondade, que guardaste para os que te temem, a qual na presença dos filhos dos homens preparaste para aqueles que em ti se refugiam!|Salmos 31:19
+Bendito seja o Senhor, pois fez maravilhosa a sua bondade para comigo numa cidade sitiada.|Salmos 31:21
+Esforçai-vos, e fortaleça-se o vosso coração, vós todos os que esperais no Senhor.|Salmos 31:24
+Instruir-te-ei, e ensinar-te-ei o caminho que deves seguir; aconselhar-te-ei, tendo-te sob a minha vista.|Salmos 32:8
+Regozijai-vos no Senhor, vós justos, pois aos retos fica bem o louvor.|Salmos 33:1
+Louvai ao Senhor com harpa, cantai-lhe louvores com saltério de dez cordas.|Salmos 33:2
+Cantai-lhe um cântico novo; tocai bem e com júbilo.|Salmos 33:3
+Ele ama a retidão e a justiça; a terra está cheia da benignidade do Senhor.|Salmos 33:5
+Bem-aventurada é a nação cujo Deus é o Senhor, o povo que ele escolheu para sua herança.|Salmos 33:12
+A nossa alma espera no Senhor; ele é o nosso auxílio e o nosso escudo.|Salmos 33:20
+Seja a tua benignidade, Senhor, sobre nós, assim como em ti esperamos.|Salmos 33:22
+No Senhor se gloria a minha alma; ouçam-no os mansos e se alegrem.|Salmos 34:2
+Olhai para ele, e sede iluminados; e os vossos rostos jamais serão confundidos.|Salmos 34:5
+Temei ao Senhor, vós, seus santos, porque nada falta aos que o temem.|Salmos 34:9
+Aparta-te do mal, e faze o bem: busca a paz, e segue-a.|Salmos 34:14
+Os olhos do Senhor estão sobre os justos, e os seus ouvidos atentos ao seu clamor.|Salmos 34:15
+A tua benignidade, Senhor, chega até os céus, e a tua fidelidade até as nuvens.|Salmos 36:5
+Quão preciosa é, ó Deus, a tua benignidade! Os filhos dos homens se refugiam à sombra das tuas asas.|Salmos 36:7
+Continua a tua benignidade aos que te conhecem, e a tua justiça aos retos de coração.|Salmos 36:10
+Confia no Senhor e faze o bem; assim habitarás na terra, e te alimentarás em segurança.|Salmos 37:3
+Deleita-te também no Senhor, e ele te concederá o que deseja o teu coração.|Salmos 37:4
+O Senhor conhece os dias dos íntegros, e a herança deles permanecerá para sempre.|Salmos 37:18
+Ele é sempre generoso, e empresta, e a sua descendência é abençoada.|Salmos 37:26
+Os justos herdarão a terra e nela habitarão para sempre.|Salmos 37:29
+A boca do justo profere sabedoria; a sua língua fala o que é reto.|Salmos 37:30
+Nota o homem íntegro, e considera o reto, porque há para o homem de paz um porvir feliz.|Salmos 37:37
+Esperei com paciência pelo Senhor, e ele se inclinou para mim e ouviu o meu clamor.|Salmos 40:1
+Pôs na minha boca um cântico novo, um hino ao nosso Deus; muitos verão isso e temerão, e confiarão no Senhor.|Salmos 40:3
+Deleito-me em fazer a tua vontade, ó Deus meu; sim, a tua lei está dentro do meu coração.|Salmos 40:8
+Regozijem-se e alegrem-se em ti todos os que te buscam. Digam continuamente os que amam a tua salvação: Engrandecido seja o Senhor.|Salmos 40:16
+Há um rio cujas correntes alegram a cidade de Deus, o lugar santo das moradas do Altíssimo.|Salmos 46:4
+Bramam nações, reinos se abalam; ele levanta a sua voz, e a terra se derrete.|Salmos 46:6
+Vinde contemplai as obras do Senhor, as desolações que tem feito na terra.|Salmos 46:8
+Batei palmas, todos os povos; aclamai a Deus com voz de júbilo.|Salmos 47:1
+Escolheu para nós a nossa herança, a glória de Jacó, a quem amou.|Salmos 47:4
+Cantai louvores a Deus, cantai louvores; cantai louvores ao nosso Rei, cantai louvores.|Salmos 47:6
+Deus reina sobre as nações; Deus está sentado sobre o seu santo trono.|Salmos 47:8
+Somente em Deus espera silenciosa a minha alma; dele vem a minha salvação.|Salmos 62:1
+Ó minha alma, espera silenciosa somente em Deus, porque dele vem a minha esperança.|Salmos 62:5
+Só ele é a minha rocha e a minha salvação; é a minha fortaleza; não serei abalado.|Salmos 62:6
+Em Deus está a minha salvação e a minha glória; Deus é o meu forte rochedo e o meu refúgio.|Salmos 62:7
+Confiai nele, ó povo, em todo o tempo; derramai perante ele o vosso coração; Deus é o nosso refúgio.|Salmos 62:8
+Uma vez falou Deus, duas vezes tenho ouvido isto: que o poder pertence a Deus.|Salmos 62:11
+A ti também, Senhor, pertence a benignidade; pois retribuis a cada um segundo a sua obra.|Salmos 62:12
+Assim no santuário te contemplo, para ver o teu poder e a tua glória.|Salmos 63:2
+Assim eu te bendirei enquanto viver; em teu nome levantarei as minhas mãos.|Salmos 63:4
+A minha alma se farta, como de tutano e de gordura; e a minha boca te louva com alegres lábios.|Salmos 63:5
+A minha alma se apega a ti; a tua destra me sustenta.|Salmos 63:8
+Bem-aventurado aquele a quem tu escolhes, e fazes chegar a ti, para habitar em teus átrios! Nós seremos satisfeitos com a bondade da tua casa, do teu santo templo.|Salmos 65:4
+As pastagens revestem-se de rebanhos, e os vales se cobrem de trigo; por isso eles se regozijam, por isso eles cantam.|Salmos 65:13
+Louvai a Deus com brados de júbilo, todas as terras.|Salmos 66:1
+Cantai a glória do seu nome, dai glória em seu louvor.|Salmos 66:2
+Toda a terra te adorará e te cantará louvores; eles cantarão o teu nome.|Salmos 66:4
+Vinde, e vede as obras de Deus; ele é tremendo nos seus feitos para com os filhos dos homens.|Salmos 66:5
+Converteu o mar em terra seca; passaram o rio a pé; ali nos alegramos nele.|Salmos 66:6
+Vinde, e ouvi, todos os que temeis a Deus, e eu contarei o que ele tem feito por mim.|Salmos 66:16
+Alegrem-se e regozijem-se as nações, pois julgas os povos com eqüidade, e guias as nações sobre a terra.|Salmos 67:4
+A terra tem produzido o seu fruto; e Deus, o nosso Deus, tem nos abençoado.|Salmos 67:6
+Deus nos tem abençoado; temam-no todas as extremidades da terra!|Salmos 67:7
+Cantai a Deus, cantai louvores ao seu nome; louvai aquele que cavalga sobre as nuvens, pois o seu nome é Já; exultai diante dele.|Salmos 68:4
+Tu, ó Deus, mandaste copiosa chuva; restauraste a tua herança, quando estava cansada.|Salmos 68:9
+Nela habitava o teu rebanho; da tua bondade, ó Deus, proveste o pobre.|Salmos 68:10
+O Senhor proclama a palavra; grande é a companhia dos que anunciam as boas-novas.|Salmos 68:11
+Deitados entre redis, sois como as asas da pomba cobertas de prata, com as suas penas de ouro amarelo.|Salmos 68:13
+Quando o Todo-Poderoso ali dispersou os reis, caiu neve em Zalmom.|Salmos 68:14
+Bendito seja o Senhor, que diariamente leva a nossa carga, o Deus que é a nossa salvação.|Salmos 68:19
+Iam na frente os cantores, atrás os tocadores de instrumentos, no meio as donzelas que tocavam adufes.|Salmos 68:25
+Bendizei a Deus nas congregações, ao Senhor, vós que sois da fonte de Israel.|Salmos 68:26
+Ali está Benjamim, o menor deles, na frente; os chefes de Judá com o seu ajuntamento; os chefes de Judá com o seu ajuntamento; os chefes de Zebulom e os chefes de Naftali.|Salmos 68:27
+Ó Deus, tu és tremendo desde o teu santuário; o Deus de Israel, ele dá força e poder ao seu povo. Bendito seja Deus!|Salmos 68:35
+Em ti, Senhor, me refugio; nunca seja eu confundido.|Salmos 71:1
+Sê tu para mim uma rocha de refúgio a que sempre me acolha; deste ordem para que eu seja salvo, pois tu és a minha rocha e a minha fortaleza.|Salmos 71:3
+A minha boca se enche do teu louvor e da tua glória continuamente.|Salmos 71:8
+Ensinaste-me, ó Deus, desde a minha mocidade; e até aqui tenho anunciado as tuas maravilhas.|Salmos 71:17
+Aumentarás a minha grandeza, e de novo me consolarás.|Salmos 71:21
+Os meus lábios exultarão quando eu cantar os teus louvores, assim como a minha alma, que tu remiste.|Salmos 71:23
+Verdadeiramente bom é Deus para com Israel, para com os limpos de coração.|Salmos 73:1
+Quanto a mim, os meus pés quase resvalaram; pouco faltou para que os meus passos escorregassem.|Salmos 73:2
+Os olhos deles estão inchados de gordura; trasbordam as fantasias do seu coração.|Salmos 73:7
+Tu me guias com o teu conselho, e depois me receberás em glória.|Salmos 73:24
+Bem-aventurados os que habitam em tua casa; louvar-te-ão continuamente.|Salmos 84:4
+Bem-aventurados os homens cuja força está em ti, em cujo coração os caminhos altos.|Salmos 84:5
+Vão sempre aumentando de força; cada um deles aparece perante Deus em Sião.|Salmos 84:7
+Senhor Deus dos exércitos, escuta a minha oração; inclina os ouvidos, ó Deus de Jacó!|Salmos 84:8
+Ó Senhor dos exércitos, bem-aventurado o homem que em ti põe a sua confiança.|Salmos 84:12
+Preserva a minha vida, pois sou piedoso; o Deus meu, salva o teu servo, que em ti confia.|Salmos 86:2
+Alegra a alma do teu servo, pois a ti, Senhor, elevo a minha alma.|Salmos 86:4
+Dá ouvidos, Senhor, à minha oração, e atende à voz das minhas súplicas.|Salmos 86:6
+Ensina-me, Senhor, o teu caminho, e andarei na tua verdade; dispõe o meu coração para temer o teu nome.|Salmos 86:10
+Louvar-te-ei, Senhor Deus meu, de todo o meu coração, e glorificarei o teu nome para sempre.|Salmos 86:11
+Os céus louvarão as tuas maravilhas, ó Senhor, e a tua fidelidade na assembléia dos santos.|Salmos 89:5
+O norte e o sul, tu os criaste; o Tabor e o Hermom regozijam-se em teu nome.|Salmos 89:12
+Tu tens um braço poderoso; forte é a tua mão, e elevado a tua destra.|Salmos 89:13
+Achei Davi, meu servo; com o meu santo óleo o ungi.|Salmos 89:20
+A minha mão será sempre com ele, e o meu braço o fortalecerá.|Salmos 89:21
+A minha fidelidade, porém, e a minha benignidade estarão com ele, e em meu nome será exaltado o seu poder.|Salmos 89:24
+Ele me invocará, dizendo: Tu és meu pai, meu Deus, e a rocha da minha salvação.|Salmos 89:26
+Conservar-lhe-ei para sempre a minha benignidade, e o meu pacto com ele ficará firme.|Salmos 89:28
+Farei que subsista para sempre a sua descendência, e o seu trono como os dias dos céus.|Salmos 89:29
+Todos os que passam pelo caminho o despojam; tornou-se objeto de opróbrio para os seus vizinhos.|Salmos 89:41
+Lembra-te de quão breves são os meus dias; de quão efêmeros criaste todos os filhos dos homens!|Salmos 89:47
+Senhor, tu tens sido o nosso refúgio de geração em geração.|Salmos 90:1
+Sacia-nos de manhã com a tua benignidade, para que nos regozijemos e nos alegremos todos os nossos dias.|Salmos 90:14
+Alegra-nos pelos dias em que nos afligiste, e pelos anos em que vimos o mal.|Salmos 90:15
+Apareça a tua obra aos teus servos, e a tua glória sobre seus filhos.|Salmos 90:16
+Seja sobre nós a graça do Senhor, nosso Deus; e confirma sobre nós a obra das nossas mãos; sim, confirma a obra das nossas mãos.|Salmos 90:17
+Direi do Senhor: Ele é o meu refúgio e a minha fortaleza, o meu Deus, em quem confio.|Salmos 91:2
+Ele te cobre com as suas penas, e debaixo das suas asas encontras refúgio; a sua verdade é escudo e broquel.|Salmos 91:4
+Com longura de dias fartá-lo-ei, e lhe mostrarei a minha salvação.|Salmos 91:16
+Os justos florescerão como a palmeira, crescerão como o cedro no Líbano.|Salmos 92:12
+Estão plantados na casa do Senhor, florescerão nos átrios do nosso Deus.|Salmos 92:13
+Os rios levantaram, ó Senhor, os rios levantaram o seu ruído, os rios levantam o seu fragor.|Salmos 93:3
+Mais que o ruído das grandes águas, mais que as vagas estrondosas do mar, poderoso é o Senhor nas alturas.|Salmos 93:4
+Mui fiéis são os teus testemunhos; a santidade convém à tua casa, Senhor, para sempre.|Salmos 93:5
+Vinde, cantemos alegremente ao Senhor, cantemos com júbilo à rocha da nossa salvação.|Salmos 95:1
+Apresentemo-nos diante dele com ações de graças, e celebremo-lo com salmos de louvor.|Salmos 95:2
+Seu é o mar, pois ele o fez, e as suas mãos formaram a serra terra seca.|Salmos 95:5
+Cantai ao Senhor um cântico novo, cantai ao Senhor, todos os moradores da terra.|Salmos 96:1
+Anunciai entre as nações a sua glória, entre todos os povos as suas maravilhas.|Salmos 96:3
+Glória e majestade estão diante dele, força e formosura no seu santuário.|Salmos 96:6
+Adorai ao Senhor vestidos de trajes santos; tremei diante dele, todos os habitantes da terra.|Salmos 96:9
+Alegrem-se os céus, e regozije-se a terra; brame o mar e a sua plenitude.|Salmos 96:11
+O Senhor reina, regozije-se a terra; alegrem-se as numerosas ilhas.|Salmos 97:1
+Os céus anunciam a sua justiça, e todos os povos vêem a sua glória.|Salmos 97:6
+A luz é semeada para o justo, e a alegria para os retos de coração.|Salmos 97:11
+Alegrai-vos, ó justos, no Senhor, e rendei graças ao seu santo nome.|Salmos 97:12
+Cantai ao Senhor um cântico novo, porque ele tem feito maravilhas; a sua destra e o seu braço santo lhe alcançaram a vitória.|Salmos 98:1
+O Senhor fez notória a sua salvação, manifestou a sua justiça perante os olhos das nações.|Salmos 98:2
+Lembrou-se da sua misericórdia e da sua fidelidade para com a casa de Israel; todas as extremidades da terra viram a salvação do nosso Deus.|Salmos 98:3
+Celebrai com júbilo ao Senhor, todos os habitantes da terra; dai brados de alegria, regozijai-vos, e cantai louvores.|Salmos 98:4
+Louvai ao Senhor com a harpa; com a harpa e a voz de canto.|Salmos 98:5
+Com trombetas, e ao som de buzinas, exultai diante do Rei, o Senhor.|Salmos 98:6
+Servi ao Senhor com alegria, e apresentai-vos a ele com cântico.|Salmos 100:2
+Sabei que o Senhor é Deus! Foi ele quem nos fez, e somos dele; somos o seu povo e ovelhas do seu pasto.|Salmos 100:3
+Entrai pelas suas portas com ação de graças, e em seus átrios com louvor; dai-lhe graças e bendizei o seu nome.|Salmos 100:4
+Bendize, ó minha alma, ao Senhor, e tudo o que há em mim bendiga o seu santo nome.|Salmos 103:1
+Compassivo e misericordioso é o Senhor; tardio em irar-se e grande em benignidade.|Salmos 103:8
+Quanto ao homem, os seus dias são como a erva; como a flor do campo, assim ele floresce.|Salmos 103:15
+Bendizei ao Senhor, vós anjos seus, poderosos em força, que cumpris as suas ordens, obedecendo à voz da sua palavra!|Salmos 103:20
+Bendizei ao Senhor, vós todos os seus exércitos, vós ministros seus, que executais a sua vontade!|Salmos 103:21
+Bendizei ao Senhor, vós todas as suas obras, em todos os lugares do seu domínio! Bendizei, ó minha alma ao Senhor!|Salmos 103:22
+Junto delas habitam as aves dos céus; dentre a ramagem fazem ouvir o seu canto.|Salmos 104:12
+Os altos montes são um refúgio para as cabras montesas, e as rochas para os querogrilos.|Salmos 104:18
+Designou a lua para marcar as estações; o sol sabe a hora do seu ocaso.|Salmos 104:19
+Os leões novos os animais bramam pela presa, e de Deus buscam o seu sustento.|Salmos 104:21
+Ó Senhor, quão multiformes são as tuas obras! Todas elas as fizeste com sabedoria; a terra está cheia das tuas riquezas.|Salmos 104:24
+Eis também o vasto e espaçoso mar, no qual se movem seres inumeráveis, animais pequenos e grandes.|Salmos 104:25
+Envias o teu fôlego, e são criados; e assim renovas a face da terra.|Salmos 104:30
+Cantarei ao Senhor enquanto eu viver; cantarei louvores ao meu Deus enquanto eu existir.|Salmos 104:33
+Seja-lhe agradável a minha meditação; eu me regozijarei no Senhor.|Salmos 104:34
+Dai graças ao Senhor; invocai o seu nome; fazei conhecidos os seus feitos entre os povos.|Salmos 105:1
+Gloriai-vos no seu santo nome; regozije-se o coração daqueles que buscam ao Senhor.|Salmos 105:3
+O rei mandou, e fez soltá-lo; o governador dos povos o libertou.|Salmos 105:20
+Mudou o coração destes para que odiassem o seu povo, e tratassem astutamente aos seus servos.|Salmos 105:25
+A terra deles produziu rãs em abundância, até nas câmaras dos seus reis.|Salmos 105:30
+Feriu-lhes também as vinhas e os figueirais, e quebrou as árvores da sua terra.|Salmos 105:33
+Eles pediram, e ele fez vir codornizes, e os saciou com pão do céu.|Salmos 105:40
+Fendeu a rocha, e dela brotaram águas, que correram pelos lugares áridos como um rio.|Salmos 105:41
+Fez sair com alegria o seu povo, e com cânticos de júbilo os seus escolhidos.|Salmos 105:43
+Dêem graças ao Senhor pela sua benignidade, e pelas suas maravilhas para com os filhos dos homens!|Salmos 107:8
+Ofereçam sacrifícios de louvor, e relatem as suas obras com regozijo!|Salmos 107:22
+Faz cessar a tormenta, de modo que se acalmam as ondas.|Salmos 107:29
+Quem é sábio observe estas coisas, e considere atentamente as benignidades do Senhor.|Salmos 107:43
+Louvai ao Senhor. De todo o coração darei graças ao Senhor, no concílio dos retos e na congregação.|Salmos 111:1
+Glória e majestade há em sua obra; e a sua justiça permanece para sempre.|Salmos 111:3
+Ele fez memoráveis as suas maravilhas; compassivo e misericordioso é o Senhor.|Salmos 111:4
+Dá mantimento aos que o temem; lembra-se sempre do seu pacto.|Salmos 111:5
+Mostrou ao seu povo o poder das suas obras, dando-lhe a herança das nações.|Salmos 111:6
+Enviou ao seu povo a redenção; ordenou para sempre o seu pacto; santo e tremendo é o seu nome.|Salmos 111:9
+O temor do Senhor é o princípio da sabedoria; têm bom entendimento todos os que cumprem os seus preceitos; o seu louvor subsiste para sempre.|Salmos 111:10
+Louvai ao Senhor. Bem-aventurado o homem que teme ao Senhor, que em seus mandamentos tem grande prazer!|Salmos 112:1
+A sua descendência será poderosa na terra; a geração dos retos será abençoada.|Salmos 112:2
+Bens e riquezas há na sua casa; e a sua justiça permanece para sempre.|Salmos 112:3
+Espalhou, deu aos necessitados; a sua justiça subsiste para sempre; o seu poder será exaltado em honra.|Salmos 112:9
+Louvai ao Senhor. Louvai, servos do Senhor, louvai o nome do Senhor.|Salmos 113:1
+Bendito seja o nome do Senhor, desde agora e para sempre.|Salmos 113:2
+Desde o nascimento do sol até o seu ocaso, há de ser louvado o nome do Senhor.|Salmos 113:3
+Exaltado está o Senhor acima de todas as nações, e a sua glória acima dos céus.|Salmos 113:4
+Ele faz com que a mulher estéril habite em família, e seja alegre mãe de filhos. Louvai ao Senhor.|Salmos 113:9
+Semelhantes a eles sejam os que fazem, e todos os que neles confiam.|Salmos 115:8
+Confia, ó Israel, no Senhor; ele é seu auxílio e seu escudo.|Salmos 115:9
+Casa de Arão, confia no Senhor; ele é seu auxílio e seu escudo.|Salmos 115:10
+Vós, os que temeis ao Senhor, confiai no Senhor; ele é seu auxílio e seu escudo.|Salmos 115:11
+Sede vós benditos do Senhor, que fez os céus e a terra.|Salmos 115:15
+Compassivo é o Senhor, e justo; sim, misericordioso é o nosso Deus.|Salmos 116:5
+Volta, minha alma, ao teu repouso, pois o Senhor te fez bem.|Salmos 116:7
+Tomarei o cálice da salvação, e invocarei o nome do Senhor.|Salmos 116:13
+Oferecer-te-ei sacrifícios de ação de graças, e invocarei o nome do Senhor.|Salmos 116:17
+Louvai ao Senhor todas as nações, exaltai-o todos os povos.|Salmos 117:1
+Diga, pois, Israel: A sua benignidade dura para sempre.|Salmos 118:2
+Diga, pois, a casa de Arão: A sua benignidade dura para sempre.|Salmos 118:3
+Digam, pois, os que temem ao Senhor: A sua benignidade dura para sempre.|Salmos 118:4
+O Senhor é a minha força e o meu cântico; tornou-se a minha salvação.|Salmos 118:14
+Nas tendas dos justos há jubiloso cântico de vitória; a destra do Senhor faz proezas.|Salmos 118:15
+Abre-me as portas da justiça, para que eu entre por elas e dê graças ao Senhor.|Salmos 118:19
+Esta é a porta do Senhor; por ela os justos entrarão.|Salmos 118:20
+Graças te dou porque me ouviste, e te tornaste a minha salvação.|Salmos 118:21
+Foi o Senhor que fez isto e é maravilhoso aos nossos olhos.|Salmos 118:23
+Ó Senhor, salva, nós te pedimos; ó Senhor, nós te pedimos, envia-nos a prosperidade.|Salmos 118:25
+Bendito aquele que vem em nome do Senhor; da casa do Senhor vos bendizemos.|Salmos 118:26
+O Senhor é Deus, e nos concede a luz; atai a vítima da festa com cordas às pontas do altar.|Salmos 118:27
+Tu és o meu Deus, e eu te darei graças; tu és o meu Deus, e eu te exaltarei.|Salmos 118:28
+Bem-aventurados os que trilham com integridade o seu caminho, os que andam na lei do Senhor!|Salmos 119:1
+Louvar-te-ei com retidão de coração, quando tiver aprendido as tuas retas ordenanças.|Salmos 119:7
+Como purificará o jovem o seu caminho? Observando-o de acordo com a tua palavra.|Salmos 119:9
+Bendito és tu, ó Senhor; ensina-me os teus estatutos.|Salmos 119:12
+Regozijo-me no caminho dos teus testemunhos, tanto como em todas as riquezas.|Salmos 119:14
+Em teus preceitos medito, e observo os teus caminhos.|Salmos 119:15
+Desvenda os meus olhos, para que eu veja as maravilhas da tua lei.|Salmos 119:18
+A minha alma se consome de anelos por tuas ordenanças em todo o tempo.|Salmos 119:20
+A minha alma apega-se ao pó; vivifica-me segundo a tua palavra.|Salmos 119:25
+Meus caminhos te descrevi, e tu me ouviste; ensina-me os teus estatutos.|Salmos 119:26
+Faze-me entender o caminho dos teus preceitos; assim meditarei nas tuas maravilhas.|Salmos 119:27
+Desvia de mim o caminho da falsidade, e ensina-me benignidade a tua lei.|Salmos 119:29
+Escolhi o caminho da fidelidade; diante de mim pus as tuas ordenanças.|Salmos 119:30
+Percorrerei o caminho dos teus mandamentos, quando dilatares o meu coração.|Salmos 119:32
+Ensina-me, ó Senhor, o caminho dos teus estatutos, e eu o guardarei até o fim.|Salmos 119:33
+Dá-me entendimento, para que eu guarde a tua lei, e a observe de todo o meu coração.|Salmos 119:34
+Confirma a tua promessa ao teu servo, que se inclina ao teu temor.|Salmos 119:38
+Venha também sobre mim a tua benignidade, ó Senhor, e a tua salvação, segundo a tua palavra.|Salmos 119:41
+De todo o meu coração imploro o teu favor; tem piedade de mim, segundo a tua palavra.|Salmos 119:58
+Quando considero os meus caminhos, volto os meus pés para os teus testemunhos.|Salmos 119:59
+A terra, ó Senhor, está cheia da tua benignidade; ensina-me os teus estatutos.|Salmos 119:64
+Tens usado de bondade para com o teu servo, Senhor, segundo a tua palavra.|Salmos 119:65
+Tu és bom e fazes o bem; ensina-me os teus estatutos.|Salmos 119:68
+Foi-me bom ter sido afligido, para que aprendesse os teus estatutos.|Salmos 119:71
+As tuas mãos me fizeram e me formaram; dá-me entendimento para que aprenda os teus mandamentos.|Salmos 119:73
+Os que te temem me verão e se alegrarão, porque tenho esperado na tua palavra.|Salmos 119:74
+Sirva, pois, a tua benignidade para me consolar, segundo a palavra que deste ao teu servo.|Salmos 119:76
+Venham sobre mim as tuas ternas misericórdias, para que eu viva, pois a tua lei é o meu deleite.|Salmos 119:77
+Vivifica-me segundo a tua benignidade, para que eu guarde os testemunhos da tua boca.|Salmos 119:88
+Para sempre, ó Senhor, a tua palavra está firmada nos céus.|Salmos 119:89
+A tua fidelidade estende-se de geração a geração; tu firmaste a terra, e firme permanece.|Salmos 119:90
+Sou teu, salva-me; pois tenho buscado os teus preceitos.|Salmos 119:94
+Tenho mais entendimento do que todos os meus mestres, porque os teus testemunhos são a minha meditação.|Salmos 119:99
+Retenho os meus pés de todo caminho mau, a fim de observar a tua palavra.|Salmos 119:101
+Pelos teus preceitos alcanço entendimento, pelo que aborreço toda vereda de falsidade.|Salmos 119:104
+Lâmpada para os meus pés é a tua palavra, e luz para o meu caminho.|Salmos 119:105
+Aceita, Senhor, eu te rogo, as oferendas voluntárias da minha boca, e ensina-me as tuas ordenanças.|Salmos 119:108
+Os teus testemunhos são a minha herança para sempre, pois são eles o gozo do meu coração.|Salmos 119:111
+Inclino o meu coração a cumprir os teus estatutos, para sempre, até o fim.|Salmos 119:112
+Tu és o meu refúgio e o meu escudo; espero na tua palavra.|Salmos 119:114
+Sustenta-me, e serei salvo, e de contínuo terei respeito aos teus estatutos.|Salmos 119:117
+Trata com o teu servo segundo a tua benignidade, e ensina-me os teus estatutos.|Salmos 119:124
+Sou teu servo; dá-me entendimento, para que eu conheça os teus testemunhos.|Salmos 119:125
+Maravilhosos são os teus testemunhos, por isso a minha alma os guarda.|Salmos 119:129
+A exposição das tuas palavras dá luz; dá entendimento aos simples.|Salmos 119:130
+Volta-te para mim, e compadece-te de mim, conforme usas para com os que amam o teu nome.|Salmos 119:132
+Ordenaste os teus testemunhos com retidão, e com toda a fidelidade.|Salmos 119:138
+A tua palavra é fiel a toda prova, por isso o teu servo a ama.|Salmos 119:140
+Justos são os teus testemunhos para sempre; dá-me entendimento, para que eu viva.|Salmos 119:144
+Clamo de todo o meu coração; atende-me, Senhor! Eu guardarei os teus estatutos.|Salmos 119:145
+Antecipo-me à alva da manhã e clamo; aguardo com esperança as tuas palavras.|Salmos 119:147
+Ouve a minha voz, segundo a tua benignidade; vivifica-me, ó Senhor, segundo a tua justiça.|Salmos 119:149
+Há muito sei eu dos teus testemunhos que os fundaste para sempre.|Salmos 119:152
+Considera como amo os teus preceitos; vivifica-me, Senhor, segundo a tua benignidade.|Salmos 119:159
+A soma da tua palavra é a verdade, e cada uma das tuas justas ordenanças dura para sempre.|Salmos 119:160
+Regozijo-me com a tua palavra, como quem acha grande despojo.|Salmos 119:162
+Odeio e abomino a falsidade; amo, porém, a tua lei.|Salmos 119:163
+Espero, Senhor, na tua salvação, e cumpro os teus mandamentos.|Salmos 119:166
+A minha alma observa os teus testemunhos; amo-os extremamente.|Salmos 119:167
+Observo os teus preceitos e os teus testemunhos, pois todos os meus caminhos estão diante de ti.|Salmos 119:168
+Chegue a ti o meu clamor, ó Senhor; dá-me entendimento conforme a tua palavra.|Salmos 119:169
+Celebre a minha língua a tua palavra, pois todos os teus mandamentos são justos.|Salmos 119:172
+Anelo por tua salvação, ó Senhor; a tua lei é o meu prazer.|Salmos 119:174
+O Senhor te guardará de todo o mal; ele guardará a tua vida.|Salmos 121:7
+O Senhor guardará a tua saída e a tua entrada, desde agora e para sempre.|Salmos 121:8
+Por causa dos meus irmãos e amigos, direi: Haja paz dentro de ti.|Salmos 122:8
+Por causa da casa do Senhor, nosso Deus, buscarei o teu bem.|Salmos 122:9
+O nosso socorro está no nome do Senhor, que fez os céus e a terra.|Salmos 124:8
+Faze o bem, ó Senhor, aos bons e aos que são retos de coração.|Salmos 125:4
+Sim, grandes coisas fez o Senhor por nós, e por isso estamos alegres.|Salmos 126:3
+Os que semeiam em lágrimas, com cânticos de júbilo segarão.|Salmos 126:5
+Inútil vos será levantar de madrugada, repousar tarde, comer o pão de dores, pois ele supre aos seus amados enquanto dormem.|Salmos 127:2
+Bem-aventurado todo aquele que teme ao Senhor e anda nos seus caminhos.|Salmos 128:1
+Eis que assim será abençoado o homem que teme ao Senhor.|Salmos 128:4
+Aguardo ao Senhor; a minha alma o aguarda, e espero na sua palavra.|Salmos 130:5
+A minha alma anseia pelo Senhor, mais do que os guardas pelo romper da manhã, sim, mais do que os guardas pela manhã.|Salmos 130:6
+Oh! quão bom e quão suave é que os irmãos vivam em união!|Salmos 133:1
+Eis aqui, bendizei ao Senhor, todos vós, servos do Senhor, que de noite assistis na casa do Senhor.|Salmos 134:1
+Erguei as mãos para o santuário, e bendizei ao Senhor.|Salmos 134:2
+Desde Sião te abençoe o Senhor, que fez os céus e a terra.|Salmos 134:3
+Dai graças ao Deus dos céus, porque a sua benignidade dura para sempre.|Salmos 136:26
+Graças te dou de todo o meu coração; diante dos deuses a ti canto louvores.|Salmos 138:1
+Inclino-me para o teu santo templo, e louvo o teu nome pela tua benignidade, e pela tua fidelidade; pois engrandeceste acima de tudo o teu nome e a tua palavra.|Salmos 138:2
+No dia em que eu clamei, atendeste-me; alentaste-me, fortalecendo a minha alma.|Salmos 138:3
+Tu conheces o meu sentar e o meu levantar; de longe entendes o meu pensamento.|Salmos 139:2
+Esquadrinhas o meu andar, e o meu deitar, e conheces todos os meus caminhos.|Salmos 139:3
+Eu te louvarei, porque de um modo tão admirável e maravilhoso fui formado; maravilhosas são as tuas obras, e a minha alma o sabe muito bem.|Salmos 139:14
+Ó Senhor, meu Senhor, meu forte libertador, tu cobriste a minha cabeça no dia da batalha.|Salmos 140:7
+Decerto os justos louvarão o teu nome; os retos habitarão na tua presença.|Salmos 140:13
+Pelo que dentro de mim esmorece o meu espírito, e em mim está desolado o meu coração.|Salmos 143:4
+Lembro-me dos dias antigos; considero todos os teus feitos; medito na obra das tuas mãos.|Salmos 143:5
+A ti estendo as minhas mãos; a minha alma, qual terra sedenta, tem sede de ti.|Salmos 143:6
+Faze-me ouvir da tua benignidade pela manhã, pois em ti confio; faze-me saber o caminho que devo seguir, porque a ti elevo a minha alma.|Salmos 143:8
+Ensina-me a fazer a tua vontade, pois tu és o meu Deus; guie-me o teu bom Espírito por terreno plano.|Salmos 143:10
+Vivifica-me, ó Senhor, por amor do teu nome; por amor da tua justiça, tira-me da tribulação.|Salmos 143:11
+Sejam os nossos filhos, na sua mocidade, como plantas bem desenvolvidas, e as nossas filhas como pedras angulares lavradas, como as de um palácio.|Salmos 144:12
+Bem-aventurado o povo a quem assim sucede! Bem-aventurado o povo cujo Deus é o Senhor.|Salmos 144:15
+Cada dia te bendirei, e louvarei o teu nome pelos séculos dos séculos.|Salmos 145:2
+Grande é o Senhor, e mui digno de ser louvado; e a sua grandeza é insondável.|Salmos 145:3
+Uma geração louvará as tuas obras à outra geração, e anunciará os teus atos poderosos.|Salmos 145:4
+Publicarão a memória da tua grande bondade, e com júbilo celebrarão a tua justiça.|Salmos 145:7
+Bondoso e compassivo é o Senhor, tardio em irar-se, e de grande benignidade.|Salmos 145:8
+O Senhor é bom para todos, e as suas misericórdias estão sobre todas as suas obras.|Salmos 145:9
+Todas as tuas obras te louvarão, ó Senhor, e os teus santos te bendirão.|Salmos 145:10
+O Senhor sustém a todos os que estão a cair, e levanta a todos os que estão abatidos.|Salmos 145:14
+Justo é o Senhor em todos os seus caminhos, e benigno em todas as suas obras.|Salmos 145:17
+Ele cumpre o desejo dos que o temem; ouve o seu clamor, e os salva.|Salmos 145:19
+Publique a minha boca o louvor do Senhor; e bendiga toda a carne o seu santo nome para todo o sempre.|Salmos 145:21
+Louvarei ao Senhor durante a minha vida; cantarei louvores ao meu Deus enquanto viver.|Salmos 146:2
+Louvai ao Senhor; porque é bom cantar louvores ao nosso Deus; pois isso é agradável, e decoroso é o louvor.|Salmos 147:1
+Cantai ao Senhor em ação de graças; com a harpa cantai louvores ao nosso Deus.|Salmos 147:7
+O Senhor se compraz nos que o temem, nos que esperam na sua benignidade.|Salmos 147:11
+Louvai ao Senhor! Louvai ao Senhor desde o céu, louvai-o nas alturas!|Salmos 148:1
+Louvai-o, todos os seus anjos; louvai-o, todas as suas hostes!|Salmos 148:2
+Louvai-o, sol e lua; louvai-o, todas as estrelas luzentes!|Salmos 148:3
+Louvai-o, céus dos céus, e as águas que estão sobre os céus!|Salmos 148:4
+Louvem eles o nome do Senhor, pois só o seu nome é excelso; a sua glória é acima da terra e do céu.|Salmos 148:13
+Louvai ao Senhor! Cantai ao Senhor um cântico novo, e o seu louvor na assembléia dos santos!|Salmos 149:1
+Alegre-se Israel naquele que o fez; regozijem-se os filhos de Sião no seu Rei.|Salmos 149:2
+Louvem-lhe o nome com danças, cantem-lhe louvores com adufe e harpa.|Salmos 149:3
+Exultem de glória os santos, cantem de alegria nos seus leitos.|Salmos 149:5
+Louvai ao Senhor! Louvai a Deus no seu santuário; louvai-o no firmamento do seu poder!|Salmos 150:1
+Louvai-o pelos seus atos poderosos; louvai-o conforme a excelência da sua grandeza!|Salmos 150:2
+Louvai-o ao som de trombeta; louvai-o com saltério e com harpa!|Salmos 150:3
+Louvai-o com adufe e com danças; louvai-o com instrumentos de cordas e com flauta!|Salmos 150:4
+Louvai-o com címbalos sonoros; louvai-o com címbalos altissonantes!|Salmos 150:5
+Tudo quanto tem fôlego louve ao Senhor. Louvai ao Senhor!|Salmos 150:6
+A suprema sabedoria altissonantemente clama nas ruas; nas praças levanta a sua voz.|Provérbios 1:20
+Convertei-vos pela minha repreensão; eis que derramarei sobre vós o meu; espírito e vos farei saber as minhas palavras.|Provérbios 1:23
+Nenhum dos que se dirigirem a ela, tornara a sair, nem retomará as veredas da vida.|Provérbios 2:19
+Assim andarás pelo caminho dos bons, e guardarás as veredas dos justos.|Provérbios 2:20
+Longura de dias há na sua mão direita; na sua esquerda riquezas e honra.|Provérbios 3:16
+Os seus caminhos são caminhos de delícias, e todas as suas veredas são paz.|Provérbios 3:17
+O Senhor pela sabedoria fundou a terra; pelo entendimento estabeleceu o céu.|Provérbios 3:19
+Ouvi, filhos, a instrução do pai, e estai atentos para conhecerdes o entendimento.|Provérbios 4:1
+A sabedoria é a coisa principal; adquire, pois, a sabedoria; sim, com tudo o que possuis adquire o entendimento.|Provérbios 4:7
+Estima-a, e ela te exaltará; se a abraçares, ela te honrará.|Provérbios 4:8
+Ela dará à tua cabeça uma grinalda de graça; e uma coroa de glória te entregará.|Provérbios 4:9
+Ouve, filho meu, e aceita as minhas palavras, para que se multipliquem os anos da tua vida.|Provérbios 4:10
+Eu te ensinei o caminho da sabedoria; guiei-te pelas veredas da retidão.|Provérbios 4:11
+Guarda com toda a diligência o teu coração, porque dele procedem as fontes da vida.|Provérbios 4:23
+Pondera a vereda de teus pés, e serão seguros todos os teus caminhos.|Provérbios 4:26
+No cume das alturas, junto ao caminho, nas encruzilhadas das veredas ela se coloca.|Provérbios 8:2
+Eu, a sabedoria, habito com a prudência, e possuo o conhecimento e a discrição.|Provérbios 8:12
+Por mim reinam os reis, e os príncipes decretam o que justo.|Provérbios 8:15
+Eu amo aos que me amam, e os que diligentemente me buscam me acharão.|Provérbios 8:17
+Riquezas e honra estão comigo; sim, riquezas duráveis e justiça.|Provérbios 8:18
+Feliz é o homem que me dá ouvidos, velando cada dia às minhas entradas, esperando junto às ombreiras da minha porta.|Provérbios 8:34
+Instrui ao sábio, e ele se fará mais, sábio; ensina ao justo, e ele crescerá em entendimento.|Provérbios 9:9
+O temor do Senhor é o princípio sabedoria; e o conhecimento do Santo é o entendimento.|Provérbios 9:10
+Um dá liberalmente, e se torna mais rico; outro retém mais do que é justo, e se empobrece.|Provérbios 11:24
+A alma generosa prosperará, e o que regar também será regado.|Provérbios 11:25
+O fruto do justo é árvore de vida; e o que ganha almas sábio é.|Provérbios 11:30
+Melhor é o que é estimado em pouco e tem servo, do que quem se honra a si mesmo e tem falta de pão.|Provérbios 12:9
+No temor do Senhor há firme confiança; e os seus filhos terão um lugar de refúgio.|Provérbios 14:26
+O coração tranqüilo é a vida da carne; a inveja, porém, é a podridão dos ossos.|Provérbios 14:30
+O homem alegra-se em dar uma resposta adequada; e a palavra a seu tempo quão boa é!|Provérbios 15:23
+A luz dos olhos alegra o coração, e boas-novas engordam os ossos.|Provérbios 15:30
+O ouvido que escuta a advertência da vida terá a sua morada entre os sábios.|Provérbios 15:31
+O temor do Senhor é a instrução da sabedoria; e adiante da honra vai a humildade.|Provérbios 15:33
+Lábios justos são o prazer dos reis; e eles amam aquele que fala coisas retas.|Provérbios 16:13
+Na luz do semblante do rei está a vida; e o seu favor é como a nuvem de chuva serôdia.|Provérbios 16:15
+Quanto melhor é adquirir a sabedoria do que o ouro! e quanto mais excelente é escolher o entendimento do que a prata!|Provérbios 16:16
+A estrada dos retos desvia-se do mal; o que guarda o seu caminho preserva a sua vida.|Provérbios 16:17
+O que atenta prudentemente para a palavra prosperará; e feliz é aquele que confia no Senhor.|Provérbios 16:20
+O sábio de coração será chamado prudente; e a doçura dos lábios aumenta o saber.|Provérbios 16:21
+O coração do sábio instrui a sua boca, e aumenta o saber nos seus lábios.|Provérbios 16:23
+Palavras suaves são como favos de mel, doçura para a alma e saúde para o corpo.|Provérbios 16:24
+Coroa de honra são as cãs, a qual se obtém no caminho da justiça.|Provérbios 16:31
+Melhor é o longânimo do que o valente; e o que domina o seu espírito do que o que toma uma cidade.|Provérbios 16:32
+Coroa dos velhos são os filhos dos filhos; e a glória dos filhos são seus pais.|Provérbios 17:6
+Pedra preciosa é a peita aos olhos de quem a oferece; para onde quer que ele se volte, serve-lhe de proveito.|Provérbios 17:8
+O homem falto de entendimento compromete-se, tornando-se fiador na presença do seu vizinho.|Provérbios 17:18
+Refreia as suas palavras aquele que possui o conhecimento; e o homem de entendimento é de espírito sereno.|Provérbios 17:27
+Águas profundas são as palavras da boca do homem; e a fonte da sabedoria é um ribeiro que corre.|Provérbios 18:4
+Torre forte é o nome do Senhor; para ela corre o justo, e está seguro.|Provérbios 18:10
+O presente do homem alarga-lhe o caminho, e leva-o à presença dos grandes.|Provérbios 18:16
+O que primeiro começa o seu pleito parece justo; até que vem o outro e o examina.|Provérbios 18:17
+A sorte faz cessar os pleitos, e decide entre os poderosos.|Provérbios 18:18
+O homem se fartará do fruto da sua boca; dos renovos dos seus lábios se fartará.|Provérbios 18:20
+O que adquire a sabedoria é amigo de si mesmo; o que guarda o entendimento prosperará.|Provérbios 19:8
+A discrição do homem fá-lo tardio em irar-se; e sua glória está em esquecer ofensas.|Provérbios 19:11
+O temor do Senhor encaminha para a vida; aquele que o tem ficará satisfeito, e mal nenhum o visitará.|Provérbios 19:23
+O justo anda na sua integridade; bem-aventurados serão os seus filhos depois dele.|Provérbios 20:7
+O ouvido que ouve, e o olho que vê, o Senhor os fez a ambos.|Provérbios 20:12
+Laço é para o homem dizer precipitadamente: É santo; e, feitos os votos, então refletir.|Provérbios 20:25
+O espírito do homem é a lâmpada do Senhor, a qual esquadrinha todo o mais íntimo do coração.|Provérbios 20:27
+A benignidade e a verdade guardam o rei; e com a benignidade sustém ele o seu trono.|Provérbios 20:28
+A glória dos jovens é a sua força; e a beleza dos velhos são as cãs.|Provérbios 20:29
+Como corrente de águas é o coração do rei na mão do Senhor; ele o inclina para onde quer.|Provérbios 21:1
+Fazer justiça e julgar com retidão é mais aceitável ao Senhor do que oferecer-lhe sacrifício.|Provérbios 21:3
+Quem ama os prazeres empobrecerá; quem ama o vinho e o azeite nunca enriquecera.|Provérbios 21:17
+O sábio escala a cidade dos valentes, e derriba a fortaleza em que ela confia.|Provérbios 21:22
+Mais digno de ser escolhido é o bom nome do que as muitas riquezas; e o favor é melhor do que a prata e o ouro.|Provérbios 22:1
+O galardão da humildade e do temor do Senhor é riquezas, e honra e vida.|Provérbios 22:4
+Quem vê com olhos bondosos será abençoado; porque dá do seu pão ao pobre.|Provérbios 22:9
+O que ama a pureza do coração, e que tem graça nos seus lábios, terá por seu amigo o rei.|Provérbios 22:11
+Inclina o teu ouvido e ouve as palavras dos sábios, e aplica o teu coração ao meu conhecimento.|Provérbios 22:17
+Para que a tua confiança esteja no senhor, a ti tos fiz saber hoje, sim, a ti mesmo.|Provérbios 22:19
+Fitando tu os olhos nas riquezas, elas se vão; pois fazem para si asas, como a águia, voam para o céu.|Provérbios 23:5
+Aplica o teu coração à instrução, e os teus ouvidos às palavras do conhecimento.|Provérbios 23:12
+Ouve tu, filho meu, e sê sábio; e dirige no caminho o teu coração.|Provérbios 23:19
+Grandemente se regozijará o pai do justo; e quem gerar um filho sábio, nele se alegrará.|Provérbios 23:24
+Alegrem-se teu pai e tua mãe, e regozije-se aquela que te deu à luz.|Provérbios 23:25
+Filho meu, dá-me o teu coração; e deleitem-se os teus olhos nos meus caminhos.|Provérbios 23:26
+Para os que se demoram perto do vinho, para os que andam buscando bebida misturada.|Provérbios 23:30
+O sábio é mais poderoso do que o forte; e o inteligente do que o que possui a força.|Provérbios 24:5
+Come mel, filho meu, porque é bom, e do favo de mel, que é doce ao teu paladar.|Provérbios 24:13
+Como o céu na sua altura, e como a terra na sua profundidade, assim o coração dos reis é inescrutável.|Provérbios 25:3
+Como o frescor de neve no tempo da sega, assim é o mensageiro fiel para com os que o enviam, porque refrigera o espírito dos seus senhores.|Provérbios 25:13
+Melhor é a repreensão aberta do que o amor encoberto.|Provérbios 27:5
+O óleo e o perfume alegram o coração; assim é o doce conselho do homem para o seu amigo.|Provérbios 27:9
+Sê sábio, filho meu, e alegra o meu coração, para que eu tenha o que responder àquele que me vituperar.|Provérbios 27:11
+Como na água o rosto corresponde ao rosto, assim o coração do homem ao homem.|Provérbios 27:19
+Se o rei julgar os pobres com eqüidade, o seu trono será estabelecido para sempre.|Provérbios 29:14
+Corrige a teu filho, e ele te dará descanso; sim, deleitará o teu coração.|Provérbios 29:17
+Abre a tua boca a favor do mudo, a favor do direito de todos os desamparados.|Provérbios 31:8
+Álefe. Mulher virtuosa, quem a pode achar? Pois o seu valor muito excede ao de jóias preciosas.|Provérbios 31:10
+Dálete. Ela busca lã e linho, e trabalha de boa vontade com as mãos.|Provérbios 31:13
+Vave. E quando ainda está escuro, ela se levanta, e dá mantimento à sua casa, e a tarefa às suas servas.|Provérbios 31:15
+Hete. Cinge os seus lombos de força, e fortalece os seus braços.|Provérbios 31:17
+Cafe. Abre a mão para o pobre; sim, ao necessitado estende as suas mãos.|Provérbios 31:20
+Pê. Abre a sua boca com sabedoria, e o ensino da benevolência está na sua língua.|Provérbios 31:26
+Tudo tem a sua ocasião própria, e há tempo para todo propósito debaixo do céu.|Eclesiastes 3:1
+O que é, já existiu; e o que há de ser, também já existiu; e Deus procura de novo o que já se passou.|Eclesiastes 3:15
+Disse eu no meu coração: Isso é por causa dos filhos dos homens, para que Deus possa prová-los, e eles possam ver que são em si mesmos como os brutos.|Eclesiastes 3:18
+Sejam sempre alvas as tuas vestes, e nunca falte o óleo sobre a tua cabeça.|Eclesiastes 9:8
+Estando as nuvens cheias de chuva, derramam-na sobre a terra. Caindo a árvore para o sul, ou para o norte, no lugar em que a árvore cair, ali ficará.|Eclesiastes 11:3
+Tu multiplicaste este povo, a alegria lhe aumentaste; todos se alegrarão perante ti, como se alegram na ceifa e como exultam quando se repartem os despojos.|Isaías 9:3
+A justiça será o cinto dos seus lombos, e a fidelidade o cinto dos seus rins.|Isaías 11:5
+Morará o lobo com o cordeiro, e o leopardo com o cabrito se deitará; e o bezerro, e o leão novo e o animal cevado viverão juntos; e um menino pequeno os conduzirá.|Isaías 11:6
+Levantará um pendão entre as nações e ajuntará os desterrados de Israel, e es dispersos de Judá congregará desde os quatro confins da terra.|Isaías 11:12
+Eis que Deus é a minha salvação; eu confiarei e não temerei porque o Senhor, sim o Senhor é a minha força e o meu cântico; e se tornou a minha salvação.|Isaías 12:2
+Portanto com alegria tirareis águas das fontes da salvação.|Isaías 12:3
+Cantai ao Senhor; porque fez coisas grandiosas; saiba-se isso em toda a terra.|Isaías 12:5
+Exulta e canta de gozo, ó habitante de Sião; porque grande é o Santo de Israel no meio de ti.|Isaías 12:6
+Ó Senhor, tu és o meu Deus; exaltar-te-ei a ti, e louvarei o teu nome; porque fizeste maravilhas, os teus conselhos antigos, em fidelidade e em verdade.|Isaías 25:1
+Tu conservarás em paz aquele cuja mente está firme em ti; porque ele confia em ti.|Isaías 26:3
+Confiai sempre no Senhor; porque o Senhor Deus é uma rocha eterna.|Isaías 26:4
+O caminho do justo é plano; tu, que és reto, nivelas a sua vereda.|Isaías 26:7
+Senhor, tu hás de estabelecer para nós a paz; pois tu fizeste para nós todas as nossas obras.|Isaías 26:12
+O coração dos imprudentes entenderá o conhecimento, e a língua dos gagos estará pronta para falar distintamente.|Isaías 32:4
+Levantai-vos, mulheres que estais sossegadas e ouvi a minha voz; e vós, filhas, que estais , tão seguras, inclinai os ouvidos às minhas palavras.|Isaías 32:9
+O meu povo habitará em morada de paz, em moradas bem seguras, e em lugares quietos de descanso.|Isaías 32:18
+Bem-aventurados sois vós os que semeais junto a todas as águas, que deixais livres os pés do boi e do jumento.|Isaías 32:20
+Ó Senhor, tem misericórdia de nós; por ti temos esperado. Sê tu o nosso braço cada manhã, como também a nossa salvação no tempo da tribulação.|Isaías 33:2
+Será ele a estabilidade dos teus tempos, abundância de salvação, sabedoria, e conhecimento; e o temor do Senhor é o seu tesouro.|Isaías 33:6
+Agora me levantarei, diz o Senhor; agora me erguerei; agora serei exaltado.|Isaías 33:10
+Ouvi, vós os que estais longe, o que tenho feito; e vós, que estais vizinhos, reconhecei o meu poder.|Isaías 33:13
+Fortalecei as mãos fracas, e firmai os joelhos trementes.|Isaías 35:3
+Todo vale será levantado, e será abatido todo monte e todo outeiro; e o terreno acidentado será nivelado, e o que é escabroso, aplanado.|Isaías 40:4
+A glória do Senhor se revelará; e toda a carne juntamente a verá; pois a boca do Senhor o disse.|Isaías 40:5
+Uma voz diz: Clama. Respondi eu: Que hei de clamar? Toda a carne é erva, e toda a sua beleza como a flor do campo.|Isaías 40:6
+Como pastor ele apascentará o seu rebanho; entre os seus braços recolherá os cordeirinhos, e os levará no seu regaço; as que amamentam, ele as guiará mansamente.|Isaías 40:11
+A quem, pois, me comparareis, para que eu lhe seja semelhante? diz o Santo.|Isaías 40:25
+Não temas, ó bichinho de Jacó, nem vós, povozinho de Israel; eu te ajudo, diz o Senhor, e o teu redentor é o Santo de Israel.|Isaías 41:14
+Tu os padejarás e o vento os levará, e o redemoinho os espalhará; e tu te alegrarás no Senhor e te gloriarás no Santo de Israel.|Isaías 41:16
+Abrirei rios nos altos desnudados, e fontes no meio dos vales; tornarei o deserto num lago d&#x27;água, e a terra seca em mananciais.|Isaías 41:18
+Eis aqui o meu servo, a quem sustenho; o meu escolhido, em quem se compraz a minha alma; pus o meu espírito sobre ele. ele trará justiça às nações.|Isaías 42:1
+Assim diz Deus, o Senhor, que criou os céus e os desenrolou, e estendeu a terra e o que dela procede; que dá a respiração ao povo que nela está, e o espírito aos que andam nela.|Isaías 42:5
+Eis que as primeiras coisas já se realizaram, e novas coisas eu vos anuncio; antes que venham à luz, vo-las faço ouvir.|Isaías 42:9
+Cantai ao Senhor um cântico novo, e o seu louvor desde a extremidade da terra, vós, os que navegais pelo mar, e tudo quanto há nele, vós ilhas, e os vossos habitantes.|Isaías 42:10
+Dêem glória ao Senhor, e anunciem nas ilhas o seu louvor.|Isaías 42:12
+Foi do agrado do Senhor, por amor da sua justiça, engrandecer a lei e torná-la gloriosa.|Isaías 42:21
+Visto que foste precioso aos meus olhos, e és digno de honra e eu te amo, portanto darei homens por ti, e es povos pela tua vida.|Isaías 43:4
+Eu sou o Senhor, vosso Santo, o Criador de Israel, vosso Rei.|Isaías 43:15
+Este dirá: Eu sou do Senhor; e aquele se chamará do nome de Jacó; e aquele outro escreverá na própria mão: Eu sou do Senhor; e por sobrenome tomará o nome de Israel.|Isaías 44:5
+Um homem corta para si cedros, ou toma um cipreste, ou um carvalho; assim escolhe dentre as árvores do bosque; planta uma faia, e a chuva a faz crescer.|Isaías 44:14
+Assim diz o Senhor, o Santo de Israel, aquele que o formou: Perguntai-me as coisas futuras; demandai-me acerca de meus filhos, e acerca da obra das minhas mãos.|Isaías 45:11
+Ouvi-me, ó duros de coração, os que estais longe da justiça.|Isaías 46:12
+Farei de todos os meus montes um caminho; e as minhas estradas serão exaltadas.|Isaías 49:11
+Ouvi-me vós, os que seguis a justiça, os que buscais ao Senhor; olhai para a rocha donde fostes cortados, e para a caverna do poço donde fostes cavados.|Isaías 51:1
+Perto está a minha justiça, vem saindo a minha salvação, e os meus braços governarão os povos; as ilhas me aguardam, e no meu braço esperam.|Isaías 51:5
+Quão formosos sobre os montes são os pés do que anuncia as boas-novas, que proclama a paz, que anuncia coisas boas, que proclama a salvação, que diz a Sião: O teu Deus reina!|Isaías 52:7
+O Senhor desnudou o seu santo braço à vista de todas as nações; e todos os confins da terra verão a salvação do nosso Deus.|Isaías 52:10
+Inclinai os vossos ouvidos, e vinde a mim; ouvi, e a vossa alma viverá; porque convosco farei um pacto perpétuo, dando-vos as firmes beneficências prometidas a Davi.|Isaías 55:3
+Buscai ao Senhor enquanto se pode achar, invocai-o enquanto está perto.|Isaías 55:6
+Porque, assim como o céu é mais alto do que a terra, assim são os meus caminhos mais altos do que os vossos caminhos, e os meus pensamentos mais altos do que os vossos pensamentos.|Isaías 55:9
+Eu crio o fruto dos lábios; paz, paz, para o que está longe, e para o que está perto diz o Senhor; e eu o sararei.|Isaías 57:19
+O Senhor te guiará continuamente, e te fartará até em lugares áridos, e fortificará os teus ossos; serás como um jardim regado, e como um manancial, cujas águas nunca falham.|Isaías 58:11
+Levanta-te, resplandece, porque é chegada a tua luz, e é nascida sobre ti a glória do Senhor.|Isaías 60:1
+Levanta em redor os teus olhos, e vê; todos estes se ajuntam, e vêm ter contigo; teus filhos vêm de longe, e tuas filhas se criarão a teu lado.|Isaías 60:4
+Porque, como a terra produz os seus renovos, e como o horto faz brotar o que nele se semeia, assim o Senhor Deus fará brotar a justiça e o louvor perante todas as nações.|Isaías 61:11
+Pois, como os novos céus e a nova terra, que hei de fazer, durarão diante de mim, diz o Senhor, assim durará a vossa posteridade e o vosso nome.|Isaías 66:22
+Bendito o varão que confia no Senhor, e cuja esperança é o Senhor.|Jeremias 17:7
+Eu, o Senhor, esquadrinho a mente, eu provo o coração; e isso para dar a cada um segundo os seus caminhos e segundo o fruto das suas ações.|Jeremias 17:10
+Um trono glorioso, posto bem alto desde o princípio, é o lugar do nosso santuário.|Jeremias 17:12
+Buscar-me-eis, e me achareis, quando me buscardes de todo o vosso coração.|Jeremias 29:13
+De longe o Senhor me apareceu, dizendo: Pois que com amor eterno te amei, também com benignidade te atraí.|Jeremias 31:3
+De novo te edificarei, e serás edificada ó virgem de Israel! ainda serás adornada com os teus adufes, e sairás nas danças dos que se alegram.|Jeremias 31:4
+Eis que os dias vêm, diz o Senhor, em que semearei de homens e de animais a casa de Israel e a casa de Judá.|Jeremias 31:27
+Se esta ordem estabelecida falhar diante de mim, diz o Senhor, deixará também a linhagem de Israel de ser uma nação diante de mim para sempre.|Jeremias 31:36
+Ah! Senhor Deus! És tu que fizeste os céus e a terra com o teu grande poder, e com o teu braço estendido! Nada há que te seja demasiado difícil!|Jeremias 32:17
+Eis que lhe trarei a ela saúde e cura, e os sararei, e lhes manifestarei abundância de paz e de segurança.|Jeremias 33:6
+Eis que vêm os dias, diz o Senhor, em que cumprirei a boa palavra que falei acerca da casa de Israel e acerca da casa de Judá.|Jeremias 33:14
+Em bons pastos as apascentarei, e nos altos montes de Israel será o seu curral; deitar-se-ão ali num bom curral, e pastarão em pastos gordos nos montes de Israel.|Ezequiel 34:14
+Farei com elas um pacto de paz; e removerei da terra os animais ruins, de sorte que elas habitarão em segurança no deserto, e dormirão nos bosques.|Ezequiel 34:25
+Tu, ó filho do homem, profetiza aos montes de Israel, e dize: Montes de Israel, ouvi a palavra do Senhor.|Ezequiel 36:1
+Ainda porei dentro de vós o meu Espírito, e farei que andeis nos meus estatutos, e guardeis as minhas ordenanças, e as observeis.|Ezequiel 36:27
+Assim diz o Senhor Deus: Ainda por isso serei consultado da parte da casa de Israel, que lho faça; multiplicá-los-ei como a um rebanho.|Ezequiel 36:37
+Ouvindo então o rei a notícia, ficou muito penalizado, e a favor de Daniel propôs dentro do seu coração livrá-lo; e até o pôr do sol trabalhou para o salvar.|Daniel 6:14
+Este Daniel, pois, prosperou no reinado de Dario, e no reinado de Ciro, o persa.|Daniel 6:28
+Voltarão os que habitam à sua sombra; reverdecerão como o trigo, e florescerão como a vide; o seu renome será como o do vinho do Líbano.|Oséias 14:7
+Diante dele um fogo consome, e atrás dele uma chama abrasa; a terra diante dele é como o jardim do Édem mas atrás dele um desolado deserto; sim, nada lhe escapa.|Joel 2:3
+Como o estrondo de carros sobre os cumes dos montes vão eles saltando, como o ruído da chama de fogo que consome o restelho, como um povo poderoso, posto em ordem de batalha.|Joel 2:5
+Não temas, ó terra; regozija-te e alegra-te, porque o Senhor tem feito grandes coisas.|Joel 2:21
+As suas mãos estão sobre o mal para o fazerem diligentemente; o príncipe e o juiz exigem a peita, e o grande manifesta o desejo mau da sua alma; e assim todos eles tecem o mal.|Miquéias 7:3
+Eu, porém, confiarei no Senhor; esperarei no Deus da minha salvação. O meu Deus me ouvirá.|Miquéias 7:7
+Deus veio de Temã, e do monte Parã o Santo. [Selá]. A sua glória cobriu os céus, e a terra encheu-se do seu louvor.|Habacuque 3:3
+Pára, e mede a terra; olha, e sacode as nações; e os montes perpétuos se espalham, os outeiros eternos se abatem; assim é o seu andar desde a eternidade.|Habacuque 3:6
+Dalém dos rios da Etiópia os meus adoradores, a saber, a filha dos meus dispersos, trarão a minha oferta.|Sofonias 3:10
+Abalarei todas as nações; e as coisas preciosas de todas as nações virão, e encherei de glória esta casa, diz o Senhor dos exércitos.|Ageu 2:7
+A glória desta última casa será maior do que a da primeira, diz o Senhor dos exércitos; e neste lugar darei a paz, diz o Senhor dos exércitos.|Ageu 2:9
+Quem és tu, ó monte grande? Diante de Zorobabel tornar-te-ás uma campina; e ele trará a pedra angular com aclamações: Graça, graça a ela.|Zacarias 4:7
+Assim diz o Senhor dos exércitos: Se isto for maravilhoso aos olhos do resto deste povo naqueles dias, acaso será também maravilhoso aos meus olhos? diz o Senhor dos exércitos.|Zacarias 8:6
+Ora Tiro edificou para si fortalezas, e amontoou prata como o pó, e ouro como a lama das ruas.|Zacarias 9:3
+Voltai à fortaleza, ó presos de esperança; também hoje anuncio que te recompensarei em dobro.|Zacarias 9:12
+Bem-aventurados os humildes de espírito, porque deles é o reino dos céus.|Mateus 5:3
+Bem-aventurados os que choram, porque eles serão consolados.|Mateus 5:4
+Bem-aventurados os mansos, porque eles herdarão a terra.|Mateus 5:5
+Bem-aventurados os misericordiosos, porque eles alcançarão misericórdia.|Mateus 5:7
+Bem-aventurados os limpos de coração, porque eles verão a Deus.|Mateus 5:8
+Bem-aventurados os pacificadores, porque eles serão chamados filhos de Deus.|Mateus 5:9
+Bem-aventurados os que são perseguidos por causa da justiça, porque deles é o reino dos céus.|Mateus 5:10
+Bem-aventurados sois vós, quando vos injuriarem e perseguiram e, mentindo, disserem todo mal contra vós por minha causa.|Mateus 5:11
+Alegrai-vos e exultai, porque é grande o vosso galardão nos céus; porque assim perseguiram aos profetas que foram antes de vós.|Mateus 5:12
+Assim resplandeça a vossa luz diante dos homens, para que vejam as vossas boas obras, e glorifiquem a vosso Pai, que está nos céus.|Mateus 5:16
+Sede vós, pois, perfeitos, como é perfeito o vosso Pai celestial.|Mateus 5:48
+Pedí, e dar-se-vos-á; buscai, e achareis; batei e abrir-se-vos-á.|Mateus 7:7
+Portanto, tudo o que vós quereis que os homens vos façam, fazei-lho também vós a eles; porque esta é a lei e os profetas.|Mateus 7:12
+Este é aquele de quem está escrito: Eis aí envio eu ante a tua face o meu mensageiro, que há de preparar adiante de ti o teu caminho.|Mateus 11:10
+Tomai sobre vós o meu jugo, e aprendei de mim, que sou manso e humilde de coração; e achareis descanso para as vossas almas.|Mateus 11:29
+Estando ele ainda a falar, eis que uma nuvem luminosa os cobriu; e dela saiu uma voz que dizia: Este é o meu Filho amado, em quem me comprazo; a ele ouvi.|Mateus 17:5
+Dizei à filha de Sião: Eis que aí te vem o teu Rei, manso e montado em um jumento, em um jumentinho, cria de animal de carga.|Mateus 21:5
+Mas, se dissermos: Dos homens, tememos o povo; porque todos consideram João como profeta.|Mateus 21:26
+Nisto veio uma nuvem que os cobriu, e dela saiu uma voz que dizia: Este é o meu Filho amado; a ele ouvi.|Marcos 9:7
+Bom é o sal; mas, se o sal se tornar insípido, com que o haveis de temperar? Tende sal em vós mesmos, e guardai a paz uns com os outros.|Marcos 9:50
+Responderam-lhe: Concede-nos que na tua glória nos sentemos, um à tua direita, e outro à tua esquerda.|Marcos 10:37
+Parou, pois, Jesus e disse: Chamai-o. E chamaram o cego, dizendo-lhe: Tem bom ânimo; levanta-te, ele te chama.|Marcos 10:49
+Muitos também estenderam pelo caminho os seus mantos, e outros, ramagens que tinham cortado nos campos.|Marcos 11:8
+Bendito o reino que vem, o reino de nosso pai Davi! Hosana nas alturas!|Marcos 11:10
+Por isso vos digo que tudo o que pedirdes em oração, crede que o recebereis, e tê-lo-eis.|Marcos 11:24
+Quando estiverdes orando, perdoai, se tendes alguma coisa contra alguém, para que também vosso Pai que está no céu, vos perdoe as vossas ofensas.|Marcos 11:25
+Ambos eram justos diante de Deus, andando irrepreensíveis em todos os mandamentos e preceitos do Senhor.|Lucas 1:6
+O povo estava esperando Zacarias, e se admirava da sua demora no santuário.|Lucas 1:21
+Assim me fez o Senhor nos dias em que atentou para mim, a fim de acabar com o meu opróbrio diante dos homens.|Lucas 1:25
+Eis que conceberás e darás à luz um filho, ao qual porás o nome de Jesus.|Lucas 1:31
+Bem-aventurada aquela que creu que se hão de cumprir as coisas que da parte do Senhor lhe foram ditas.|Lucas 1:45
+Ouviram seus vizinhos e parentes que o Senhor lhe multiplicara a sua misericórdia, e se alegravam com ela.|Lucas 1:58
+Imediatamente a boca se lhe abriu, e a língua se lhe soltou; louvando a Deus.|Lucas 1:64
+Naqueles dias retirou-se para o monte a fim de orar; e passou a noite toda em oração a Deus.|Lucas 6:12
+Regozijai-vos nesse dia e exultai, porque eis que é grande o vosso galardão no céu; pois assim faziam os seus pais aos profetas.|Lucas 6:23
+Buscai antes o seu reino, e estas coisas vos serão acrescentadas.|Lucas 12:31
+Porque, onde estiver o vosso tesouro, aí estará também o vosso coração.|Lucas 12:34
+Bem-aventurados aqueles servos, aos quais o senhor, quando vier, achar vigiando! Em verdade vos digo que se cingirá, e os fará reclinar-se à mesa e, chegando-se, os servirá.|Lucas 12:37
+Quer venha na segunda vigília, quer na terceira, bem-aventurados serão eles, se assim os achar.|Lucas 12:38
+Bem-aventurado aquele servo a quem o seu senhor, quando vier, achar fazendo assim.|Lucas 12:43
+Em verdade vos digo que o porá sobre todos os seus bens.|Lucas 12:44
+Há um batismo em que hei de ser batizado; e como me angustio até que venha a cumprir-se!|Lucas 12:50
+Prosseguiu o Senhor: Ouvi o que diz esse juiz injusto.|Lucas 18:6
+Todas as coisas foram feitas por intermédio dele, e sem ele nada do que foi feito se fez.|João 1:3
+Este veio como testemunha, a fim de dar testemunho da luz, para que todos cressem por meio dele.|João 1:7
+Ninguém jamais viu a Deus. O Deus unigênito, que está no seio do Pai, esse o deu a conhecer.|João 1:18
+O que é nascido da carne é carne, e o que é nascido do Espírito é espírito.|João 3:6
+O Pai ama ao Filho, e todas as coisas entregou nas suas mãos.|João 3:35
+Deus é Espírito, e é necessário que os que o adoram o adorem em espírito e em verdade.|João 4:24
+Replicou-lhe a mulher: Eu sei que vem o Messias {que se chama o Cristo}; quando ele vier há de nos anunciar todas as coisas.|João 4:25
+Quem ceifa já está recebendo recompensa e ajuntando fruto para a vida eterna; para que o que semeia e o que ceifa juntamente se regozijem.|João 4:36
+Reconheceu, pois, o pai ser aquela hora a mesma em que Jesus lhe dissera: O teu filho vive; e creu ele e toda a sua casa.|João 4:53
+Está escrito nos profetas: E serão todos ensinados por Deus. Portanto todo aquele que do Pai ouviu e aprendeu vem a mim.|João 6:45
+Em verdade, em verdade vos digo: Aquele que crê tem a vida eterna.|João 6:47
+Eu sou o pão vivo que desceu do céu; se alguém comer deste pão, viverá para sempre; e o pão que eu darei pela vida do mundo é a minha carne.|João 6:51
+O espírito é o que vivifica, a carne para nada aproveita; as palavras que eu vos tenho dito são espírito e são vida.|João 6:63
+Referia-se a Judas, filho de Simão Iscariotes; porque era ele o que o havia de entregar, sendo um dos doze.|João 6:71
+Pela manhã cedo voltou ao templo, e todo o povo vinha ter com ele; e Jesus, sentando-se o ensinava.|João 8:2
+Se, pois, o Filho vos libertar, verdadeiramente sereis livres.|João 8:36
+A este o porteiro abre; e as ovelhas ouvem a sua voz; e ele chama pelo nome as suas ovelhas, e as conduz para fora.|João 10:3
+Eu sou o bom pastor; o bom pastor dá a sua vida pelas ovelhas.|João 10:11
+Por isto o Pai me ama, porque dou a minha vida para a retomar.|João 10:17
+Dito isto, retirou-se e foi chamar em segredo a Maria, sua irmã, e lhe disse: O Mestre está aí, e te chama.|João 11:28
+Tiraram então a pedra. E Jesus, levantando os olhos ao céu, disse: Pai, graças te dou, porque me ouviste.|João 11:41
+Muitos, pois, dentre os judeus que tinham vindo visitar Maria, e que tinham visto o que Jesus fizera, creram nele.|João 11:45
+Não se turbe o vosso coração; credes em Deus, crede também em mim.|João 14:1
+Se vós me conhecêsseis a mim, também conheceríeis a meu Pai; e já desde agora o conheceis, e o tendes visto.|João 14:7
+Deixo-vos a paz, a minha paz vos dou; eu não vo-la dou como o mundo a dá. Não se turbe o vosso coração, nem se atemorize.|João 14:27
+Ouvistes que eu vos disse: Vou, e voltarei a vós. Se me amásseis, alegrar-vos-íeis de que eu vá para o Pai; porque o Pai é maior do que eu.|João 14:28
+Se vós permanecerdes em mim, e as minhas palavras permanecerem em vós, pedi o que quiserdes, e vos será feito.|João 15:7
+Como o Pai me amou, assim também eu vos amei; permanecei no meu amor.|João 15:9
+Se guardardes os meus mandamentos, permanecereis no meu amor; do mesmo modo que eu tenho guardado os mandamentos de meu Pai, e permaneço no seu amor.|João 15:10
+Ninguém tem maior amor do que este, de dar alguém a sua vida pelos seus amigos.|João 15:13
+Até agora nada pedistes em meu nome; pedi, e recebereis, para que o vosso gozo seja completo.|João 16:24
+Pois, se os que são da lei são herdeiros, logo a fé é vã e a promessa é anulada.|Romanos 4:14
+Irmãos, o bom desejo do meu coração e a minha súplica a Deus por Israel é para sua salvação.|Romanos 10:1
+Rogo-vos pois, irmãos, pela compaixão de Deus, que apresenteis os vossos corpos como um sacrifício vivo, santo e agradável a Deus, que é o vosso culto racional.|Romanos 12:1
+Se for possível, quanto depender de vós, tende paz com todos os homens.|Romanos 12:18
+Portanto cada um de nós agrade ao seu próximo, visando o que é bom para edificação.|Romanos 15:2
+Portanto recebei-vos uns aos outros, como também Cristo nos recebeu, para glória de Deus.|Romanos 15:7
+Eu, da minha parte, irmãos meus, estou persuadido a vosso respeito, que vós já estais cheios de bondade, cheios de todo o conhecimento e capazes, vós mesmos, de admoestar-vos uns aos outros.|Romanos 15:14
+Isto pois lhes pareceu bem, como devedores que são para com eles. Porque, se os gentios foram participantes das bênçãos espirituais dos judeus, devem também servir a estes com as materiais.|Romanos 15:27
+Graça seja convosco, e paz, da parte de Deus nosso Pai, e do Senhor Jesus Cristo.|1 Coríntios 1:3
+Fiel é Deus, pelo qual fostes chamados para a comunhão de seu Filho Jesus Cristo nosso Senhor.|1 Coríntios 1:9
+Pois, qual dos homens entende as coisas do homem, senão o espírito do homem que nele está? assim também as coisas de Deus, ninguém as compreendeu, senão o Espírito de Deus.|1 Coríntios 2:11
+Pois, quem jamais conheceu a mente do Senhor, para que possa instruí-lo? Mas nós temos a mente de Cristo.|1 Coríntios 2:16
+Portanto, quer comais quer bebais, ou façais, qualquer outra coisa, fazei tudo para glória de Deus.|1 Coríntios 10:31
+Se é só para esta vida que esperamos em Cristo, somos de todos os homens os mais dignos de lástima.|1 Coríntios 15:19
+Eu vos declaro, irmãos, pela glória que de vós tenho em Cristo Jesus nosso Senhor, que morro todos os dias.|1 Coríntios 15:31
+Uma é a glória do sol, outra a glória da lua e outra a glória das estrelas; porque uma estrela difere em glória de outra estrela.|1 Coríntios 15:41
+Semeia-se corpo animal, é ressuscitado corpo espiritual. Se há corpo animal, há também corpo espiritual.|1 Coríntios 15:44
+Assim também está escrito: O primeiro homem, Adão, tornou-se alma vivente; o último Adão, espírito vivificante.|1 Coríntios 15:45
+Graça a vós, e paz da parte de Deus nosso Pai, e do Senhor Jesus Cristo.|2 Coríntios 1:2
+Pois, tantas quantas forem as promessas de Deus, nele está o sim; portanto é por ele o amém, para glória de Deus por nosso intermédio.|2 Coríntios 1:20
+Tendo, pois, tal esperança, usamos de muita ousadia no falar.|2 Coríntios 3:12
+Pelo que também nos esforçamos para ser-lhe agradáveis, quer presentes, quer ausentes.|2 Coríntios 5:9
+Pelo que, se alguém está em Cristo, nova criatura é; as coisas velhas já passaram; eis que tudo se fez novo.|2 Coríntios 5:17
+Há muito, de certo, pensais que nos estamos desculpando convosco. Perante Deus, falamos em Cristo, e tudo isto, amados, é para vossa edificação.|2 Coríntios 12:19
+Separados estais de Cristo, vós os que vos justificais pela lei; da graça decaístes.|Gálatas 5:4
+Nós, entretanto, pelo Espírito aguardamos a esperança da justiça que provém da fé.|Gálatas 5:5
+Se vivemos pelo Espírito, andemos também pelo Espírito.|Gálatas 5:25
+Levai as cargas uns dos outros, e assim cumprireis a lei de Cristo.|Gálatas 6:2
+A graça de nosso Senhor Jesus Cristo seja, irmãos, com o vosso espírito. Amém.|Gálatas 6:18
+Assim devem os maridos amar a suas próprias mulheres, como a seus próprios corpos. Quem ama a sua mulher, ama-se a si mesmo.|Efésios 5:28
+Vós, filhos, sede obedientes a vossos pais no Senhor, porque isto é justo.|Efésios 6:1
+Finalmente, fortalecei-vos no Senhor e na força do seu poder.|Efésios 6:10
+Portanto tomai toda a armadura de Deus, para que possais resistir no dia mau e, havendo feito tudo, permanecer firmes.|Efésios 6:13
+Paz seja com os irmãos, e amor com fé, da parte de Deus Pai e do Senhor Jesus Cristo.|Efésios 6:23
+A graça seja com todos os que amam a nosso Senhor Jesus Cristo com amor incorruptível.|Efésios 6:24
+Pelo que todos quantos somos perfeitos tenhamos este sentimento; e, se sentis alguma coisa de modo diverso, Deus também vo-lo revelará.|Filipenses 3:15
+Mas, naquela medida de perfeição a que já chegamos, nela prossigamos.|Filipenses 3:16
+Portanto, meus amados e saudosos irmãos, minha alegria e coroa, permanecei assim firmes no Senhor, amados.|Filipenses 4:1
+O que também aprendestes, e recebestes, e ouvistes, e vistes em mim, isso praticai; e o Deus de paz será convosco.|Filipenses 4:9
+Saudai a cada um dos santos em Cristo Jesus. Os irmãos que estão comigo vos saúdam.|Filipenses 4:21
+A graça do Senhor Jesus Cristo seja com o vosso espírito.|Filipenses 4:23
+Se, pois, fostes ressuscitados juntamente com Cristo, buscai as coisas que são de cima, onde Cristo está assentado à destra de Deus.|Colossenses 3:1
+Quando Cristo, que é a nossa vida, se manifestar, então também vós vos manifestareis com ele em glória.|Colossenses 3:4
+E, sobre tudo isto, revestí-vos do amor, que é o vínculo da perfeição.|Colossenses 3:14
+Exortamo-vos também, irmãos, a que admoesteis os insubordinados, consoleis os desanimados, ampareis os fracos e sejais longânimos para com todos.|1 Tessalonicenses 5:14
+Em tudo dai graças; porque esta é a vontade de Deus em Cristo Jesus para convosco.|1 Tessalonicenses 5:18
+A graça de nosso Senhor Jesus Cristo seja convosco.|1 Tessalonicenses 5:28
+A graça de nosso Senhor Jesus Cristo seja com todos vós.|2 Tessalonicenses 3:18
+Ocupa-te destas coisas, dedica-te inteiramente a elas, para que o teu progresso seja manifesto a todos.|1 Timóteo 4:15
+Considera o que digo, porque o Senhor te dará entendimento em tudo.|2 Timóteo 2:7
+Por isso, tudo suporto por amor dos eleitos, para que também eles alcancem a salvação que há em Cristo Jesus com glória eterna.|2 Timóteo 2:10
+Se, pois, alguém se purificar destas coisas, será vaso para honra, santificado e útil ao Senhor, preparado para toda boa obra.|2 Timóteo 2:21
+Foge também das paixões da mocidade, e segue a justiça, a fé, o amor, a paz com os que, de coração puro, invocam o Senhor.|2 Timóteo 2:22
+Combati o bom combate, acabei a carreira, guardei a fé.|2 Timóteo 4:7
+Cheguemo-nos, pois, confiadamente ao trono da graça, para que recebamos misericórdia e achemos graça, a fim de sermos socorridos no momento oportuno.|Hebreus 4:16
+Pela fé, até a própria Sara recebeu a virtude de conceber um filho, mesmo fora da idade, porquanto teve por fiel aquele que lho havia prometido.|Hebreus 11:11
+Lembrai-vos dos vossos guias, os quais vos falaram a palavra de Deus, e, atentando para o êxito da sua carreira, imitai-lhes a fé.|Hebreus 13:7
+Saiamos pois a ele fora do arraial, levando o seu opróbrio.|Hebreus 13:13
+Por ele, pois, ofereçamos sempre a Deus sacrifício de louvor, isto é, o fruto dos lábios que confessam o seu nome.|Hebreus 13:15
+Saudai a todos os vossos guias e a todos os santos. Os de Itália vos saúdam.|Hebreus 13:24
+Bem-aventurado o homem que suporta a provação; porque, depois de aprovado, receberá a coroa da vida, que o Senhor prometeu aos que o amam.|Tiago 1:12
+Sabei isto, meus amados irmãos: Todo homem seja pronto para ouvir, tardio para falar e tardio para se irar.|Tiago 1:19
+O vosso ouro e a vossa prata estão enferrujados; e a sua ferrugem dará testemunho contra vós, e devorará as vossas carnes como fogo. Entesourastes para os últimos dias.|Tiago 5:3
+Eis que o salário que fraudulentamente retivestes aos trabalhadores que ceifaram os vossos campos clama, e os clamores dos ceifeiros têm chegado aos ouvidos do Senhor dos exércitos.|Tiago 5:4
+Sede vós também pacientes; fortalecei os vossos corações, porque a vinda do Senhor está próxima.|Tiago 5:8
+Irmãos, tomai como exemplo de sofrimento e paciência os profetas que falaram em nome do Senhor.|Tiago 5:10
+Portanto, cingindo os lombos do vosso entendimento, sede sóbrios, e esperai inteiramente na graça que se vos oferece na revelação de Jesus Cristo.|1 Pedro 1:13
+Honrai a todos, amai a irmandade, temei a Deus, respeitai ao rei.|1 Pedro 2:17
+Se pelo nome de Cristo sois vituperados, bem-aventurados sois, porque sobre vós repousa o Espírito da glória, o Espírito de Deus.|1 Pedro 4:14
+Portanto os que sofrem segundo a vontade de Deus confiem as suas almas ao fiel Criador, praticando o bem.|1 Pedro 4:19
+E, quando se manifestar o sumo Pastor, recebereis a imarcescível coroa da glória.|1 Pedro 5:4
+Saudai-vos uns aos outros com ósculo de amor. Paz seja com todos vós que estais em Cristo.|1 Pedro 5:14
+Pelo que estarei sempre pronto para vos lembrar estas coisas, ainda que as saibais, e estejais confirmados na verdade que já está convosco.|2 Pedro 1:12
+Todo o que odeia a seu irmão é homicida; e vós sabeis que nenhum homicida tem a vida eterna permanecendo nele.|1 João 3:15
+Nisto conhecemos o amor: que Cristo deu a sua vida por nós; e nós devemos dar a vida pelos irmãos.|1 João 3:16
+Quem guarda os seus mandamentos, em Deus permanece e Deus nele. E nisto conhecemos que ele permanece em nós: pelo Espírito que nos tem dado.|1 João 3:24
+Filhinhos, vós sois de Deus, e já os tendes vencido; porque maior é aquele que está em vós do que aquele que está no mundo.|1 João 4:4
+Amados, amemo-nos uns aos outros, porque o amor é de Deus; e todo o que ama é nascido de Deus e conhece a Deus.|1 João 4:7
+Nisto se manifestou o amor de Deus para conosco: em que Deus enviou seu Filho unigênito ao mundo, para que por meio dele vivamos.|1 João 4:9
+Amados, se Deus assim nos amou, nós também devemos amar-nos uns aos outros.|1 João 4:11
+Ninguém jamais viu a Deus; e nos amamos uns aos outros, Deus permanece em nós, e o seu amor é em nós aperfeiçoado.|1 João 4:12
+Nisto conhecemos que permanecemos nele, e ele em nós: por ele nos ter dado do seu Espírito.|1 João 4:13
+Qualquer que confessar que Jesus é o Filho de Deus, Deus permanece nele, e ele em Deus.|1 João 4:15
+Todo aquele que crê que Jesus é o Cristo, é o nascido de Deus; e todo aquele que ama ao que o gerou, ama também ao que dele é nascido.|1 João 5:1
+Nisto conhecemos que amamos os filhos de Deus, se amamos a Deus e guardamos os seus mandamentos.|1 João 5:2
+Estas coisas vos escrevo, a vós que credes no nome do Filho de Deus, para que saibais que tendes a vida eterna.|1 João 5:13
+Quem tem ouvidos, ouça o que o espírito diz às igrejas.|Apocalipse 3:6
+Ao que vencer, eu lhe concederei que se assente comigo no meu trono.|Apocalipse 3:21
+Disse-me ainda: está cumprido: Eu sou o Alfa e o Ômega, o princípio e o fim. A quem tiver sede, de graça lhe darei a beber da fonte da água da vida.|Apocalipse 21:6
+As nações andarão à sua luz; e os reis da terra trarão para ela a sua glória.|Apocalipse 21:24
+No meio da sua praça, e de ambos os lados do rio, estava a árvore da vida, que produz doze frutos, dando seu fruto de mês em mês; e as folhas da árvore são para a cura das nações.|Apocalipse 22:2
+Eis que cedo venho! Bem-aventurado aquele que guarda as palavras da profecia deste livro.|Apocalipse 22:7
+Eu, João, sou o que ouvi e vi estas coisas. E quando as ouvi e vi, prostrei-me aos pés do anjo que mas mostrava, para o adorar.|Apocalipse 22:8
+Quem é injusto, faça injustiça ainda: e quem está sujo, suje-se ainda; e quem é justo, faça justiça ainda; e quem é santo, santifique-se ainda.|Apocalipse 22:11
+Eu, Jesus, enviei o meu anjo para vos testificar estas coisas a favor das igrejas. Eu sou a raiz e a geração de Davi, a resplandecente estrela da manhã.|Apocalipse 22:16
