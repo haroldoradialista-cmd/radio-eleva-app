@@ -29,6 +29,16 @@ KOTLIN
 # 5b. Despertador: receptores de alarme (disparam mesmo com o app fechado)
 sed -i 's#</application>#    <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" android:exported="false"/>\n        <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="false">\n            <intent-filter>\n                <action android:name="android.intent.action.BOOT_COMPLETED"/>\n                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>\n                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n            </intent-filter>\n        </receiver>\n        <receiver android:name="br.com.radioeleva.radio_eleva.DespertadorReceiver" android:exported="false"/>\n        <service android:name="br.com.radioeleva.radio_eleva.DespertadorAudioService" android:exported="false" android:foregroundServiceType="mediaPlayback"/>\n    </application>#' "$M"
 
+# 5b2. Tela do alarme (aparece sobre o bloqueio) — registro no manifesto
+sed -i 's#</application>#    <activity android:name="br.com.radioeleva.radio_eleva.DespertadorAlarmeActivity" android:exported="false" android:showWhenLocked="true" android:turnScreenOn="true" android:excludeFromRecents="true" android:launchMode="singleTask" android:taskAffinity="" android:theme="@android:style/Theme.DeviceDefault.NoActionBar"/>\n    </application>#' "$M"
+
+if grep -q "DespertadorAlarmeActivity" "$M"; then
+  echo "OK: tela do alarme registrada no manifesto."
+else
+  echo "::error::FALHA CRITICA: a tela do alarme (DespertadorAlarmeActivity) nao entrou no AndroidManifest!"
+  exit 1
+fi
+
 # 5c. Desugaring (exigência do despertador) — bloco anexado, método robusto
 if [ -f android/app/build.gradle.kts ]; then
   cat >> android/app/build.gradle.kts <<'GRADLE'
