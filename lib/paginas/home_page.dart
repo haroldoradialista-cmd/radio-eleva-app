@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../servicos/analytics_service.dart';
 import '../servicos/config_service.dart';
 import '../servicos/player_service.dart';
+import '../servicos/letra_service.dart';
 import '../tema.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/capa_musica.dart';
@@ -93,6 +94,135 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     final ja = prefs.getBool('curtiu_${musica.hashCode}') == true;
     if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
+  }
+
+  /// Abre um painel deslizante com a letra da música tocando agora
+  void _abrirLetra(BuildContext context, AppConfig cfg) {
+    final musica = _musicaAtual.trim();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (ctx, scrollCtrl) {
+            return Container(
+              decoration: BoxDecoration(
+                gradient: CoresEleva.fundoApp,
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(
+                    color: CoresEleva.dourado.withOpacity(0.5), width: 1),
+              ),
+              child: Column(
+                children: [
+                  // puxador
+                  Container(
+                    margin: EdgeInsets.only(top: 10, bottom: 6),
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: CoresEleva.dourado.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(20, 4, 20, 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.lyrics_rounded,
+                            color: CoresEleva.dourado, size: 22),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            musica.isEmpty ? 'Letra da música' : musica,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                                color: CoresEleva.dourado),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close_rounded,
+                              color: CoresEleva.textoFraco),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(color: CoresEleva.dourado.withOpacity(0.3), height: 1),
+                  Expanded(
+                    child: musica.isEmpty
+                        ? _letraMensagem(
+                            '🎵 Aguarde uma música começar a tocar para ver a letra aqui.')
+                        : FutureBuilder<String?>(
+                            future: LetraService.buscar(musica),
+                            builder: (ctx, snap) {
+                              if (snap.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircularProgressIndicator(
+                                          color: CoresEleva.dourado),
+                                      SizedBox(height: 14),
+                                      Text('Buscando a letra...',
+                                          style: TextStyle(
+                                              color: CoresEleva.textoFraco)),
+                                    ],
+                                  ),
+                                );
+                              }
+                              final letra = snap.data;
+                              if (letra == null || letra.isEmpty) {
+                                return _letraMensagem(
+                                    '😕 Não encontramos a letra desta música.\n\nNem toda música está disponível — mas a maioria dos louvores conhecidos aparece por aqui. Tente novamente na próxima!');
+                              }
+                              return SingleChildScrollView(
+                                controller: scrollCtrl,
+                                padding: EdgeInsets.fromLTRB(22, 16, 22, 40),
+                                child: Text(
+                                  letra,
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      height: 1.6,
+                                      fontWeight: FontWeight.w500,
+                                      color: CoresEleva.branco),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _letraMensagem(String texto) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(30),
+        child: Text(
+          texto,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: CoresEleva.textoFraco),
+        ),
+      ),
+    );
   }
 
   void _compartilhar(AppConfig cfg) {
@@ -218,7 +348,50 @@ class _HomePageState extends State<HomePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          SizedBox(height: 18),
+                          SizedBox(height: 12),
+                          // Botão LETRA (acima da capa)
+                          GestureDetector(
+                            onTap: () => _abrirLetra(context, cfg),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 18, vertical: 7),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(colors: [
+                                  CoresEleva.dourado,
+                                  CoresEleva.dourado.withOpacity(0.7),
+                                ]),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:
+                                        CoresEleva.dourado.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.lyrics_rounded,
+                                      size: 17,
+                                      color: CoresEleva.escuro
+                                          ? const Color(0xFF0E0857)
+                                          : Colors.white),
+                                  SizedBox(width: 6),
+                                  Text('LETRA',
+                                      style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.5,
+                                          color: CoresEleva.escuro
+                                              ? const Color(0xFF0E0857)
+                                              : Colors.white)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 10),
                           // Capa da música / foto do programa no ar
                           CapaMusica(
                             tamanho: (c.maxHeight * 0.30)
