@@ -4,7 +4,7 @@
   "stream_url": "https://sv16.hdradios.net:8516/stream",
   "logo_url": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/assets/logo.png",
   "whatsapp": "5521978994649",
-  "mensagem_pedido": "Olá, Rádio Eleva! Quero pedir uma música: ",
+  "mensagem_pedido": "Olá, Rádio Eleva! Quero pedir uma música:",
   "chat_url": "https://radio-eleva-default-rtdb.firebaseio.com/chat",
   "banners": [
     {
@@ -39,7 +39,7 @@
   "redes": [
     {
       "nome": "Instagram",
-      "link": ""
+      "link": "https://www.instagram.com/amusicadoseujeito/"
     },
     {
       "nome": "Facebook",
@@ -47,6 +47,10 @@
     },
     {
       "nome": "YouTube",
+      "link": ""
+    },
+    {
+      "nome": "TikTok",
       "link": ""
     }
   ],
