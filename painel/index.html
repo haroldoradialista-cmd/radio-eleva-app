@@ -384,8 +384,12 @@
           <button class="botao mini neutro" onclick="marcarDias(['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'])">Todos</button>
         </div>
         <div class="grade2">
-          <div><label>Horário (ex.: 08:00)</label><input id="pgHora" type="time"></div>
+          <div><label>Horário de início</label><input id="pgHora" type="time"></div>
+          <div><label>Horário de término</label><input id="pgHoraFim" type="time"></div>
+        </div>
+        <div class="grade2">
           <div><label>Foto do programa (opcional • quadrada, 400 x 400 px)</label><input type="file" id="pgFoto" accept="image/png,image/jpeg"></div>
+          <div></div>
         </div>
         <label>Nome do programa</label><input id="pgNome" placeholder="Ex.: Manhã com Adoração">
         <label>Apresentador(a) (opcional)</label><input id="pgApres">
@@ -507,7 +511,7 @@
       </div>
       <div class="cartao">
         <h2>Ranking de votação das músicas</h2>
-        <p class="rotulo-secao">Escolha o período no calendário e gere o ranking real com base nos votos 👍/👎 dos ouvintes no player.</p>
+        <p class="rotulo-secao">Escolha o período no calendário e gere o ranking real com base nas curtidas 👍 dos ouvintes no player.</p>
         <div class="grade2">
           <div><label>📅 De</label><input type="date" id="vtDe"></div>
           <div><label>📅 Até</label><input type="date" id="vtAte"></div>
@@ -1000,9 +1004,9 @@ async function adicionarPrograma(){
     const arq = document.getElementById('pgFoto').files[0];
     if(arq){ avisar('Enviando foto...'); imagem = await subirImagem(arq,'imagens'); }
     config.programacao = config.programacao || [];
-    config.programacao.push({ dias, horario:pgHora.value, programa:pgNome.value.trim(), apresentador:pgApres.value.trim(), imagem });
+    config.programacao.push({ dias, horario:pgHora.value, horario_fim:(document.getElementById('pgHoraFim').value||''), programa:pgNome.value.trim(), apresentador:pgApres.value.trim(), imagem });
     await salvarConfig('Painel: programacao');
-    pgNome.value=pgApres.value=''; document.getElementById('pgFoto').value=''; marcarDias([]);
+    pgNome.value=pgApres.value=''; pgHora.value=''; document.getElementById('pgHoraFim').value=''; document.getElementById('pgFoto').value=''; marcarDias([]);
     desenharProgramas(); avisar('Programa adicionado! ✅');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
@@ -1932,32 +1936,32 @@ function desenharRanking(){
   if(!total){ el.innerHTML = '<p class="rotulo-secao">Nenhum voto nesse período.</p>'; return; }
 
   rankingAtual = Object.entries(mapa)
-    .sort((a,b)=> (b[1].like - a[1].like) || (a[1].dislike - b[1].dislike))
+    .sort((a,b)=> (b[1].like - a[1].like))
     .map(([m,c],i)=>({ pos:i+1, musica:m, like:c.like, dislike:c.dislike, saldo:c.like-c.dislike }));
   rankingResumo = `${total} votos ${periodo} • ${Object.keys(mapa).length} músicas`;
   const linhas = rankingAtual
-    .map(r=>`<tr><td>${r.pos}º</td><td>${r.musica}</td><td>👍 ${r.like}</td><td>👎 ${r.dislike}</td><td>${r.saldo>0?'+':''}${r.saldo}</td></tr>`)
+    .map(r=>`<tr><td>${r.pos}º</td><td>${r.musica}</td><td>👍 ${r.like}</td></tr>`)
     .join('');
-  el.innerHTML = `<table><tr><th>#</th><th>Música</th><th>Gostei</th><th>Não gostei</th><th>Saldo</th></tr>${linhas}</table>`;
+  el.innerHTML = `<table><tr><th>#</th><th>Música</th><th>👍 Gostei</th></tr>${linhas}</table>`;
 }
 
 // ===== salvar/imprimir o ranking =====
 function salvarRanking(formato){
   if(!rankingAtual.length){ avisar('Gere o ranking do período primeiro.', true); return; }
   if(formato === 'excel'){
-    let csv = 'posicao;musica;gostei;nao_gostei;saldo\n';
-    rankingAtual.forEach(r=>{ csv += [r.pos,r.musica,r.like,r.dislike,r.saldo].join(';')+'\n'; });
+    let csv = 'posicao;musica;gostei\n';
+    rankingAtual.forEach(r=>{ csv += [r.pos,r.musica,r.like].join(';')+'\n'; });
     const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'ranking_musicas_eleva.csv'; a.click();
     avisar('Ranking salvo em Excel (CSV)! 📊'); return;
   }
-  const linhas = rankingAtual.map(r=>`<tr><td>${r.pos}º</td><td>${String(r.musica).replace(/</g,'&lt;')}</td><td>${r.like}</td><td>${r.dislike}</td><td>${r.saldo>0?'+':''}${r.saldo}</td></tr>`).join('');
+  const linhas = rankingAtual.map(r=>`<tr><td>${r.pos}º</td><td>${String(r.musica).replace(/</g,'&lt;')}</td><td>${r.like}</td></tr>`).join('');
   const corpo = `<div class="rel" id="rel">
       <div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
       <h2 style="margin-top:10px">RANKING DE VOTAÇÃO DAS MÚSICAS</h2>
       <div>${rankingResumo}</div></div>
-      <table><tr><th>#</th><th>Música</th><th>👍 Gostei</th><th>👎 Não gostei</th><th>Saldo</th></tr>${linhas}</table>
+      <table><tr><th>#</th><th>Música</th><th>👍 Gostei</th></tr>${linhas}</table>
       <div class="rodape">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva</div>
     </div>`;
   const estilo = `<style>

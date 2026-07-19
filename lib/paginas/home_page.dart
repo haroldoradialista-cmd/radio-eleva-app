@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
@@ -69,14 +70,29 @@ class _HomePageState extends State<HomePage> {
     _abrirLink(b['link']);
   }
 
-  void _curtir(AppConfig cfg) {
+  Future<void> _curtir(AppConfig cfg) async {
+    if (_curtiu || _musicaAtual.isEmpty) return; // uma curtida por música
     setState(() => _curtiu = true);
+    final prefs = await SharedPreferences.getInstance();
+    final chave = 'curtiu_${_musicaAtual.hashCode}';
+    if (prefs.getBool(chave) == true) return; // já curtiu esta música antes
+    await prefs.setBool(chave, true);
     PlayerService.instancia.votar(cfg.chatUrl, 'like', _musicaAtual);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      duration: Duration(seconds: 2),
-      backgroundColor: CoresEleva.verdeEscuro,
-      content: Text('Você curtiu esta música! ❤️'),
-    ));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        duration: Duration(seconds: 2),
+        backgroundColor: CoresEleva.verdeEscuro,
+        content: Text('Você curtiu esta música! ❤️'),
+      ));
+    }
+  }
+
+  /// Ao trocar de música, verifica se o ouvinte já a curtiu antes
+  Future<void> _conferirCurtida(String musica) async {
+    if (musica.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final ja = prefs.getBool('curtiu_${musica.hashCode}') == true;
+    if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
   }
 
   void _compartilhar(AppConfig cfg) {
@@ -113,7 +129,10 @@ class _HomePageState extends State<HomePage> {
                       height: alturaBanner,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(17),
-                        child: banners.isEmpty
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: banners.isEmpty
                             ? _bannerPadrao()
                             : Stack(
                                 children: [
@@ -172,12 +191,34 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ],
                               ),
+                            ),
+                            // tarja de data e hora no topo do banner (modelo)
+                            Positioned(
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.42),
+                                  border: Border(
+                                    bottom: BorderSide(
+                                        color: CoresEleva.dourado
+                                            .withOpacity(0.4),
+                                        width: 1),
+                                  ),
+                                ),
+                                child: RelogioAgora(),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     ),
                   ),
 
-                  // ===== DATA E HORA (abaixo do NO AR fica no bloco do player) =====
 
                   // ===== PLAYER (modelo enviado) =====
                   Expanded(
@@ -187,13 +228,14 @@ class _HomePageState extends State<HomePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          SizedBox(height: 10),
                           // Capa da música / foto do programa no ar
                           CapaMusica(
                             tamanho: (c.maxHeight * 0.30)
                                 .clamp(176.0, 240.0)
                                 .toDouble(),
                               reserva: (noAr?['imagem'] ?? '').toString()),
-                          SizedBox(height: 12),
+                          SizedBox(height: 6),
                           Column(
                             children: [
                               Container(
@@ -225,11 +267,6 @@ class _HomePageState extends State<HomePage> {
                                   ],
                                 ),
                               ),
-                              // data e hora logo abaixo do NO AR / AO VIVO
-                              Padding(
-                                padding: EdgeInsets.only(top: 7),
-                                child: RelogioAgora(),
-                              ),
                               SizedBox(height: 6),
                               StreamBuilder<IcyMetadata?>(
                                 stream: player.icyMetadataStream,
@@ -239,6 +276,7 @@ class _HomePageState extends State<HomePage> {
                                   if (titulo != _musicaAtual) {
                                     _musicaAtual = titulo;
                                     _curtiu = false;
+                                    _conferirCurtida(titulo);
                                   }
                                   return Text(
                                     titulo.isEmpty
@@ -501,34 +539,23 @@ class _RelogioAgoraState extends State<RelogioAgora> {
         '$diaCap, ${agora.day} de ${_meses[agora.month - 1]} de ${agora.year}';
     final hora =
         '${agora.hour.toString().padLeft(2, '0')}:${agora.minute.toString().padLeft(2, '0')}';
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(CoresEleva.escuro ? 0.28 : 0.12),
-        border: Border(
-          bottom: BorderSide(
-              color: CoresEleva.dourado.withOpacity(0.35), width: 1),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.schedule_rounded, size: 14, color: CoresEleva.dourado),
-          SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              '$data  •  $hora',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: CoresEleva.brancoSuave),
-            ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.schedule_rounded, size: 14, color: CoresEleva.dourado),
+        SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            '$data  •  $hora',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

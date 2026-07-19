@@ -22,16 +22,23 @@ import 'tema.dart';
 class WakelockEleva {
   static const _canal = MethodChannel('br.com.radioeleva/despertador');
   static Timer? _timer;
+  /// Fica true durante o esmaecimento (a tela do app cobre com um véu escuro)
+  static final ValueNotifier<bool> esmaecendo = ValueNotifier(false);
 
   static void ativarPorUmMinuto() {
+    esmaecendo.value = false;
     try {
       _canal.invokeMethod('manterTelaAcesa', {'ligar': true});
     } catch (_) {}
     _timer?.cancel();
-    _timer = Timer(const Duration(minutes: 1), () {
-      try {
-        _canal.invokeMethod('manterTelaAcesa', {'ligar': false});
-      } catch (_) {}
+    // 1 minuto acesa; nos últimos ~4s a tela esmaece; depois libera e apaga
+    _timer = Timer(const Duration(seconds: 56), () {
+      esmaecendo.value = true; // começa a escurecer suavemente
+      Timer(const Duration(seconds: 4), () {
+        try {
+          _canal.invokeMethod('manterTelaAcesa', {'ligar': false});
+        } catch (_) {}
+      });
     });
   }
 }
@@ -125,8 +132,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         child: AnimatedContainer(
           duration: Duration(milliseconds: 280),
           curve: Curves.easeOut,
-          margin: EdgeInsets.symmetric(horizontal: 2),
-          padding: EdgeInsets.symmetric(vertical: 6),
+          margin: EdgeInsets.symmetric(horizontal: 1),
+          padding: EdgeInsets.symmetric(horizontal: 1, vertical: 6),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             color: ativo
@@ -146,18 +153,21 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icone,
-                  size: ativo ? 25 : 22,
+                  size: ativo ? 24 : 21,
                   color: ativo ? CoresEleva.dourado : CoresEleva.textoFraco),
               SizedBox(height: 2),
-              Text(rotulo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: ativo ? FontWeight.w900 : FontWeight.w600,
-                      color: ativo
-                          ? CoresEleva.dourado
-                          : CoresEleva.textoFraco)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(rotulo,
+                    maxLines: 1,
+                    style: TextStyle(
+                        fontSize: 8.5,
+                        fontWeight:
+                            ativo ? FontWeight.w900 : FontWeight.w600,
+                        color: ativo
+                            ? CoresEleva.dourado
+                            : CoresEleva.textoFraco)),
+              ),
             ],
           ),
         ),
@@ -194,13 +204,29 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     return Scaffold(
       body: Listener(
         onPointerDown: (_) => _manterTelaAcesa(),
-        child: PageView(
-          controller: _pageCtrl,
-          onPageChanged: (i) {
-            _manterTelaAcesa();
-            setState(() => _abaAtual = i);
-          },
-          children: paginas,
+        child: Stack(
+          children: [
+            PageView(
+              controller: _pageCtrl,
+              onPageChanged: (i) {
+                _manterTelaAcesa();
+                setState(() => _abaAtual = i);
+              },
+              children: paginas,
+            ),
+            // Véu de esmaecimento: escurece a tela antes de apagar
+            ValueListenableBuilder<bool>(
+              valueListenable: WakelockEleva.esmaecendo,
+              builder: (context, escurecer, _) => IgnorePointer(
+                ignoring: !escurecer,
+                child: AnimatedOpacity(
+                  opacity: escurecer ? 0.82 : 0.0,
+                  duration: Duration(seconds: 4),
+                  child: Container(color: Colors.black),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: ClipRRect(
@@ -217,7 +243,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           child: SafeArea(
             top: false,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 5),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
