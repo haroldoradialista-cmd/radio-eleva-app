@@ -182,8 +182,55 @@ class _HomePageState extends State<HomePage> {
                               }
                               final letra = snap.data;
                               if (letra == null || letra.isEmpty) {
-                                return _letraMensagem(
-                                    '😕 Não encontramos a letra desta música.\n\nNem toda música está disponível — mas a maioria dos louvores conhecidos aparece por aqui. Tente novamente na próxima!');
+                                return Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(28),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '😕 Não encontramos a letra desta música na nossa base.',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              height: 1.5,
+                                              color: CoresEleva.textoFraco),
+                                        ),
+                                        SizedBox(height: 18),
+                                        ElevatedButton.icon(
+                                          onPressed: () {
+                                            final busca = Uri.encodeComponent(
+                                                '$musica letra');
+                                            launchUrl(
+                                                Uri.parse(
+                                                    'https://www.google.com/search?q=$busca'),
+                                                mode: LaunchMode
+                                                    .externalApplication);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                CoresEleva.dourado,
+                                            foregroundColor:
+                                                const Color(0xFF0E0857),
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 20,
+                                                vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        22)),
+                                          ),
+                                          icon: Icon(Icons.search_rounded,
+                                              size: 18),
+                                          label: Text('Buscar no navegador',
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.w800)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
                               }
                               return SingleChildScrollView(
                                 controller: scrollCtrl,
@@ -348,13 +395,13 @@ class _HomePageState extends State<HomePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          SizedBox(height: 12),
+                          SizedBox(height: 8),
                           // Botão LETRA (acima da capa)
                           GestureDetector(
                             onTap: () => _abrirLetra(context, cfg),
                             child: Container(
                               padding: EdgeInsets.symmetric(
-                                  horizontal: 18, vertical: 7),
+                                  horizontal: 14, vertical: 5),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(colors: [
                                   CoresEleva.dourado,
@@ -374,16 +421,16 @@ class _HomePageState extends State<HomePage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.lyrics_rounded,
-                                      size: 17,
+                                      size: 14,
                                       color: CoresEleva.escuro
                                           ? const Color(0xFF0E0857)
                                           : Colors.white),
-                                  SizedBox(width: 6),
+                                  SizedBox(width: 5),
                                   Text('LETRA',
                                       style: TextStyle(
-                                          fontSize: 12.5,
+                                          fontSize: 10.5,
                                           fontWeight: FontWeight.w900,
-                                          letterSpacing: 1.5,
+                                          letterSpacing: 1.2,
                                           color: CoresEleva.escuro
                                               ? const Color(0xFF0E0857)
                                               : Colors.white)),
@@ -391,14 +438,14 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
-                          SizedBox(height: 10),
+                          SizedBox(height: 8),
                           // Capa da música / foto do programa no ar
                           CapaMusica(
-                            tamanho: (c.maxHeight * 0.30)
-                                .clamp(176.0, 240.0)
+                            tamanho: (c.maxHeight * 0.28)
+                                .clamp(160.0, 220.0)
                                 .toDouble(),
                               reserva: (noAr?['imagem'] ?? '').toString()),
-                          SizedBox(height: 16),
+                          SizedBox(height: 12),
                           Column(
                             children: [
                               Container(
@@ -430,14 +477,14 @@ class _HomePageState extends State<HomePage> {
                                   ],
                                 ),
                               ),
-                              SizedBox(height: 10),
+                              SizedBox(height: 8),
                               // linha divisória entre o AO VIVO e o nome da música
                               Container(
-                                width: 120,
+                                width: 110,
                                 height: 1,
                                 color: CoresEleva.dourado.withOpacity(0.45),
                               ),
-                              SizedBox(height: 10),
+                              SizedBox(height: 8),
                               StreamBuilder<IcyMetadata?>(
                                 stream: player.icyMetadataStream,
                                 builder: (context, snap) {
@@ -456,7 +503,7 @@ class _HomePageState extends State<HomePage> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                        fontSize: 15.5,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                         color: CoresEleva.brancoSuave),
                                   );
@@ -465,7 +512,7 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
 
-                          SizedBox(height: 12),
+                          SizedBox(height: 10),
                           // CORAÇÃO — PLAY — COMPARTILHAR
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -473,8 +520,8 @@ class _HomePageState extends State<HomePage> {
                               GestureDetector(
                                 onTap: () => _curtir(cfg),
                                 child: Container(
-                                  width: 56,
-                                  height: 56,
+                                  width: 48,
+                                  height: 48,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
@@ -490,11 +537,11 @@ class _HomePageState extends State<HomePage> {
                                     color: _curtiu
                                         ? Colors.pink
                                         : CoresEleva.dourado,
-                                    size: 27,
+                                    size: 23,
                                   ),
                                 ),
                               ),
-                              SizedBox(width: 30),
+                              SizedBox(width: 26),
                               StreamBuilder<PlayerState>(
                                 stream: player.playerStateStream,
                                 builder: (context, snap) {
@@ -514,8 +561,8 @@ class _HomePageState extends State<HomePage> {
                                           .alternar();
                                     },
                                     child: Container(
-                                      width: 88,
-                                      height: 88,
+                                      width: 74,
+                                      height: 74,
                                       decoration: BoxDecoration(
                                         gradient: CoresEleva.botaoPlay,
                                         shape: BoxShape.circle,
@@ -533,7 +580,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       child: carregando
                                           ? Padding(
-                                              padding: EdgeInsets.all(26),
+                                              padding: EdgeInsets.all(22),
                                               child:
                                                   CircularProgressIndicator(
                                                 color: Colors.white,
@@ -545,19 +592,19 @@ class _HomePageState extends State<HomePage> {
                                                   ? Icons.pause_rounded
                                                   : Icons
                                                       .play_arrow_rounded,
-                                              size: 48,
+                                              size: 40,
                                               color: Colors.white,
                                             ),
                                     ),
                                   );
                                 },
                               ),
-                              SizedBox(width: 30),
+                              SizedBox(width: 26),
                               GestureDetector(
                                 onTap: () => _compartilhar(cfg),
                                 child: Container(
-                                  width: 56,
-                                  height: 56,
+                                  width: 48,
+                                  height: 48,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
@@ -565,7 +612,7 @@ class _HomePageState extends State<HomePage> {
                                         width: 2),
                                   ),
                                   child: Icon(Icons.share_rounded,
-                                      color: CoresEleva.dourado, size: 24),
+                                      color: CoresEleva.dourado, size: 20),
                                 ),
                               ),
                             ],

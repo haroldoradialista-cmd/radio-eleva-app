@@ -129,7 +129,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           duration: Duration(milliseconds: 280),
           curve: Curves.easeOut,
           margin: EdgeInsets.symmetric(horizontal: 1),
-          padding: EdgeInsets.symmetric(horizontal: 1, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: 1, vertical: 3),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             color: ativo
@@ -149,7 +149,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icone,
-                  size: ativo ? 24 : 21,
+                  size: ativo ? 22 : 19,
                   color: ativo ? CoresEleva.dourado : CoresEleva.textoFraco),
               SizedBox(height: 2),
               FittedBox(
@@ -223,7 +223,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           child: SafeArea(
             top: false,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 5),
+              padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
