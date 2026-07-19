@@ -105,3 +105,35 @@ ThemeData temaEleva() {
     ),
   );
 }
+
+
+/// Fundo padrão do app: gradiente + marca d'água "RÁDIO ELEVA" repetida
+/// na diagonal, bem sutil, dando profundidade ao fundo liso.
+class FundoEleva extends StatelessWidget {
+  final Widget child;
+  const FundoEleva({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final marca = CoresEleva.escuro
+        ? 'assets/marca_dagua_escura.png'
+        : 'assets/marca_dagua_clara.png';
+    return Container(
+      decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+      child: Stack(
+        children: [
+          // marca d'água em mosaico cobrindo todo o fundo
+          Positioned.fill(
+            child: Image.asset(
+              marca,
+              repeat: ImageRepeat.repeat,
+              alignment: Alignment.topLeft,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}

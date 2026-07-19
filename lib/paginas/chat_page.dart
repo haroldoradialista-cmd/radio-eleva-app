@@ -27,8 +27,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+    return FundoEleva(
       child: SafeArea(
         child: ValueListenableBuilder<AppConfig>(
           valueListenable: ConfigService.instancia.config,

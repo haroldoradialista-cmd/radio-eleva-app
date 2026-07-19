@@ -162,8 +162,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           backgroundColor: Colors.transparent,
-          body: Container(
-            decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+          body: FundoEleva(
             child: SafeArea(
               child: Column(
                 children: [
@@ -210,8 +209,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+    return FundoEleva(
       child: SafeArea(
         child: ValueListenableBuilder<AppConfig>(
           valueListenable: ConfigService.instancia.config,

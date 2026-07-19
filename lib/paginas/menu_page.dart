@@ -60,8 +60,10 @@ class MenuPage extends StatelessWidget {
                       Icon(Icons.bedtime_off_rounded,
                           color: CoresEleva.dourado, size: 20),
                       SizedBox(width: 10),
-                      Text('Sleep Timer Cancelado',
-                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      Text('SLEEP TIMER CANCELADO',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5)),
                     ],
                   ),
                 ));
@@ -79,8 +81,7 @@ class MenuPage extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => Scaffold(
           backgroundColor: Colors.transparent,
-          body: Container(
-            decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+          body: FundoEleva(
             child: SafeArea(
               child: Column(
                 children: [
@@ -125,8 +126,7 @@ class MenuPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+    return FundoEleva(
       child: SafeArea(
         child: ValueListenableBuilder<AppConfig>(
           valueListenable: ConfigService.instancia.config,

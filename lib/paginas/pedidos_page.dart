@@ -24,8 +24,7 @@ class PedidosPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+    return FundoEleva(
       child: SafeArea(
         child: ValueListenableBuilder<AppConfig>(
           valueListenable: ConfigService.instancia.config,
@@ -215,8 +214,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+      body: FundoEleva(
         child: SafeArea(
           child: ListView(
             padding: EdgeInsets.all(20),

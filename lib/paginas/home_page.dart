@@ -288,8 +288,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context, cfg, _) {
         final banners = filtrarAgendados(cfg.banners);
         final noAr = programaNoAr(cfg.programacao);
-        return Container(
-          decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+        return FundoEleva(
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
               final alturaBanner = (c.maxHeight * 0.245).clamp(140.0, 196.0);
