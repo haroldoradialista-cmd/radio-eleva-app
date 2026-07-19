@@ -412,6 +412,7 @@
         <label>Instagram</label><input id="cfInsta" placeholder="https://instagram.com/...">
         <label>Facebook</label><input id="cfFace" placeholder="https://facebook.com/...">
         <label>YouTube</label><input id="cfYou" placeholder="https://youtube.com/...">
+        <label>TikTok</label><input id="cfTiktok" placeholder="https://tiktok.com/@...">
         <button class="botao" onclick="salvarTextos()">💾 Salvar alterações</button>
       </div>
     </section>
@@ -1086,7 +1087,7 @@ function preencherTextos(){
   cfStream.value=config.stream_url||''; cfZap.value=config.whatsapp||'';
   cfMsgPedido.value=config.mensagem_pedido||'';
   const rede = nome => (config.redes.find(r=>r.nome===nome)||{}).link||'';
-  cfInsta.value=rede('Instagram'); cfFace.value=rede('Facebook'); cfYou.value=rede('YouTube');
+  cfInsta.value=rede('Instagram'); cfFace.value=rede('Facebook'); cfYou.value=rede('YouTube'); cfTiktok.value=rede('TikTok');
 }
 async function salvarTextos(){
   config.nome=cfNome.value.trim(); config.slogan=cfSlogan.value.trim();
@@ -1097,6 +1098,7 @@ async function salvarTextos(){
     {nome:'Instagram',link:cfInsta.value.trim()},
     {nome:'Facebook',link:cfFace.value.trim()},
     {nome:'YouTube',link:cfYou.value.trim()},
+    {nome:'TikTok',link:cfTiktok.value.trim()},
   ];
   try{ await salvarConfig('Painel: dados da rádio'); avisar('Alterações salvas! ✅'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
