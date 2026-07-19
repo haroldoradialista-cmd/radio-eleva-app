@@ -75,6 +75,15 @@
       "programa": "Programa Ednei Gonçalves",
       "apresentador": "Ednei Gonçalves",
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783819631594_tarde_total_300kb.png"
+    },
+    {
+      "dias": [
+        "Domingo"
+      ],
+      "horario": "06:00",
+      "programa": "Manhã de Adoração",
+      "apresentador": "André Simas",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1784455464290_tarde_total_300kb.png"
     }
   ],
   "enquetes": [
