@@ -7,8 +7,20 @@ final ValueNotifier<bool> modoEscuroNotifier = ValueNotifier(false);
 Future<void> carregarTemaSalvo() async {
   try {
     final p = await SharedPreferences.getInstance();
-    modoEscuroNotifier.value = p.getBool('modo_escuro') ?? false;
-  } catch (_) {}
+    // Migração para o novo padrão CLARO: se o app ainda não passou por
+    // esta migração, começa no claro (independente do que estava salvo).
+    // Depois disso, respeita a escolha manual do usuário normalmente.
+    final jaMigrou = p.getBool('migrou_tema_claro') ?? false;
+    if (!jaMigrou) {
+      modoEscuroNotifier.value = false; // começa claro
+      await p.setBool('modo_escuro', false);
+      await p.setBool('migrou_tema_claro', true);
+    } else {
+      modoEscuroNotifier.value = p.getBool('modo_escuro') ?? false;
+    }
+  } catch (_) {
+    modoEscuroNotifier.value = false;
+  }
   CoresEleva.escuro = modoEscuroNotifier.value;
 }
 

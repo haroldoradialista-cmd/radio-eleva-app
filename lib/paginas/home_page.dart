@@ -465,7 +465,7 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
 
-                          SizedBox(height: 22),
+                          SizedBox(height: 12),
                           // CORAÇÃO — PLAY — COMPARTILHAR
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
