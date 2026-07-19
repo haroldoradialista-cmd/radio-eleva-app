@@ -40,20 +40,20 @@ class CoresEleva {
   static Color get azulProfundo =>
       escuro ? const Color(0xFF0E0857) : const Color(0xFFFFD814);
   static Color get azulMedio =>
-      escuro ? const Color(0xFF201780) : const Color(0xFFFFFFFF);
+      escuro ? const Color(0xFF201780) : const Color(0xFFFFFDF5);
   static Color get azulVivo => const Color(0xFF1E9BFF);
   static Color get verde => const Color(0xFF35C733);
   static Color get verdeEscuro => const Color(0xFF1E8A2E);
   static Color get dourado =>
-      escuro ? const Color(0xFFFFD65A) : const Color(0xFF8A5A00);
+      escuro ? const Color(0xFFFFD65A) : const Color(0xFF7A4E00);
   static Color get branco =>
-      escuro ? Colors.white : const Color(0xFF131046);
+      escuro ? Colors.white : const Color(0xFF120A38);
   static Color get brancoSuave =>
-      escuro ? const Color(0xFFE9E7FF) : const Color(0xFF201C4E);
+      escuro ? const Color(0xFFE9E7FF) : const Color(0xFF241A52);
   static Color get textoFraco =>
-      escuro ? Colors.white60 : const Color(0xFF474371);
+      escuro ? Colors.white60 : const Color(0xFF5A4A1E);
   static Color get borda =>
-      escuro ? Colors.white24 : const Color(0x3D131046);
+      escuro ? Colors.white24 : const Color(0x33120A38);
   // Aviso destacado (ex.: aviso do chat público)
   static Color get avisoFundo =>
       escuro ? const Color(0xFFFFD65A).withOpacity(0.12)
@@ -68,7 +68,7 @@ class CoresEleva {
         end: Alignment.bottomCenter,
         colors: escuro
             ? const [Color(0xFF1D14A8), Color(0xFF0E0857), Color(0xFF060330)]
-            : const [Color(0xFFFFFFFF), Color(0xFFF2F4FE), Color(0xFFE3E7FA)],
+            : const [Color(0xFFFFE04D), Color(0xFFFFD814), Color(0xFFF7C500)],
       );
 
   static LinearGradient get botaoPlay => const LinearGradient(

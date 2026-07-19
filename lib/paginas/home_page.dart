@@ -441,8 +441,8 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(height: 8),
                           // Capa da música / foto do programa no ar
                           CapaMusica(
-                            tamanho: (c.maxHeight * 0.28)
-                                .clamp(160.0, 220.0)
+                            tamanho: (c.maxHeight * 0.32)
+                                .clamp(184.0, 248.0)
                                 .toDouble(),
                               reserva: (noAr?['imagem'] ?? '').toString()),
                           SizedBox(height: 12),
@@ -452,7 +452,7 @@ class _HomePageState extends State<HomePage> {
                                 padding: EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.shade700,
+                                  color: const Color(0xFFB71C1C),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
