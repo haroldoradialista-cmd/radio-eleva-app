@@ -54,6 +54,7 @@ class MenuPage extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   backgroundColor: CoresEleva.verdeEscuro,
                   behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.fromLTRB(16, 0, 16, 12),
                   content: Row(
                     children: [
                       Icon(Icons.bedtime_off_rounded,

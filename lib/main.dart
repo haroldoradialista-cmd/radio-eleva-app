@@ -22,23 +22,19 @@ import 'tema.dart';
 class WakelockEleva {
   static const _canal = MethodChannel('br.com.radioeleva/despertador');
   static Timer? _timer;
-  /// Fica true durante o esmaecimento (a tela do app cobre com um véu escuro)
-  static final ValueNotifier<bool> esmaecendo = ValueNotifier(false);
 
+  /// Mantém a tela do celular acesa por 1 minuto (renovável a cada toque).
+  /// Depois de 1 minuto sem interação, o próprio Android apaga a tela
+  /// normalmente, no tempo configurado pelo usuário — o app NÃO esmaece.
   static void ativarPorUmMinuto() {
-    esmaecendo.value = false;
     try {
       _canal.invokeMethod('manterTelaAcesa', {'ligar': true});
     } catch (_) {}
     _timer?.cancel();
-    // 1 minuto acesa; nos últimos ~4s a tela esmaece; depois libera e apaga
-    _timer = Timer(const Duration(seconds: 56), () {
-      esmaecendo.value = true; // começa a escurecer suavemente
-      Timer(const Duration(seconds: 4), () {
-        try {
-          _canal.invokeMethod('manterTelaAcesa', {'ligar': false});
-        } catch (_) {}
-      });
+    _timer = Timer(const Duration(minutes: 1), () {
+      try {
+        _canal.invokeMethod('manterTelaAcesa', {'ligar': false});
+      } catch (_) {}
     });
   }
 }
@@ -204,29 +200,13 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     return Scaffold(
       body: Listener(
         onPointerDown: (_) => _manterTelaAcesa(),
-        child: Stack(
-          children: [
-            PageView(
-              controller: _pageCtrl,
-              onPageChanged: (i) {
-                _manterTelaAcesa();
-                setState(() => _abaAtual = i);
-              },
-              children: paginas,
-            ),
-            // Véu de esmaecimento: escurece a tela antes de apagar
-            ValueListenableBuilder<bool>(
-              valueListenable: WakelockEleva.esmaecendo,
-              builder: (context, escurecer, _) => IgnorePointer(
-                ignoring: !escurecer,
-                child: AnimatedOpacity(
-                  opacity: escurecer ? 0.82 : 0.0,
-                  duration: Duration(seconds: 4),
-                  child: Container(color: Colors.black),
-                ),
-              ),
-            ),
-          ],
+        child: PageView(
+          controller: _pageCtrl,
+          onPageChanged: (i) {
+            _manterTelaAcesa();
+            setState(() => _abaAtual = i);
+          },
+          children: paginas,
         ),
       ),
       bottomNavigationBar: ClipRRect(

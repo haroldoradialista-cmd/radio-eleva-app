@@ -125,13 +125,24 @@ class _HomePageState extends State<HomePage> {
                     padding: EdgeInsets.fromLTRB(14, 8, 14, 0),
                     child: MolduraNeon(
                       raio: 20,
-                      child: Container(
-                      height: alturaBanner,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(17),
-                        child: Stack(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Positioned.fill(
+                            // tarja de data e hora ACIMA do banner (faixa própria)
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              color: Colors.black.withOpacity(
+                                  CoresEleva.escuro ? 0.42 : 0.30),
+                              child: RelogioAgora(),
+                            ),
+                            // banner (altura preservada, imagem intacta)
+                            SizedBox(
+                              height: alturaBanner,
+                              width: double.infinity,
                               child: banners.isEmpty
                             ? _bannerPadrao()
                             : Stack(
@@ -192,30 +203,9 @@ class _HomePageState extends State<HomePage> {
                                 ],
                               ),
                             ),
-                            // tarja de data e hora no topo do banner (modelo)
-                            Positioned(
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.42),
-                                  border: Border(
-                                    bottom: BorderSide(
-                                        color: CoresEleva.dourado
-                                            .withOpacity(0.4),
-                                        width: 1),
-                                  ),
-                                ),
-                                child: RelogioAgora(),
-                              ),
-                            ),
                           ],
                         ),
                       ),
-                    ),
                     ),
                   ),
 
@@ -228,14 +218,14 @@ class _HomePageState extends State<HomePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          SizedBox(height: 10),
+                          SizedBox(height: 18),
                           // Capa da música / foto do programa no ar
                           CapaMusica(
                             tamanho: (c.maxHeight * 0.30)
                                 .clamp(176.0, 240.0)
                                 .toDouble(),
                               reserva: (noAr?['imagem'] ?? '').toString()),
-                          SizedBox(height: 6),
+                          SizedBox(height: 16),
                           Column(
                             children: [
                               Container(
@@ -267,7 +257,14 @@ class _HomePageState extends State<HomePage> {
                                   ],
                                 ),
                               ),
-                              SizedBox(height: 6),
+                              SizedBox(height: 10),
+                              // linha divisória entre o AO VIVO e o nome da música
+                              Container(
+                                width: 120,
+                                height: 1,
+                                color: CoresEleva.dourado.withOpacity(0.45),
+                              ),
+                              SizedBox(height: 10),
                               StreamBuilder<IcyMetadata?>(
                                 stream: player.icyMetadataStream,
                                 builder: (context, snap) {
@@ -295,6 +292,7 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
 
+                          SizedBox(height: 22),
                           // CORAÇÃO — PLAY — COMPARTILHAR
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
