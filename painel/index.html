@@ -513,8 +513,8 @@
         <h2>Ranking de votação das músicas</h2>
         <p class="rotulo-secao">Escolha o período no calendário e gere o ranking real com base nas curtidas 👍 dos ouvintes no player.</p>
         <div class="grade2">
-          <div><label>📅 De</label><input type="date" id="vtDe"></div>
-          <div><label>📅 Até</label><input type="date" id="vtAte"></div>
+          <div><label>📅 De (data e hora)</label><input type="datetime-local" id="vtDe"></div>
+          <div><label>📅 Até (data e hora)</label><input type="datetime-local" id="vtAte"></div>
         </div>
         <button class="botao" onclick="carregarVotos()">🔎 Gerar ranking do período</button>
         <button class="botao neutro" onclick="vtDe.value='';vtAte.value='';carregarVotos()">Período todo</button>
@@ -1913,8 +1913,9 @@ function desenharRanking(){
     document.getElementById('vtResumo').textContent=''; return; }
 
   // filtro do calendário
-  const de  = vtDe.value  ? new Date(vtDe.value  + 'T00:00:00') : null;
-  const ate = vtAte.value ? new Date(vtAte.value + 'T23:59:59') : null;
+  // datetime-local já inclui a hora escolhida (ex.: 2026-07-19T14:30)
+  const de  = vtDe.value  ? new Date(vtDe.value)  : null;
+  const ate = vtAte.value ? new Date(vtAte.value) : null;
 
   const mapa = {}; let total = 0;
   Object.values(votosBrutos).forEach(v=>{
