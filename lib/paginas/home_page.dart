@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 color: CoresEleva.escuro
                     ? const Color(0xFF2E105A)
-                    : const Color(0xFFFCE345),
+                    : const Color(0xFFE6F65A),
                 borderRadius:
                     BorderRadius.vertical(top: Radius.circular(24)),
                 border: Border.all(
