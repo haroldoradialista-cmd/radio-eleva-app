@@ -49,21 +49,27 @@ class MenuPage extends StatelessWidget {
                   Icon(Icons.close_rounded, color: CoresEleva.textoFraco),
               title: Text('Cancelar sleep timer'),
               onTap: () {
+                // Captura o messenger ANTES de fechar o menu (senão o
+                // context é removido e a tarja aparece vazia)
+                final messenger = ScaffoldMessenger.of(context);
                 PlayerService.instancia.definirSleep(0);
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                messenger.hideCurrentSnackBar();
+                messenger.showSnackBar(SnackBar(
                   backgroundColor: CoresEleva.verdeEscuro,
                   behavior: SnackBarBehavior.floating,
                   margin: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  duration: Duration(seconds: 3),
                   content: Row(
                     children: [
                       Icon(Icons.bedtime_off_rounded,
-                          color: CoresEleva.dourado, size: 20),
+                          color: Colors.white, size: 20),
                       SizedBox(width: 10),
-                      Text('SLEEP TIMER CANCELADO',
+                      Text('Sleep Timer Cancelado',
                           style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5)),
+                              color: Colors.white,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ));

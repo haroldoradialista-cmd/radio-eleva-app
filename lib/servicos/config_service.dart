@@ -121,6 +121,8 @@ class ConfigService {
 List<Map<String, dynamic>> filtrarAgendados(List<Map<String, dynamic>> itens) {
   final agora = DateTime.now();
   return itens.where((i) {
+    // Finalizado manualmente pelo painel (botão ⏹️) → sai do ar na hora
+    if ((i['finalizado'] ?? '').toString() == 'sim') return false;
     final ini = DateTime.tryParse((i['publicar_em'] ?? '').toString());
     final fim = DateTime.tryParse((i['expirar_em'] ?? '').toString());
     if (ini != null && agora.isBefore(ini)) return false;
@@ -136,6 +138,8 @@ List<Map<String, dynamic>> filtrarEncerradasComResultado(
   final agora = DateTime.now();
   return itens.where((i) {
     if ((i['exibir_resultado'] ?? '').toString() != 'sim') return false;
+    // mostra o resultado se foi finalizada no painel OU se passou do prazo
+    if ((i['finalizado'] ?? '').toString() == 'sim') return true;
     final fim = DateTime.tryParse((i['expirar_em'] ?? '').toString());
     if (fim == null) return false;
     return agora.isAfter(fim);
