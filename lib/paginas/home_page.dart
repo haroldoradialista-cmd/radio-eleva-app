@@ -112,7 +112,15 @@ class _HomePageState extends State<HomePage> {
           builder: (ctx, scrollCtrl) {
             return Container(
               decoration: BoxDecoration(
-                gradient: CoresEleva.fundoApp,
+                image: DecorationImage(
+                  image: AssetImage(CoresEleva.escuro
+                      ? 'assets/fundo_escuro.jpg'
+                      : 'assets/fundo_claro.jpg'),
+                  fit: BoxFit.cover,
+                ),
+                color: CoresEleva.escuro
+                    ? const Color(0xFF2E105A)
+                    : const Color(0xFFFCE345),
                 borderRadius:
                     BorderRadius.vertical(top: Radius.circular(24)),
                 border: Border.all(

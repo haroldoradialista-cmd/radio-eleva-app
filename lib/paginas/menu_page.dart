@@ -126,6 +126,8 @@ class MenuPage extends StatelessWidget {
     if (n.contains('insta')) return Icons.camera_alt_rounded;
     if (n.contains('face')) return Icons.facebook_rounded;
     if (n.contains('you')) return Icons.play_circle_fill_rounded;
+    if (n.contains('tiktok') || n.contains('tik tok') || n.contains('tik'))
+      return Icons.music_note_rounded;
     if (n.contains('site')) return Icons.language_rounded;
     return Icons.public_rounded;
   }
@@ -317,7 +319,10 @@ class MenuPage extends StatelessWidget {
                         SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: cfg.redes.map((r) {
+                          children: cfg.redes
+                              .where((r) =>
+                                  (r['link'] ?? '').toString().trim().isNotEmpty)
+                              .map((r) {
                             return IconButton(
                               onPressed: () => _abrirLink(r['link']),
                               icon: Icon(_iconeRede(r['nome'] ?? ''),
