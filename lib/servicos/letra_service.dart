@@ -1,14 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// Busca a letra de uma música tentando VÁRIAS fontes em cascata,
-/// para cobrir o máximo possível do repertório gospel brasileiro.
-/// Fontes (todas públicas, sem chave obrigatória):
-///   - Vagalume  — forte em MPB/gospel nacional
-///   - LRCLIB    — base aberta e grande
-///   - lyrics.ovh — reforço internacional
+/// Busca a letra de uma música tentando VÁRIAS fontes em cascata.
+/// Nenhuma exige cadastro ou chave.
+///   - LRCLIB   — base aberta com ~3 milhões de letras (com User-Agent)
+///   - lyrics.ovh — reforço
+/// Para cada fonte, tenta variações do nome (com/sem acento, invertido,
+/// limpo de "ao vivo/feat.") para acertar o máximo possível.
 class LetraService {
   static final Map<String, String?> _cache = {};
+
+  // Identificação exigida pela LRCLIB (melhora muito a taxa de resposta)
+  static const _headers = {
+    'User-Agent': 'RadioEleva/1.0 (https://radioeleva.com.br)',
+  };
 
   static (String, String) _separar(String bruto) {
     final t = bruto.trim();
@@ -44,44 +49,35 @@ class LetraService {
   }
 
   static String _limparLetra(String s) =>
-      s.trim().replaceAll(RegExp(r'\r'), '').replaceAll(RegExp(r'\n{3,}'), '\n\n');
+      s.trim().replaceAll('\r', '').replaceAll(RegExp(r'\n{3,}'), '\n\n');
 
-  // ---------- Fonte 1: Vagalume ----------
-  static Future<String?> _vagalume(String artista, String titulo) async {
-    if (artista.isEmpty || titulo.isEmpty) return null;
-    try {
-      final url = Uri.parse(
-          'https://api.vagalume.com.br/search.php?art=${Uri.encodeComponent(artista)}&mus=${Uri.encodeComponent(titulo)}');
-      final r = await http.get(url).timeout(const Duration(seconds: 8));
-      if (r.statusCode == 200 && r.body.isNotEmpty) {
-        final j = jsonDecode(r.body);
-        if (j is Map && j['mus'] is List && (j['mus'] as List).isNotEmpty) {
-          final letra = (j['mus'][0]['text'] ?? '').toString();
-          if (letra.trim().length > 10) return _limparLetra(letra);
-        }
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  // ---------- Fonte 2: LRCLIB ----------
-  static Future<String?> _lrclib(String artista, String titulo) async {
+  // ---------- LRCLIB: get exato ----------
+  static Future<String?> _lrclibGet(String artista, String titulo) async {
     if (titulo.isEmpty) return null;
     try {
       final url = Uri.parse(
           'https://lrclib.net/api/get?artist_name=${Uri.encodeComponent(artista)}&track_name=${Uri.encodeComponent(titulo)}');
-      final r = await http.get(url).timeout(const Duration(seconds: 8));
+      final r =
+          await http.get(url, headers: _headers).timeout(const Duration(seconds: 8));
       if (r.statusCode == 200) {
         final j = jsonDecode(utf8.decode(r.bodyBytes));
         final letra = (j['plainLyrics'] ?? '').toString();
         if (letra.trim().length > 10) return _limparLetra(letra);
       }
-      // busca aproximada
-      final url2 = Uri.parse(
-          'https://lrclib.net/api/search?q=${Uri.encodeComponent('$artista $titulo')}');
-      final r2 = await http.get(url2).timeout(const Duration(seconds: 8));
-      if (r2.statusCode == 200) {
-        final lista = jsonDecode(utf8.decode(r2.bodyBytes));
+    } catch (_) {}
+    return null;
+  }
+
+  // ---------- LRCLIB: busca aproximada ----------
+  static Future<String?> _lrclibBusca(String consulta) async {
+    if (consulta.trim().isEmpty) return null;
+    try {
+      final url = Uri.parse(
+          'https://lrclib.net/api/search?q=${Uri.encodeComponent(consulta)}');
+      final r =
+          await http.get(url, headers: _headers).timeout(const Duration(seconds: 9));
+      if (r.statusCode == 200) {
+        final lista = jsonDecode(utf8.decode(r.bodyBytes));
         if (lista is List) {
           for (final item in lista) {
             final letra = (item['plainLyrics'] ?? '').toString();
@@ -93,9 +89,9 @@ class LetraService {
     return null;
   }
 
-  // ---------- Fonte 3: lyrics.ovh ----------
+  // ---------- lyrics.ovh ----------
   static Future<String?> _lyricsOvh(String artista, String titulo) async {
-    if (titulo.isEmpty) return null;
+    if (titulo.isEmpty || artista.isEmpty) return null;
     try {
       final url = Uri.parse(
           'https://api.lyrics.ovh/v1/${Uri.encodeComponent(artista)}/${Uri.encodeComponent(titulo)}');
@@ -109,17 +105,7 @@ class LetraService {
     return null;
   }
 
-  /// Tenta todas as fontes com uma dada combinação de artista/título.
-  static Future<String?> _todasAsFontes(String a, String t) async {
-    for (final fonte in [_vagalume, _lrclib, _lyricsOvh]) {
-      final letra = await fonte(a, t);
-      if (letra != null) return letra;
-    }
-    return null;
-  }
-
-  /// Retorna a letra, ou null. Faz várias tentativas (variações do nome)
-  /// e, em cada uma, consulta as três fontes.
+  /// Retorna a letra, ou null.
   static Future<String?> buscar(String musicaBruta) async {
     final chave = musicaBruta.trim().toLowerCase();
     if (chave.isEmpty) return null;
@@ -129,20 +115,41 @@ class LetraService {
     final aL = _limpar(artista);
     final tL = _limpar(titulo);
 
-    final tentativas = <(String, String)>[
+    // 1) LRCLIB get exato, com variações de nome
+    final combos = <(String, String)>[
       if (aL.isNotEmpty) (aL, tL),
       if (aL.isNotEmpty) (tL, aL), // stream pode vir "Título - Artista"
       if (aL.isNotEmpty) (_semAcento(aL), _semAcento(tL)),
       if (aL.isNotEmpty && (artista != aL || titulo != tL)) (artista, titulo),
-      if (aL.isEmpty) ('', tL),
     ];
-
     final vistos = <String>{};
-    for (final (a, t) in tentativas) {
+    for (final (a, t) in combos) {
       final id = '$a|$t';
       if (vistos.contains(id)) continue;
       vistos.add(id);
-      final letra = await _todasAsFontes(a, t);
+      final letra = await _lrclibGet(a, t);
+      if (letra != null) {
+        _cache[chave] = letra;
+        return letra;
+      }
+    }
+
+    // 2) LRCLIB busca aproximada (pega variações de grafia)
+    for (final consulta in <String>[
+      if (aL.isNotEmpty) '$aL $tL',
+      if (tL.isNotEmpty) tL,
+      if (aL.isNotEmpty) _semAcento('$aL $tL'),
+    ]) {
+      final letra = await _lrclibBusca(consulta);
+      if (letra != null) {
+        _cache[chave] = letra;
+        return letra;
+      }
+    }
+
+    // 3) lyrics.ovh como último reforço
+    for (final (a, t) in combos) {
+      final letra = await _lyricsOvh(a, t);
       if (letra != null) {
         _cache[chave] = letra;
         return letra;
