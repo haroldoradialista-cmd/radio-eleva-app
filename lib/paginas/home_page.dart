@@ -463,7 +463,7 @@ class _HomePageState extends State<HomePage> {
                                     Flexible(
                                       child: Text(
                                         noAr != null
-                                            ? 'AO VIVO • ${(noAr['programa'] ?? '').toString().toUpperCase()}'
+                                            ? 'NO AR • ${(noAr['programa'] ?? '').toString().toUpperCase()}'
                                             : 'NO AR',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,

@@ -29,6 +29,13 @@ KOTLIN
 # 5b. Despertador: receptores de alarme (disparam mesmo com o app fechado)
 sed -i 's#</application>#    <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" android:exported="false"/>\n        <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="false">\n            <intent-filter>\n                <action android:name="android.intent.action.BOOT_COMPLETED"/>\n                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>\n                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n            </intent-filter>\n        </receiver>\n        <receiver android:name="br.com.radioeleva.radio_eleva.DespertadorReceiver" android:exported="false"/>\n        <service android:name="br.com.radioeleva.radio_eleva.DespertadorAudioService" android:exported="false" android:foregroundServiceType="mediaPlayback"/>\n    </application>#' "$M"
 
+# 5b0. Travar o app na vertical (retrato) — impede o app de girar
+M="android/app/src/main/AndroidManifest.xml"
+if grep -q 'android:name="\.MainActivity"' "$M" && ! grep -q 'screenOrientation' "$M"; then
+  sed -i 's#<activity android:name="\.MainActivity"#<activity android:name=".MainActivity" android:screenOrientation="portrait"#' "$M"
+  echo "App travado na vertical (retrato)."
+fi
+
 # 5b1. Logo da rádio para a tela do despertador
 mkdir -p android/app/src/main/res/drawable
 if [ -f assets/logo.png ]; then

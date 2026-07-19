@@ -68,8 +68,23 @@ class LetraService {
     return null;
   }
 
-  // ---------- LRCLIB: busca aproximada ----------
-  static Future<String?> _lrclibBusca(String consulta) async {
+  /// Compara dois nomes ignorando acentos, maiúsculas e pontuação.
+  /// Retorna true se um contém o outro (match forte).
+  static bool _combina(String a, String b) {
+    String n(String s) => _semAcento(s.toLowerCase())
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final x = n(a), y = n(b);
+    if (x.isEmpty || y.isEmpty) return false;
+    return x == y || x.contains(y) || y.contains(x);
+  }
+
+  // ---------- LRCLIB: busca aproximada COM VALIDAÇÃO ----------
+  /// Só aceita o resultado se o artista E o título realmente conferem
+  /// com a música que está tocando (evita exibir letra de outra música).
+  static Future<String?> _lrclibBusca(
+      String consulta, String artistaReal, String tituloReal) async {
     if (consulta.trim().isEmpty) return null;
     try {
       final url = Uri.parse(
@@ -81,7 +96,14 @@ class LetraService {
         if (lista is List) {
           for (final item in lista) {
             final letra = (item['plainLyrics'] ?? '').toString();
-            if (letra.trim().length > 10) return _limparLetra(letra);
+            if (letra.trim().length <= 10) continue;
+            final artResp = (item['artistName'] ?? '').toString();
+            final titResp = (item['trackName'] ?? '').toString();
+            // o TÍTULO precisa bater; o artista bate ou não foi informado
+            final tituloOk = _combina(titResp, tituloReal);
+            final artistaOk =
+                artistaReal.isEmpty || _combina(artResp, artistaReal);
+            if (tituloOk && artistaOk) return _limparLetra(letra);
           }
         }
       }
@@ -134,13 +156,12 @@ class LetraService {
       }
     }
 
-    // 2) LRCLIB busca aproximada (pega variações de grafia)
+    // 2) LRCLIB busca aproximada — só aceita se conferir artista e título
     for (final consulta in <String>[
       if (aL.isNotEmpty) '$aL $tL',
-      if (tL.isNotEmpty) tL,
       if (aL.isNotEmpty) _semAcento('$aL $tL'),
     ]) {
-      final letra = await _lrclibBusca(consulta);
+      final letra = await _lrclibBusca(consulta, aL, tL);
       if (letra != null) {
         _cache[chave] = letra;
         return letra;
