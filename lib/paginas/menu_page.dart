@@ -51,6 +51,19 @@ class MenuPage extends StatelessWidget {
               onTap: () {
                 PlayerService.instancia.definirSleep(0);
                 Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  backgroundColor: CoresEleva.verdeEscuro,
+                  behavior: SnackBarBehavior.floating,
+                  content: Row(
+                    children: [
+                      Icon(Icons.bedtime_off_rounded,
+                          color: CoresEleva.dourado, size: 20),
+                      SizedBox(width: 10),
+                      Text('Sleep Timer Cancelado',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ));
               },
             ),
           ],

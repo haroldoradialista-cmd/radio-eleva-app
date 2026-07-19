@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'paginas/home_page.dart';
@@ -15,6 +16,25 @@ import 'servicos/despertador_service.dart';
 import 'servicos/presenca_service.dart';
 import 'servicos/player_service.dart';
 import 'tema.dart';
+
+/// Mantém a tela do celular acesa por 1 minuto (renovável a cada toque),
+/// para o ouvinte acompanhar o app sem a tela apagar no meio.
+class WakelockEleva {
+  static const _canal = MethodChannel('br.com.radioeleva/despertador');
+  static Timer? _timer;
+
+  static void ativarPorUmMinuto() {
+    try {
+      _canal.invokeMethod('manterTelaAcesa', {'ligar': true});
+    } catch (_) {}
+    _timer?.cancel();
+    _timer = Timer(const Duration(minutes: 1), () {
+      try {
+        _canal.invokeMethod('manterTelaAcesa', {'ligar': false});
+      } catch (_) {}
+    });
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,6 +97,87 @@ class TelaPrincipal extends StatefulWidget {
 
 class _TelaPrincipalState extends State<TelaPrincipal> {
   int _abaAtual = 0;
+  final PageController _pageCtrl = PageController();
+  Timer? _telaAcesa;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mantém a tela acesa por 1 minuto sempre que o app está em uso
+    _manterTelaAcesa();
+  }
+
+  /// Mantém a tela ligada por 60s e renova a cada interação
+  void _manterTelaAcesa() {
+    try {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    } catch (_) {}
+    WakelockEleva.ativarPorUmMinuto();
+  }
+
+  /// Item do menu inferior — o selecionado ganha brilho dourado (glow)
+  Widget _itemNav(int i, IconData icone, String rotulo) {
+    final ativo = _abaAtual == i;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _irParaAba(i),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+          margin: EdgeInsets.symmetric(horizontal: 2),
+          padding: EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: ativo
+                ? CoresEleva.dourado.withOpacity(0.16)
+                : Colors.transparent,
+            boxShadow: ativo
+                ? [
+                    BoxShadow(
+                      color: CoresEleva.dourado.withOpacity(0.55),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    )
+                  ]
+                : [],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icone,
+                  size: ativo ? 25 : 22,
+                  color: ativo ? CoresEleva.dourado : CoresEleva.textoFraco),
+              SizedBox(height: 2),
+              Text(rotulo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: ativo ? FontWeight.w900 : FontWeight.w600,
+                      color: ativo
+                          ? CoresEleva.dourado
+                          : CoresEleva.textoFraco)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _irParaAba(int i) {
+    _manterTelaAcesa();
+    setState(() => _abaAtual = i);
+    _pageCtrl.animateToPage(i,
+        duration: Duration(milliseconds: 320), curve: Curves.easeOutCubic);
+  }
+
+  @override
+  void dispose() {
+    _telaAcesa?.cancel();
+    _pageCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +192,17 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       MenuPage(),
     ];
     return Scaffold(
-      body: IndexedStack(index: _abaAtual, children: paginas),
+      body: Listener(
+        onPointerDown: (_) => _manterTelaAcesa(),
+        child: PageView(
+          controller: _pageCtrl,
+          onPageChanged: (i) {
+            _manterTelaAcesa();
+            setState(() => _abaAtual = i);
+          },
+          children: paginas,
+        ),
+      ),
       bottomNavigationBar: ClipRRect(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(22),
@@ -103,33 +214,22 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
             border:
                 Border(top: BorderSide(color: CoresEleva.dourado, width: 1.2)),
           ),
-          child: BottomNavigationBar(
-            currentIndex: _abaAtual,
-            onTap: (i) => setState(() => _abaAtual = i),
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedItemColor: CoresEleva.dourado,
-            unselectedItemColor: CoresEleva.textoFraco,
-            selectedFontSize: 9.5,
-            unselectedFontSize: 9.5,
-            selectedLabelStyle: TextStyle(fontWeight: FontWeight.w800),
-            items: [
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.home_rounded), label: 'Início'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.forum_rounded), label: 'Chat'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.card_giftcard_rounded),
-                  label: 'Promoções'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.calendar_month_rounded),
-                  label: 'Programação'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.music_note_rounded), label: 'Pedidos'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.menu_rounded), label: 'Menu'),
-            ],
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _itemNav(0, Icons.home_rounded, 'Início'),
+                  _itemNav(1, Icons.forum_rounded, 'Chat'),
+                  _itemNav(2, Icons.card_giftcard_rounded, 'Promoções'),
+                  _itemNav(3, Icons.calendar_month_rounded, 'Programação'),
+                  _itemNav(4, Icons.music_note_rounded, 'Pedidos'),
+                  _itemNav(5, Icons.menu_rounded, 'Menu'),
+                ],
+              ),
+            ),
           ),
         ),
       ),

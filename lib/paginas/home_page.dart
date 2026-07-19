@@ -99,79 +99,21 @@ class _HomePageState extends State<HomePage> {
           decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
-              // Banner no formato do modelo: largo e baixo (proporção ~2.5:1)
-              final larguraBanner = c.maxWidth - 28;
-              final alturaBanner =
-                  (larguraBanner / 2.5).clamp(120.0, 170.0).toDouble();
+              final alturaBanner = (c.maxHeight * 0.245).clamp(140.0, 196.0);
               return Column(
                 children: [
                   AnuncioBanner(),
 
-                  // ===== CABEÇALHO FIXO: logo da rádio =====
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 2),
-                    child: Row(
-                      children: [
-                        Image.asset('assets/logo.png',
-                            height: 38,
-                            errorBuilder: (_, __, ___) => SizedBox.shrink()),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(cfg.nome,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w900,
-                                      color: CoresEleva.dourado)),
-                              if (cfg.slogan.isNotEmpty)
-                                Text(cfg.slogan,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                        fontSize: 10.5,
-                                        letterSpacing: 1.2,
-                                        fontWeight: FontWeight.w600,
-                                        color: CoresEleva.brancoSuave)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // ===== BANNER CARROSSEL COM MOLDURA (modelo) =====
+                  // ===== BANNER CARROSSEL COM MOLDURA NEON =====
                   Padding(
                     padding: EdgeInsets.fromLTRB(14, 8, 14, 0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border:
-                            Border.all(color: CoresEleva.dourado.withOpacity(0.45), width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black
-                                .withOpacity(CoresEleva.escuro ? 0.35 : 0.12),
-                            blurRadius: 14,
-                            offset: Offset(0, 5),
-                          ),
-                        ],
-                      ),
+                    child: MolduraNeon(
+                      raio: 20,
+                      child: Container(
+                      height: alturaBanner,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(19),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // faixa de data e hora no topo (modelo)
-                            RelogioAgora(),
-                            SizedBox(
-                              height: alturaBanner,
-                              width: double.infinity,
-                              child: banners.isEmpty
+                        borderRadius: BorderRadius.circular(17),
+                        child: banners.isEmpty
                             ? _bannerPadrao()
                             : Stack(
                                 children: [
@@ -230,12 +172,12 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
+                    ),
                   ),
+
+                  // ===== DATA E HORA (abaixo do NO AR fica no bloco do player) =====
 
                   // ===== PLAYER (modelo enviado) =====
                   Expanded(
@@ -243,15 +185,15 @@ class _HomePageState extends State<HomePage> {
                       padding:
                           EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           // Capa da música / foto do programa no ar
                           CapaMusica(
-                            tamanho: (c.maxHeight * 0.34)
-                                .clamp(190.0, 264.0)
+                            tamanho: (c.maxHeight * 0.30)
+                                .clamp(176.0, 240.0)
                                 .toDouble(),
                               reserva: (noAr?['imagem'] ?? '').toString()),
-
+                          SizedBox(height: 12),
                           Column(
                             children: [
                               Container(
@@ -267,34 +209,28 @@ class _HomePageState extends State<HomePage> {
                                     Icon(Icons.circle,
                                         size: 9, color: Colors.white),
                                     SizedBox(width: 6),
-                                    Text(
+                                    Flexible(
+                                      child: Text(
                                         noAr != null
-                                            ? 'AO VIVO'
+                                            ? 'AO VIVO • ${(noAr['programa'] ?? '').toString().toUpperCase()}'
                                             : 'NO AR',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.w800,
                                             fontSize: 12,
-                                            letterSpacing: 1.5)),
+                                            letterSpacing: 1.2)),
+                                    ),
                                   ],
                                 ),
                               ),
+                              // data e hora logo abaixo do NO AR / AO VIVO
                               Padding(
-                                  padding: EdgeInsets.only(top: 6),
-                                  child: Text(
-                                    noAr != null
-                                        ? '📻 ${noAr['programa']}'
-                                        : '📻 ${cfg.nome}',
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: CoresEleva.dourado),
-                                  ),
-                                ),
-                              SizedBox(height: 8),
+                                padding: EdgeInsets.only(top: 7),
+                                child: RelogioAgora(),
+                              ),
+                              SizedBox(height: 6),
                               StreamBuilder<IcyMetadata?>(
                                 stream: player.icyMetadataStream,
                                 builder: (context, snap) {
@@ -595,4 +531,114 @@ class _RelogioAgoraState extends State<RelogioAgora> {
       ),
     );
   }
+}
+
+
+/// Moldura com um facho de luz "neon" percorrendo a borda no sentido
+/// anti-horário, com a cor mudando suavemente ao longo do tempo.
+class MolduraNeon extends StatefulWidget {
+  final Widget child;
+  final double raio;
+  const MolduraNeon({super.key, required this.child, this.raio = 20});
+  @override
+  State<MolduraNeon> createState() => _MolduraNeonState();
+}
+
+class _MolduraNeonState extends State<MolduraNeon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, filho) {
+        return CustomPaint(
+          foregroundPainter: _NeonPainter(_ctrl.value, widget.raio),
+          child: filho,
+        );
+      },
+      child: Padding(padding: const EdgeInsets.all(2), child: widget.child),
+    );
+  }
+}
+
+class _NeonPainter extends CustomPainter {
+  final double t; // 0..1 (posição do facho)
+  final double raio;
+  _NeonPainter(this.t, this.raio);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(raio),
+    );
+
+    // linha fininha de base
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = const Color(0xFFFFD65A).withOpacity(0.28);
+    canvas.drawRRect(rrect.deflate(1), base);
+
+    // cor que muda suavemente com o tempo (HSV girando)
+    final matiz = (t * 360 * 1.0) % 360;
+    final corNeon = HSVColor.fromAHSV(1, matiz, 0.85, 1).toColor();
+
+    // caminho da borda para extrair o trecho iluminado
+    final path = Path()..addRRect(rrect.deflate(1));
+    final metrics = path.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+    final metric = metrics.first;
+    final total = metric.length;
+
+    // sentido ANTI-horário: andamos "para trás" no caminho
+    final comprimentoFacho = total * 0.22;
+    final inicio = (total * (1 - t)) % total;
+
+    Path trecho;
+    if (inicio + comprimentoFacho <= total) {
+      trecho = metric.extractPath(inicio, inicio + comprimentoFacho);
+    } else {
+      trecho = metric.extractPath(inicio, total)
+        ..addPath(
+            metric.extractPath(0, (inicio + comprimentoFacho) - total),
+            Offset.zero);
+    }
+
+    // brilho (glow) + núcleo do facho
+    final glow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..color = corNeon.withOpacity(0.55)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawPath(trecho, glow);
+
+    final nucleo = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..color = corNeon;
+    canvas.drawPath(trecho, nucleo);
+  }
+
+  @override
+  bool shouldRepaint(_NeonPainter old) => old.t != t;
 }

@@ -240,6 +240,17 @@ class MainActivity : AudioServiceActivity() {
                         result.success(false)
                     }
                 }
+                "manterTelaAcesa" -> {
+                    val ligar = call.argument<Boolean>("ligar") ?: false
+                    runOnUiThread {
+                        if (ligar) {
+                            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        } else {
+                            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                    }
+                    result.success(true)
+                }
                 "testarAgora" -> {
                     val quando = System.currentTimeMillis() + 10000
                     DespertadorReceiver.agendar(this, quando, false, false)
