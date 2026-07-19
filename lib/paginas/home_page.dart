@@ -99,20 +99,59 @@ class _HomePageState extends State<HomePage> {
           decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
-              final alturaBanner = (c.maxHeight * 0.245).clamp(140.0, 196.0);
+              // Banner no formato do modelo: largo e baixo (proporção ~2.5:1)
+              final larguraBanner = c.maxWidth - 28;
+              final alturaBanner =
+                  (larguraBanner / 2.5).clamp(120.0, 170.0).toDouble();
               return Column(
                 children: [
                   AnuncioBanner(),
 
-                  // ===== BANNER CARROSSEL COM MOLDURA =====
+                  // ===== CABEÇALHO FIXO: logo da rádio =====
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 2),
+                    child: Row(
+                      children: [
+                        Image.asset('assets/logo.png',
+                            height: 38,
+                            errorBuilder: (_, __, ___) => SizedBox.shrink()),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(cfg.nome,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w900,
+                                      color: CoresEleva.dourado)),
+                              if (cfg.slogan.isNotEmpty)
+                                Text(cfg.slogan,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        fontSize: 10.5,
+                                        letterSpacing: 1.2,
+                                        fontWeight: FontWeight.w600,
+                                        color: CoresEleva.brancoSuave)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ===== BANNER CARROSSEL COM MOLDURA (modelo) =====
                   Padding(
                     padding: EdgeInsets.fromLTRB(14, 8, 14, 0),
                     child: Container(
-                      height: alturaBanner,
-                      width: double.infinity,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: CoresEleva.borda, width: 1),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: CoresEleva.dourado.withOpacity(0.45), width: 1.2),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black
@@ -123,8 +162,16 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(21),
-                        child: banners.isEmpty
+                        borderRadius: BorderRadius.circular(19),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // faixa de data e hora no topo (modelo)
+                            RelogioAgora(),
+                            SizedBox(
+                              height: alturaBanner,
+                              width: double.infinity,
+                              child: banners.isEmpty
                             ? _bannerPadrao()
                             : Stack(
                                 children: [
@@ -183,14 +230,11 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ],
                               ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-
-                  // ===== DATA E HORA =====
-                  Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: RelogioAgora(),
                   ),
 
                   // ===== PLAYER (modelo enviado) =====
@@ -203,8 +247,8 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           // Capa da música / foto do programa no ar
                           CapaMusica(
-                            tamanho: (c.maxHeight * 0.30)
-                                .clamp(168.0, 226.0)
+                            tamanho: (c.maxHeight * 0.34)
+                                .clamp(190.0, 264.0)
                                 .toDouble(),
                               reserva: (noAr?['imagem'] ?? '').toString()),
 
@@ -223,7 +267,10 @@ class _HomePageState extends State<HomePage> {
                                     Icon(Icons.circle,
                                         size: 9, color: Colors.white),
                                     SizedBox(width: 6),
-                                    Text('AO VIVO',
+                                    Text(
+                                        noAr != null
+                                            ? 'AO VIVO'
+                                            : 'NO AR',
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.w800,
@@ -232,11 +279,12 @@ class _HomePageState extends State<HomePage> {
                                   ],
                                 ),
                               ),
-                              if (noAr != null)
-                                Padding(
+                              Padding(
                                   padding: EdgeInsets.only(top: 6),
                                   child: Text(
-                                    '📻 ${noAr['programa']}',
+                                    noAr != null
+                                        ? '📻 ${noAr['programa']}'
+                                        : '📻 ${cfg.nome}',
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
@@ -511,28 +559,40 @@ class _RelogioAgoraState extends State<RelogioAgora> {
   @override
   Widget build(BuildContext context) {
     final agora = DateTime.now();
+    final diaSemana = _dias[agora.weekday - 1];
+    final diaCap = diaSemana[0].toUpperCase() + diaSemana.substring(1);
     final data =
-        '${_dias[agora.weekday - 1]}, ${agora.day} de ${_meses[agora.month - 1]} de ${agora.year}';
+        '$diaCap, ${agora.day} de ${_meses[agora.month - 1]} de ${agora.year}';
     final hora =
-        '${agora.hour.toString().padLeft(2, '0')}:${agora.minute.toString().padLeft(2, '0')}:${agora.second.toString().padLeft(2, '0')}';
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.schedule_rounded, size: 15, color: CoresEleva.dourado),
-        SizedBox(width: 6),
-        Text(data,
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: CoresEleva.brancoSuave)),
-        SizedBox(width: 8),
-        Text(hora,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                color: CoresEleva.dourado,
-                letterSpacing: 0.5)),
-      ],
+        '${agora.hour.toString().padLeft(2, '0')}:${agora.minute.toString().padLeft(2, '0')}';
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(CoresEleva.escuro ? 0.28 : 0.12),
+        border: Border(
+          bottom: BorderSide(
+              color: CoresEleva.dourado.withOpacity(0.35), width: 1),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.schedule_rounded, size: 14, color: CoresEleva.dourado),
+          SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              '$data  •  $hora',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: CoresEleva.brancoSuave),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
