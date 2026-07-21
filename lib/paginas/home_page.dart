@@ -10,6 +10,7 @@ import '../servicos/analytics_service.dart';
 import '../servicos/config_service.dart';
 import '../servicos/player_service.dart';
 import '../servicos/letra_service.dart';
+import '../servicos/auth_service.dart';
 import '../tema.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/capa_musica.dart';
@@ -30,6 +31,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    // Quando o usuário troca de conta, reavalia a curtida da música atual
+    AuthService.instancia.usuario.addListener(_aoTrocarUsuario);
     _timerBanner = Timer.periodic(Duration(seconds: 5), (_) {
       final banners =
           filtrarAgendados(ConfigService.instancia.config.value.banners);
@@ -41,8 +44,14 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _aoTrocarUsuario() {
+    // novo usuário → confere se ELE já curtiu a música que está tocando
+    _conferirCurtida(_musicaAtual);
+  }
+
   @override
   void dispose() {
+    AuthService.instancia.usuario.removeListener(_aoTrocarUsuario);
     _timerBanner?.cancel();
     _pageController.dispose();
     super.dispose();
@@ -71,12 +80,21 @@ class _HomePageState extends State<HomePage> {
     _abrirLink(b['link']);
   }
 
+  /// Identificador do usuário logado (para a curtida ser por conta).
+  /// Se ninguém está logado, usa 'anon' (curtida do aparelho).
+  String get _idUsuario =>
+      AuthService.instancia.usuario.value?.uid ?? 'anon';
+
+  /// Chave da curtida: música + usuário → cada conta tem a sua curtida
+  String _chaveCurtida(String musica) =>
+      'curtiu_${_idUsuario}_${musica.hashCode}';
+
   Future<void> _curtir(AppConfig cfg) async {
     if (_curtiu || _musicaAtual.isEmpty) return; // uma curtida por música
     setState(() => _curtiu = true);
     final prefs = await SharedPreferences.getInstance();
-    final chave = 'curtiu_${_musicaAtual.hashCode}';
-    if (prefs.getBool(chave) == true) return; // já curtiu esta música antes
+    final chave = _chaveCurtida(_musicaAtual);
+    if (prefs.getBool(chave) == true) return; // este usuário já curtiu
     await prefs.setBool(chave, true);
     PlayerService.instancia.votar(cfg.chatUrl, 'like', _musicaAtual);
     if (mounted) {
@@ -88,11 +106,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Ao trocar de música, verifica se o ouvinte já a curtiu antes
+  /// Ao trocar de música (ou de usuário), verifica se ESTE usuário já curtiu
   Future<void> _conferirCurtida(String musica) async {
     if (musica.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    final ja = prefs.getBool('curtiu_${musica.hashCode}') == true;
+    final ja = prefs.getBool(_chaveCurtida(musica)) == true;
     if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
   }
 

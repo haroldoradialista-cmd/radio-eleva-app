@@ -1,3 +1,4 @@
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../servicos/auth_service.dart';
@@ -123,13 +124,25 @@ class MenuPage extends StatelessWidget {
 
   IconData _iconeRede(String nome) {
     final n = nome.toLowerCase();
-    if (n.contains('insta')) return Icons.camera_alt_rounded;
-    if (n.contains('face')) return Icons.facebook_rounded;
-    if (n.contains('you')) return Icons.play_circle_fill_rounded;
+    if (n.contains('insta')) return FontAwesomeIcons.instagram;
+    if (n.contains('face')) return FontAwesomeIcons.facebook;
+    if (n.contains('you')) return FontAwesomeIcons.youtube;
     if (n.contains('tiktok') || n.contains('tik tok') || n.contains('tik'))
-      return Icons.music_note_rounded;
-    if (n.contains('site')) return Icons.language_rounded;
-    return Icons.public_rounded;
+      return FontAwesomeIcons.tiktok;
+    if (n.contains('whats')) return FontAwesomeIcons.whatsapp;
+    if (n.contains('site')) return FontAwesomeIcons.globe;
+    return FontAwesomeIcons.link;
+  }
+
+  /// Cor oficial de cada rede social
+  Color _corRede(String nome) {
+    final n = nome.toLowerCase();
+    if (n.contains('insta')) return const Color(0xFFE1306C);
+    if (n.contains('face')) return const Color(0xFF1877F2);
+    if (n.contains('you')) return const Color(0xFFFF0000);
+    if (n.contains('tiktok') || n.contains('tik')) return const Color(0xFF000000);
+    if (n.contains('whats')) return const Color(0xFF25D366);
+    return CoresEleva.dourado;
   }
 
   @override
@@ -323,10 +336,31 @@ class MenuPage extends StatelessWidget {
                               .where((r) =>
                                   (r['link'] ?? '').toString().trim().isNotEmpty)
                               .map((r) {
-                            return IconButton(
-                              onPressed: () => _abrirLink(r['link']),
-                              icon: Icon(_iconeRede(r['nome'] ?? ''),
-                                  color: CoresEleva.dourado, size: 28),
+                            final nome = (r['nome'] ?? '').toString();
+                            return Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 7),
+                              child: GestureDetector(
+                                onTap: () => _abrirLink(r['link']),
+                                child: Container(
+                                  width: 52,
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 6,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: FaIcon(_iconeRede(nome),
+                                        color: _corRede(nome), size: 26),
+                                  ),
+                                ),
+                              ),
                             );
                           }).toList(),
                         ),
