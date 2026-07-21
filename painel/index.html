@@ -1044,7 +1044,8 @@ function botaoFinalizar(tipo, i){
   if(estaForaDoAr(item)){
     return '<button class="botao mini" style="background:#1B7A4B" onclick="voltarAoArItem(\''+tipo+'\','+i+')" title="Voltar ao ar">▶️</button>';
   }
-  return '<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem(\''+tipo+'\','+i+')" title="Finalizar agora (continua no painel)">⏹️</button>';
+  return '<button class="botao mini" style="background:#8a5a00" onclick="finalizarItem(\''+tipo+'\','+i+')" title="Finalizar agora (continua no painel)">⏹️</button>' +
+         '<button class="botao mini" style="background:#0d5aa0" onclick="agendarFinalizacao(\''+tipo+'\','+i+')" title="Agendar finalização (data e hora)">⏰</button>';
 }
 const _listaDe = { banners:'banners', noticias:'noticias', enquetes:'enquetes', promocoes:'promocoes' };
 const _redesenhaDe = () => ({ banners:desenharBanners, noticias:desenharNoticias, enquetes:desenharEnquetes, promocoes:desenharPromos });
@@ -1062,6 +1063,34 @@ async function finalizarItem(tipo, i){
     await salvarConfig('Painel: ' + nome + ' finalizada');
     _redesenhaDe()[tipo]();
     avisar(`⏹️ ${nome.charAt(0).toUpperCase()+nome.slice(1)} finalizada! Continua guardada no painel.`);
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+async function agendarFinalizacao(tipo, i){
+  const item = config[_listaDe[tipo]][i];
+  const nome = _nomeDe[tipo];
+  // valor atual (se já houver) para preencher o prompt
+  const atual = (item.expirar_em || '').slice(0,16);
+  const agora = new Date();
+  const sugestao = atual || new Date(agora.getTime() - agora.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  const resp = prompt(
+    `Quando esta ${nome} deve sair do ar?\n\nDigite a DATA e HORA no formato:\nAAAA-MM-DD HH:MM\n(exemplo: 2026-07-25 22:30)`,
+    sugestao.replace('T',' '));
+  if(resp === null) return; // cancelou
+  const txt = resp.trim().replace(' ','T');
+  const quando = new Date(txt);
+  if(isNaN(quando.getTime())){
+    avisar('Data/hora inválida. Use o formato AAAA-MM-DD HH:MM', true);
+    return;
+  }
+  item.expirar_em = txt.slice(0,16);
+  delete item.finalizado;      // agendado não é "finalizado agora"
+  delete item.finalizado_em;
+  try{
+    await salvarConfig('Painel: ' + nome + ' com finalização agendada');
+    _redesenhaDe()[tipo]();
+    const q = quando.toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    avisar(`⏰ ${nome.charAt(0).toUpperCase()+nome.slice(1)} vai sair do ar em ${q}.`);
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
