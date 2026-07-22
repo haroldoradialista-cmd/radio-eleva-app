@@ -171,13 +171,19 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   final _nome = TextEditingController();
   final _musica = TextEditingController();
   final _interprete = TextEditingController();
+  final _bairro = TextEditingController();
   bool _enviando = false;
 
   Future<void> _enviar() async {
-    if (_nome.text.trim().isEmpty || _musica.text.trim().isEmpty) {
+    if (_nome.text.trim().isEmpty ||
+        _musica.text.trim().isEmpty ||
+        _interprete.text.trim().isEmpty ||
+        _bairro.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.red.shade700,
-          content: Text('Preencha pelo menos seu nome e a música.')));
+          duration: Duration(seconds: 3),
+          content: Text(
+              'Preencha TODOS os campos (seu nome, a música, o intérprete e o bairro) para enviar o pedido.')));
       return;
     }
     if (widget.cfg.chatUrl.isEmpty || _enviando) return;
@@ -190,6 +196,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
           'nome': _nome.text.trim(),
           'musica': _musica.text.trim(),
           'interprete': _interprete.text.trim(),
+          'bairro': _bairro.text.trim(),
           'quando': DateTime.now().toIso8601String(),
         }),
       );
@@ -242,6 +249,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
               _campo(_nome, 'NOME DO OUVINTE', Icons.person_rounded),
               _campo(_musica, 'MÚSICA', Icons.music_note_rounded),
               _campo(_interprete, 'INTÉRPRETE', Icons.mic_rounded),
+              _campo(_bairro, 'SEU BAIRRO', Icons.location_on_rounded),
               SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,

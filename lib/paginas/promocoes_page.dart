@@ -22,6 +22,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
   final Map<String, TextEditingController> _nome = {};
   final Map<String, TextEditingController> _zap = {};
   final Map<String, TextEditingController> _insta = {};
+  final Map<String, TextEditingController> _bairro = {};
   final Map<String, int> _resposta = {};
   final Set<String> _participadas = {};
   final Set<String> _regulamentoAberto = {};
@@ -108,11 +109,14 @@ class _PromocoesPageState extends State<PromocoesPage> {
     final resp = _resposta[id];
     if (_ctrl(_nome, id).text.trim().isEmpty ||
         _ctrl(_zap, id).text.trim().isEmpty ||
+        _ctrl(_insta, id).text.trim().isEmpty ||
+        _ctrl(_bairro, id).text.trim().isEmpty ||
         resp == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.red.shade700,
-          content:
-              Text('Preencha seu nome, WhatsApp e escolha uma resposta.')));
+          duration: Duration(seconds: 3),
+          content: Text(
+              'Preencha TODOS os campos da promoção (nome, WhatsApp, Instagram, bairro) e escolha uma resposta para participar.')));
       return;
     }
     setState(() => _enviando = true);
@@ -133,6 +137,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
           'uid': u.uid,
           'quando': DateTime.now().toIso8601String(),
           'cidade': AnalyticsService.cidade,
+          'bairro': _ctrl(_bairro, id).text.trim(),
           'estado': AnalyticsService.estado,
           'pais': AnalyticsService.pais,
           'dispositivo': AnalyticsService.dispositivo,
@@ -490,6 +495,8 @@ class _PromocoesPageState extends State<PromocoesPage> {
                   _campo(_ctrl(_insta, id), 'SEUUSUARIO',
                       Icons.camera_alt_rounded,
                       prefixo: '@'),
+                  _campo(_ctrl(_bairro, id), 'SEU BAIRRO',
+                      Icons.location_on_rounded),
                   SizedBox(height: 4),
                   SizedBox(
                     width: double.infinity,

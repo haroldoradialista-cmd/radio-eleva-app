@@ -6,7 +6,7 @@ import 'config_service.dart';
 /// data/hora, plataforma e cidade aproximada (via internet, sem GPS).
 class AnalyticsService {
   static bool _registrado = false;
-  static String cidade = '', estado = '', pais = '';
+  static String cidade = '', estado = '', pais = '', bairro = '';
   static String dispositivo = 'Android';
 
   static Future<void> registrarAcesso() async {
@@ -27,6 +27,7 @@ class AnalyticsService {
             cidade = (d['city'] ?? '').toString();
             estado = (d['region'] ?? '').toString();
             pais = (d['country'] ?? '').toString();
+            bairro = (d['district'] ?? d['borough'] ?? '').toString();
           }
         }
       } catch (_) {}

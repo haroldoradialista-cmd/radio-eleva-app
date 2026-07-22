@@ -251,11 +251,15 @@ class _TelaChatState extends State<_TelaChat> {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
               SizedBox(height: 12),
               Text(
-                'Prezado ouvinte, após reincidir nas regras de convivência do nosso bate-papo, '
-                'seu acesso ao chat foi encerrado em definitivo, conforme as normas que zelam '
-                'pelo respeito e pela ordem em nossa comunidade.\n\n'
-                'A Rádio Eleva preza por um ambiente de paz, fé e boa convivência para todos. '
-                'Se você acredita que houve um engano, fale com a nossa equipe pelos canais oficiais.',
+                'Prezado ouvinte, informamos que o seu acesso ao bate-papo da Rádio Eleva '
+                'foi BANIDO em caráter definitivo, por ter infringido reiteradamente as regras '
+                'de convivência do nosso chat.\n\n'
+                'Conforme as normas previamente estabelecidas, após atingir o limite de suspensões '
+                'determinado pela emissora, o banimento é aplicado automaticamente para preservar '
+                'o respeito, a ordem e o bom convívio entre todos os ouvintes.\n\n'
+                'A Rádio Eleva zela por um ambiente de paz, fé e boa convivência. '
+                'Caso entenda que houve equívoco, entre em contato com a nossa equipe '
+                'pelos canais oficiais de atendimento.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: CoresEleva.brancoSuave, height: 1.6),
               ),
@@ -328,10 +332,11 @@ class _TelaChatState extends State<_TelaChat> {
                     border: Border.all(color: Colors.red.shade300, width: 1.2),
                   ),
                   child: Text(
-                    'Caro ouvinte, você infringiu as regras do nosso chat. '
+                    'Caro ouvinte, você já foi suspenso $_numSuspensoes '
+                    '${_numSuspensoes == 1 ? "vez" : "vezes"} por infringir as regras do nosso chat. '
                     'Faltam $restamParaBanir ${restamParaBanir == 1 ? "suspensão" : "suspensões"} '
                     'para que seu acesso seja banido em definitivo, conforme as regras de convivência. '
-                    'Contamos com o seu respeito para mantermos um ambiente de paz e harmonia. 🙏',
+                    'Evite o banimento: contamos com o seu respeito para mantermos um ambiente de paz e harmonia. 🙏',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.red.shade100,

@@ -28,6 +28,26 @@ class _HomePageState extends State<HomePage> {
   bool _curtiu = false;
   String _musicaAtual = '';
 
+  /// Corrige o nome da música vindo do metadado do stream:
+  /// - conserta acentuação corrompida (encoding Latin-1 lido como UTF-8)
+  /// - padroniza o travessão longo (— ou –) para traço simples ( - )
+  String _limparNomeMusica(String bruto) {
+    if (bruto.isEmpty) return bruto;
+    var s = bruto;
+    if (s.contains('Ã') || s.contains('Â') || s.contains('â€')) {
+      try {
+        final recuperado = latin1.decode(s.codeUnits);
+        if (!recuperado.contains('Ã') && !recuperado.contains('â€')) {
+          s = recuperado;
+        }
+      } catch (_) {}
+    }
+    s = s.replaceAll(' — ', ' - ').replaceAll(' – ', ' - ');
+    s = s.replaceAll('—', ' - ').replaceAll('–', ' - ');
+    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return s;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -513,8 +533,8 @@ class _HomePageState extends State<HomePage> {
                               StreamBuilder<IcyMetadata?>(
                                 stream: player.icyMetadataStream,
                                 builder: (context, snap) {
-                                  final titulo =
-                                      snap.data?.info?.title?.trim() ?? '';
+                                  final titulo = _limparNomeMusica(
+                                      snap.data?.info?.title?.trim() ?? '');
                                   if (titulo != _musicaAtual) {
                                     _musicaAtual = titulo;
                                     _curtiu = false;

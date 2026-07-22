@@ -140,7 +140,10 @@ class MenuPage extends StatelessWidget {
     if (n.contains('insta')) return const Color(0xFFE1306C);
     if (n.contains('face')) return const Color(0xFF1877F2);
     if (n.contains('you')) return const Color(0xFFFF0000);
-    if (n.contains('tiktok') || n.contains('tik')) return const Color(0xFF000000);
+    // TikTok é preto: no modo escuro usa branco para não sumir no fundo roxo
+    if (n.contains('tiktok') || n.contains('tik')) {
+      return CoresEleva.escuro ? Colors.white : const Color(0xFF000000);
+    }
     if (n.contains('whats')) return const Color(0xFF25D366);
     return CoresEleva.dourado;
   }
@@ -338,28 +341,11 @@ class MenuPage extends StatelessWidget {
                               .map((r) {
                             final nome = (r['nome'] ?? '').toString();
                             return Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 7),
+                              padding: EdgeInsets.symmetric(horizontal: 10),
                               child: GestureDetector(
                                 onTap: () => _abrirLink(r['link']),
-                                child: Container(
-                                  width: 52,
-                                  height: 52,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        blurRadius: 6,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: FaIcon(_iconeRede(nome),
-                                        color: _corRede(nome), size: 26),
-                                  ),
-                                ),
+                                child: FaIcon(_iconeRede(nome),
+                                    color: _corRede(nome), size: 34),
                               ),
                             );
                           }).toList(),
