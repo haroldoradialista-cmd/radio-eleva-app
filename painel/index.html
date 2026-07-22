@@ -796,6 +796,85 @@ function preencherSorteio(){
   if(!sel) return;
   sel.innerHTML = (config.promocoes||[]).map(p=>`<option value="${p.id}">${p.nome||p.pergunta}</option>`).join('') || '<option value="">Nenhuma promoção</option>';
 }
+// ================== ANIMAÇÃO DO SORTEIO ==================
+function animacaoSorteio(lista, ganhador){
+  return new Promise((resolve)=>{
+    const nomes = lista.map(p => (p.nome||'Ouvinte')).filter(Boolean);
+    const nomeG = ganhador.nome || 'Ouvinte';
+
+    const ov = document.createElement('div');
+    ov.id = 'ovSorteio';
+    ov.style.cssText = 'position:fixed;inset:0;background:radial-gradient(circle at 50% 40%,#1a1560,#0a0730 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;overflow:hidden';
+    ov.innerHTML = `
+      <canvas id="cvConfete" style="position:absolute;inset:0;pointer-events:none"></canvas>
+      <div style="font-size:22px;color:#ffd65a;font-weight:800;margin-bottom:18px;letter-spacing:1px">🎲 Sorteando o ganhador...</div>
+      <div style="height:96px;display:flex;align-items:center;justify-content:center;overflow:hidden;width:90%;max-width:520px">
+        <div id="rolo" style="font-size:40px;font-weight:900;color:#fff;text-align:center;text-shadow:0 2px 20px rgba(255,214,90,.5);white-space:nowrap"></div>
+      </div>
+      <div id="msgParabens" style="opacity:0;transition:opacity .6s;margin-top:22px;font-size:26px;color:#35f0a0;font-weight:900;text-align:center;padding:0 20px"></div>`;
+    document.body.appendChild(ov);
+
+    const rolo = ov.querySelector('#rolo');
+    const T = 10000;              // 10 segundos
+    const t0 = performance.now();
+
+    function frame(now){
+      const t = Math.min((now - t0)/T, 1);
+      // desaceleração: intervalo entre trocas cresce (easeOut forte)
+      const ease = 1 - Math.pow(1 - t, 3);
+      if(t < 1){
+        // quanto mais perto do fim, mais devagar troca o nome
+        const trocaAgora = Math.random() < (1 - ease) * 0.9 + 0.02;
+        if(trocaAgora){
+          rolo.textContent = nomes[Math.floor(Math.random()*nomes.length)] || nomeG;
+        }
+        // nos últimos 1,2s já fixa o ganhador
+        if(t > 0.88) rolo.textContent = nomeG;
+        requestAnimationFrame(frame);
+      } else {
+        rolo.textContent = nomeG;
+        rolo.style.color = '#ffd65a';
+        rolo.style.transform = 'scale(1.15)';
+        rolo.style.transition = 'transform .4s';
+        const msg = ov.querySelector('#msgParabens');
+        msg.textContent = '🎉 Parabéns, ' + nomeG + '! 🎉';
+        msg.style.opacity = '1';
+        dispararConfete(ov.querySelector('#cvConfete'));
+        setTimeout(()=>{ ov.style.transition='opacity .5s'; ov.style.opacity='0';
+          setTimeout(()=>{ ov.remove(); resolve(); }, 500); }, 2600);
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function dispararConfete(canvas){
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const cores = ['#ffd65a','#35f0a0','#ff4d6d','#4da6ff','#c77dff','#fff'];
+  const parts = [];
+  for(let i=0;i<160;i++){
+    parts.push({
+      x: canvas.width/2, y: canvas.height*0.42,
+      vx:(Math.random()-0.5)*14, vy:(Math.random()-1.1)*14,
+      cor:cores[Math.floor(Math.random()*cores.length)],
+      tam:4+Math.random()*6, rot:Math.random()*6, vr:(Math.random()-0.5)*0.4
+    });
+  }
+  let frames = 0;
+  (function anima(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    parts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.28; p.rot+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.fillStyle=p.cor; ctx.fillRect(-p.tam/2,-p.tam/2,p.tam,p.tam*0.6);
+      ctx.restore();
+    });
+    frames++;
+    if(frames < 160) requestAnimationFrame(anima);
+  })();
+}
+
 async function sortearGanhador(){
   const id = document.getElementById('selSorteio').value;
   if(!id){ avisar('Crie uma promoção primeiro.', true); return; }
@@ -807,6 +886,8 @@ async function sortearGanhador(){
     const lista = Object.values(d);
     const g = lista[Math.floor(Math.random()*lista.length)];
     ultimoGanhador = g;
+    // animação de 10s com nomes girando até parar no ganhador
+    await animacaoSorteio(lista, g);
     document.getElementById('resultadoSorteio').style.display='block';
     document.getElementById('sorteioNome').textContent = `🏆 ${g.nome||'Ouvinte'} (${lista.length} participações no sorteio)`;
     document.getElementById('sorteioContato').textContent = `WhatsApp: ${g.whatsapp||'-'} • Instagram: ${g.instagram||'-'} • E-mail: ${g.email||'-'}`;
@@ -1066,32 +1147,50 @@ async function finalizarItem(tipo, i){
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
-async function agendarFinalizacao(tipo, i){
+function agendarFinalizacao(tipo, i){
   const item = config[_listaDe[tipo]][i];
   const nome = _nomeDe[tipo];
-  // valor atual (se já houver) para preencher o prompt
-  const atual = (item.expirar_em || '').slice(0,16);
   const agora = new Date();
-  const sugestao = atual || new Date(agora.getTime() - agora.getTimezoneOffset()*60000).toISOString().slice(0,16);
-  const resp = prompt(
-    `Quando esta ${nome} deve sair do ar?\n\nDigite a DATA e HORA no formato:\nAAAA-MM-DD HH:MM\n(exemplo: 2026-07-25 22:30)`,
-    sugestao.replace('T',' '));
-  if(resp === null) return; // cancelou
-  const txt = resp.trim().replace(' ','T');
-  const quando = new Date(txt);
-  if(isNaN(quando.getTime())){
-    avisar('Data/hora inválida. Use o formato AAAA-MM-DD HH:MM', true);
-    return;
-  }
-  item.expirar_em = txt.slice(0,16);
-  delete item.finalizado;      // agendado não é "finalizado agora"
-  delete item.finalizado_em;
-  try{
-    await salvarConfig('Painel: ' + nome + ' com finalização agendada');
-    _redesenhaDe()[tipo]();
-    const q = quando.toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    avisar(`⏰ ${nome.charAt(0).toUpperCase()+nome.slice(1)} vai sair do ar em ${q}.`);
-  }catch(e){ avisar('Falhou: '+e.message, true); }
+  const local = new Date(agora.getTime() - agora.getTimezoneOffset()*60000);
+  const sugestao = (item.expirar_em || '').slice(0,16) || local.toISOString().slice(0,16);
+
+  // remove modal anterior, se houver
+  const antigo = document.getElementById('modalAgendar');
+  if(antigo) antigo.remove();
+
+  const fundo = document.createElement('div');
+  fundo.id = 'modalAgendar';
+  fundo.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999';
+  fundo.innerHTML = `
+    <div style="background:#12103a;border:1px solid #d4af37;border-radius:16px;padding:22px;max-width:340px;width:90%;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.5)">
+      <h3 style="margin:0 0 6px;color:#ffd65a">⏰ Agendar finalização</h3>
+      <p style="margin:0 0 14px;font-size:13px;color:#bdb8f0">Escolha quando esta ${nome} deve sair do ar automaticamente.</p>
+      <input type="datetime-local" id="inpAgendar" value="${sugestao}"
+             style="width:100%;padding:11px;border-radius:10px;border:1px solid #4a4580;background:#1c1850;color:#fff;font-size:15px">
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button id="btCancelarAg" style="flex:1;padding:11px;border:none;border-radius:22px;background:#3a3560;color:#fff;font-weight:700;cursor:pointer">Cancelar</button>
+        <button id="btConfirmarAg" style="flex:1;padding:11px;border:none;border-radius:22px;background:#0d5aa0;color:#fff;font-weight:800;cursor:pointer">Agendar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fundo);
+
+  document.getElementById('btCancelarAg').onclick = () => fundo.remove();
+  fundo.onclick = (e) => { if(e.target === fundo) fundo.remove(); };
+  document.getElementById('btConfirmarAg').onclick = async () => {
+    const val = document.getElementById('inpAgendar').value;
+    const quando = new Date(val);
+    if(!val || isNaN(quando.getTime())){ avisar('Escolha uma data e hora válidas.', true); return; }
+    item.expirar_em = val.slice(0,16);
+    delete item.finalizado;
+    delete item.finalizado_em;
+    fundo.remove();
+    try{
+      await salvarConfig('Painel: ' + nome + ' com finalização agendada');
+      _redesenhaDe()[tipo]();
+      const q = quando.toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      avisar(`⏰ ${nome.charAt(0).toUpperCase()+nome.slice(1)} vai sair do ar em ${q}.`);
+    }catch(e){ avisar('Falhou: '+e.message, true); }
+  };
 }
 
 async function voltarAoArItem(tipo, i){
