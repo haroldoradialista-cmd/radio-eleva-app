@@ -49,24 +49,69 @@ class _CapaMusicaState extends State<CapaMusica> {
     });
   }
 
-  Future<void> _buscar(String titulo) async {
+  Future<void> _buscar(String bruto) async {
     try {
+      // separa "Artista - Título"
+      String artista = '', titulo = bruto.trim();
+      for (final sep in [' - ', ' – ', ' — ']) {
+        final idx = bruto.indexOf(sep);
+        if (idx > 0) {
+          artista = bruto.substring(0, idx).trim();
+          titulo = bruto.substring(idx + sep.length).trim();
+          break;
+        }
+      }
+      // limpa "(ao vivo)", "[clipe]" etc.
+      String limpar(String s) => s
+          .replaceAll(RegExp(r'[\[\](){}].*?[\[\](){}]'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+      final artL = limpar(artista);
+      final titL = limpar(titulo);
+
+      // busca pelo conjunto artista+título (bem mais preciso que só o título)
       final termo = Uri.encodeComponent(
-          titulo.replaceAll(RegExp(r'[\[\](){}]'), ' ').trim());
+          (artL.isNotEmpty ? '$artL $titL' : titL));
       final r = await http
           .get(Uri.parse(
-              'https://itunes.apple.com/search?term=$termo&country=br&media=music&limit=1'))
+              'https://itunes.apple.com/search?term=$termo&country=br&media=music&limit=5'))
           .timeout(Duration(seconds: 8));
       String? url;
       if (r.statusCode == 200) {
         final d = jsonDecode(r.body);
-        if ((d['resultCount'] ?? 0) > 0) {
-          url = (d['results'][0]['artworkUrl100'] ?? '')
-              .toString()
-              .replaceAll('100x100', '400x400');
-          if (url.isEmpty) url = null;
+        final results = (d['results'] ?? []) as List;
+        String semAcento(String s) {
+          const de = 'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ';
+          const pa = 'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC';
+          var x = s.toLowerCase();
+          for (var i = 0; i < de.length; i++) {
+            x = x.replaceAll(de[i].toLowerCase(), pa[i].toLowerCase());
+          }
+          return x.replaceAll(RegExp(r'[^a-z0-9 ]'), '').trim();
+        }
+
+        for (final item in results) {
+          final aResp = semAcento((item['artistName'] ?? '').toString());
+          final tResp = semAcento((item['trackName'] ?? '').toString());
+          final aBusca = semAcento(artL);
+          final tBusca = semAcento(titL);
+          // valida: o TÍTULO precisa bater, e o artista bate (ou não temos artista)
+          final tituloOk = tResp.contains(tBusca) || tBusca.contains(tResp);
+          final artistaOk = aBusca.isEmpty ||
+              aResp.contains(aBusca) ||
+              aBusca.contains(aResp);
+          if (tituloOk && artistaOk) {
+            final u = (item['artworkUrl100'] ?? '')
+                .toString()
+                .replaceAll('100x100', '600x600');
+            if (u.isNotEmpty) {
+              url = u;
+              break;
+            }
+          }
         }
       }
+      // se nada foi validado, NÃO usa capa aleatória — deixa a reserva/logo
       if (mounted) setState(() => _capaUrl = url);
     } catch (_) {
       if (mounted) setState(() => _capaUrl = null);
