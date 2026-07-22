@@ -335,10 +335,7 @@
           <div class="item" style="flex-wrap:wrap">
             <div class="info"><b id="sorteioNome"></b><span id="sorteioContato"></span></div>
           </div>
-          <label>Mensagem de parabéns (edite se quiser)</label>
-          <textarea id="sorteioMsg" rows="7" readonly></textarea>
-          <button class="botao neutro" onclick="sorteioMsg.readOnly=false;sorteioMsg.focus();avisar('Pode editar a mensagem! ✏️')">✏️ Editar</button>
-          <button class="botao" onclick="baixarParabensPDF()">📄 Baixar em PDF</button>
+          <div id="mensagensGanhadores" style="margin-top:12px"></div>
         </div>
       </div>
       <div class="cartao">
@@ -993,13 +990,29 @@ async function sortearGanhador(){
       document.getElementById('sorteioNome').textContent = `🏆 ${qtd} ganhadores sorteados (${lista.length} participações)`;
       document.getElementById('sorteioContato').innerHTML = ganhadores.map((g,i)=>`${i+1}. <b>${(g.nome||'Ouvinte').replace(/</g,'&lt;')}</b> — WhatsApp: ${g.whatsapp||'-'} • Instagram: ${g.instagram||'-'}`).join('<br>');
     }
-    const msg = document.getElementById('sorteioMsg');
-    msg.readOnly = true;
-    msg.value = `🎉 PARABÉNS, ${(g0.nome||'OUVINTE').toUpperCase()} 🎉\n\n`+
+
+    // guarda os ganhadores para os botões de PDF individuais
+    window._ganhadoresAtuais = ganhadores;
+    window._nomePromoAtual = nomePromo;
+
+    // gera UMA mensagem de parabéns para CADA ganhador
+    const cont = document.getElementById('mensagensGanhadores');
+    cont.innerHTML = ganhadores.map((g,i)=>{
+      const texto = `🎉 PARABÉNS, ${(g.nome||'OUVINTE').toUpperCase()} 🎉\n\n`+
 `Você é o(a) grande vencedor(a) da promoção "${nomePromo}" da Rádio Eleva!\n\n`+
 `Sua participação foi a escolhida entre todos os ouvintes. Receba essa notícia com alegria e gratidão, desejamos que Deus continue abençoando a sua vida e sua família.\n\n`+
 `Em breve, nossa equipe entrará em contato pelo seu WhatsApp para combinar a entrega do seu prêmio.\n\n`+
 `Adore • Viva • Eleve\n📻 Rádio Eleva — inspirando vidas por meio da fé e da boa música.`;
+      const tit = qtd>1 ? `🏆 Ganhador ${i+1}: ${(g.nome||'Ouvinte').replace(/</g,'&lt;')}` : 'Mensagem de parabéns (edite se quiser)';
+      return `<div style="margin-bottom:16px;padding-top:8px;border-top:${i>0?'1px solid #333':'none'}">
+        <label>${tit}</label>
+        <textarea id="msgG${i}" rows="7" readonly style="width:100%">${texto.replace(/</g,'&lt;')}</textarea>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          <button class="botao mini neutro" onclick="document.getElementById('msgG${i}').readOnly=false;document.getElementById('msgG${i}').focus();avisar('Pode editar! ✏️')">✏️ Editar</button>
+          <button class="botao mini" onclick="baixarParabensPDFIndex(${i})">📄 Baixar em PDF</button>
+        </div>
+      </div>`;
+    }).join('');
     avisar(qtd>1 ? `${qtd} ganhadores sorteados! 🏆` : 'Ganhador sorteado! 🏆');
   }catch(e){ avisar('Falhou ao sortear.', true); }
 }
@@ -1060,9 +1073,17 @@ async function mostrarRelatorioGanhadores(){
     avisar('Relatório de ganhadores aberto! 🏆');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
+function baixarParabensPDFIndex(i){
+  const ta = document.getElementById('msgG'+i);
+  const g = (window._ganhadoresAtuais||[])[i] || {};
+  gerarParabensPDF(ta ? ta.value : '', g.nome||'Ouvinte');
+}
 function baixarParabensPDF(){
-  const msg = document.getElementById('sorteioMsg').value;
+  const msg = document.getElementById('sorteioMsg') ? document.getElementById('sorteioMsg').value : '';
   const nomeG = (ultimoGanhador && ultimoGanhador.nome) ? ultimoGanhador.nome : 'Ouvinte';
+  gerarParabensPDF(msg, nomeG);
+}
+function gerarParabensPDF(msg, nomeG){
   const LOGO = 'https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/assets/logo.png';
   const corpo = msg.replace(/</g,'&lt;').split('\n').filter(l=>l.trim()!=='').map(l=>{
     if(l.includes('PARABÉNS')) return '';
