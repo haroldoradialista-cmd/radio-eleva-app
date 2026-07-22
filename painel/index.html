@@ -321,6 +321,15 @@
         <p class="rotulo-secao">Escolha a promoção e deixe a sorte decidir entre todas as participações.</p>
         <label>Promoção</label>
         <select id="selSorteio"></select>
+        <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:10px;margin:8px 0">
+          <p class="rotulo-secao" style="margin:0 0 6px">🌎 Filtrar participações por localização (opcional) — deixe em branco para incluir todos</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="fltPais" placeholder="País" style="flex:1;min-width:120px">
+            <input id="fltEstado" placeholder="Estado (UF)" style="flex:1;min-width:120px">
+            <input id="fltCidade" placeholder="Cidade" style="flex:1;min-width:120px">
+            <input id="fltBairro" placeholder="Bairro" style="flex:1;min-width:120px">
+          </div>
+        </div>
         <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:8px 0">
           <div style="flex:0 0 160px">
             <label>Quantos ganhadores?</label>
@@ -949,7 +958,22 @@ async function sortearGanhador(){
     const r = await fetch(`${RTDB}/promo_participacoes/${id}.json?t=${Date.now()}`);
     const d = await r.json();
     if(!d){ avisar('Essa promoção ainda não tem participações.', true); return; }
-    const lista = Object.values(d);
+    let lista = Object.values(d);
+    // filtro de localização (opcional)
+    const fP = (document.getElementById('fltPais').value||'').trim().toLowerCase();
+    const fE = (document.getElementById('fltEstado').value||'').trim().toLowerCase();
+    const fC = (document.getElementById('fltCidade').value||'').trim().toLowerCase();
+    const fB = (document.getElementById('fltBairro').value||'').trim().toLowerCase();
+    if(fP||fE||fC||fB){
+      lista = lista.filter(p=>{
+        const okP = !fP || (p.pais||'').toLowerCase().includes(fP);
+        const okE = !fE || (p.estado||'').toLowerCase().includes(fE);
+        const okC = !fC || (p.cidade||'').toLowerCase().includes(fC);
+        const okB = !fB || (p.bairro||'').toLowerCase().includes(fB);
+        return okP && okE && okC && okB;
+      });
+      if(!lista.length){ avisar('Nenhuma participação encontrada com esse filtro de localização.', true); return; }
+    }
     if(qtd > lista.length) qtd = lista.length;
     // sorteia N ganhadores distintos
     const pool = lista.slice();
@@ -975,7 +999,7 @@ async function sortearGanhador(){
         total_participantes: lista.length,
         nome: g.nome||'', whatsapp: g.whatsapp||'', instagram: g.instagram||'', email: g.email||'',
         cadastrado_em: g.quando||g.data||'',
-        cidade: g.cidade||'', estado: g.estado||''
+        cidade: g.cidade||'', estado: g.estado||'', bairro: g.bairro||'', pais: g.pais||''
       };
       try{ await fetch(`${RTDB}/ganhadores.json`, {method:'POST', body: JSON.stringify(reg)}); }catch(_){}
     }
@@ -1023,7 +1047,22 @@ async function mostrarRelatorioGanhadores(){
     const r = await fetch(`${RTDB}/ganhadores.json?t=${Date.now()}`);
     const d = await r.json();
     if(!d){ avisar('Nenhum ganhador sorteado ainda.', true); return; }
-    const lista = Object.values(d).sort((a,b)=>(b.sorteado_em||'').localeCompare(a.sorteado_em||''));
+    let lista = Object.values(d).sort((a,b)=>(b.sorteado_em||'').localeCompare(a.sorteado_em||''));
+    // filtros de localização do relatório (usa os mesmos campos do sorteador)
+    const rP = (document.getElementById('fltPais').value||'').trim().toLowerCase();
+    const rE = (document.getElementById('fltEstado').value||'').trim().toLowerCase();
+    const rC = (document.getElementById('fltCidade').value||'').trim().toLowerCase();
+    const rB = (document.getElementById('fltBairro').value||'').trim().toLowerCase();
+    if(rP||rE||rC||rB){
+      lista = lista.filter(g=>{
+        const okP = !rP || (g.pais||'').toLowerCase().includes(rP);
+        const okE = !rE || (g.estado||'').toLowerCase().includes(rE);
+        const okC = !rC || (g.cidade||'').toLowerCase().includes(rC);
+        const okB = !rB || (g.bairro||'').toLowerCase().includes(rB);
+        return okP && okE && okC && okB;
+      });
+    }
+    if(!lista.length){ avisar('Nenhum ganhador encontrado com esse filtro.', true); return; }
     const fmt = s => s ? new Date(s).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-';
     const linhas = lista.map((g,i)=>`<tr>
       <td>${i+1}</td>
@@ -1034,9 +1073,12 @@ async function mostrarRelatorioGanhadores(){
       <td>${String(g.whatsapp||'-').replace(/</g,'&lt;')}</td>
       <td>${String(g.instagram||'-').replace(/</g,'&lt;')}</td>
       <td>${String(g.email||'-').replace(/</g,'&lt;')}</td>
-      <td>${String((g.cidade||'')+((g.cidade&&g.estado)?'/':'')+(g.estado||'')||'-').replace(/</g,'&lt;')}</td>
+      <td>${String(g.bairro||'-').replace(/</g,'&lt;')}</td>
+      <td>${String(g.cidade||'-').replace(/</g,'&lt;')}</td>
+      <td>${String(g.estado||'-').replace(/</g,'&lt;')}</td>
+      <td>${String(g.pais||'-').replace(/</g,'&lt;')}</td>
     </tr>`).join('');
-    const cab = '<tr><th>#</th><th>Ganhador</th><th>Promoção</th><th>Sorteado em</th><th>Cadastrou em</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Cidade</th></tr>';
+    const cab = '<tr><th>#</th><th>Ganhador</th><th>Promoção</th><th>Sorteado em</th><th>Cadastrou em</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Bairro</th><th>Cidade</th><th>Estado</th><th>País</th></tr>';
     const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ganhadores - Rádio Eleva</title>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
       <style>body{font-family:Arial;padding:22px;color:#14203a}h1{color:#0D2B52;margin:2px 0}h2{color:#1B7A4B;font-size:15px}
@@ -1137,10 +1179,10 @@ let pedidosMAtual = [];
 function exportarPedidosM(formato){
   if(!pedidosMAtual.length){ avisar('Não há pedidos para exportar.', true); return; }
   if(formato === 'excel'){
-    let linhas = '<tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Quando</th></tr>';
+    let linhas = '<tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Bairro</th><th>Quando</th></tr>';
     pedidosMAtual.forEach((p,i)=>{
       const c = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-      linhas += '<tr><td>'+(i+1)+'</td><td>'+c(p.nome)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td></tr>';
+      linhas += '<tr><td>'+(i+1)+'</td><td>'+c(p.nome)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td><td>'+c(p.bairro)+'</td><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td></tr>';
     });
     const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
     const blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel'});
@@ -1148,14 +1190,14 @@ function exportarPedidosM(formato){
     a.download = 'pedidos_ouvintes_eleva.xls'; a.click();
     avisar('Pedidos salvos em Excel! 📊'); return;
   }
-  const linhas = pedidosMAtual.map((p,i)=>`<tr><td>${i+1}</td><td>${String(p.nome||'').replace(/</g,'&lt;')}</td><td>${String(p.musica||'').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'').replace(/</g,'&lt;')}</td><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('');
+  const linhas = pedidosMAtual.map((p,i)=>`<tr><td>${i+1}</td><td>${String(p.nome||'').replace(/</g,'&lt;')}</td><td>${String(p.musica||'').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'').replace(/</g,'&lt;')}</td><td>${String(p.bairro||'').replace(/</g,'&lt;')}</td><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('');
   const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos musicais - Rádio Eleva</title>
     <style>body{font-family:Arial;padding:24px;color:#14203a}h1{color:#0D2B52;margin:2px 0}h2{color:#1B7A4B;font-size:15px}
     table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}th{background:#0D2B52;color:#fff}
     .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}</style></head><body>
     <div id="rel"><div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
     <h2>PEDIDOS MUSICAIS DOS OUVINTES</h2><div>${pedidosMAtual.length} pedidos recebidos</div></div>
-    <table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Quando</th></tr>${linhas}</table>
+    <table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Bairro</th><th>Quando</th></tr>${linhas}</table>
     <p style="margin-top:14px;font-size:12px;color:#5a6a85;text-align:center">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva</p></div></body></html>`;
   if(formato === 'word'){
     const conteudo = '<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>'+doc+'</body></html>';
@@ -1183,9 +1225,10 @@ async function carregarPedidosM(){
     const lista = Object.entries(d).sort((a,b)=>(b[1].quando||'').localeCompare(a[1].quando||''));
     pedidosMAtual = lista.map(([k,p])=>p);
     el.innerHTML = `<p class="rotulo-secao">📊 <b>${lista.length}</b> pedidos recebidos</p>` +
-      `<table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Quando</th><th></th></tr>` +
+      `<table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Bairro</th><th>Quando</th><th></th></tr>` +
       lista.map(([k,p],i)=>`<tr>
         <td>${i+1}</td><td>${p.nome||''}</td><td><b>${p.musica||''}</b></td><td>${p.interprete||''}</td>
+        <td>${p.bairro||'-'}</td>
         <td>${(p.quando||'').replace('T',' ').slice(0,16)}</td>
         <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
       </tr>`).join('') + `</table>`;
