@@ -322,13 +322,24 @@
         <label>Promoção</label>
         <select id="selSorteio"></select>
         <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:10px;margin:8px 0">
-          <p class="rotulo-secao" style="margin:0 0 6px">🌎 Filtrar participações por localização (opcional) — deixe em branco para incluir todos</p>
+          <p class="rotulo-secao" style="margin:0 0 6px">🌎 Filtrar participações por localização (opcional) — deixe "Todos" para incluir todos</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <input id="fltPais" placeholder="País" style="flex:1;min-width:120px">
-            <input id="fltEstado" placeholder="Estado (UF)" style="flex:1;min-width:120px">
-            <input id="fltCidade" placeholder="Cidade" style="flex:1;min-width:120px">
-            <input id="fltBairro" placeholder="Bairro" style="flex:1;min-width:120px">
+            <select id="fltPais" style="flex:1;min-width:120px" onchange="carregarEstadosFiltro()">
+              <option value="">🌍 Todos os países</option>
+              <option value="Brasil" selected>Brasil</option>
+              <option value="Portugal">Portugal</option>
+              <option value="Estados Unidos">Estados Unidos</option>
+              <option value="__outro__">Outro (digitar)</option>
+            </select>
+            <select id="fltEstado" style="flex:1;min-width:120px" onchange="carregarCidadesFiltro()">
+              <option value="">Todos os estados</option>
+            </select>
+            <select id="fltCidade" style="flex:1;min-width:120px">
+              <option value="">Todas as cidades</option>
+            </select>
+            <input id="fltBairro" placeholder="Bairro (digite)" style="flex:1;min-width:120px">
           </div>
+          <input id="fltPaisOutro" placeholder="Digite o país" style="width:100%;margin-top:6px;display:none">
         </div>
         <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:8px 0">
           <div style="flex:0 0 160px">
@@ -948,6 +959,74 @@ function dispararConfete(canvas){
   })();
 }
 
+// ===== Filtros de localização (País → Estado → Cidade via IBGE) =====
+const _UFS = [
+  ['AC','Acre'],['AL','Alagoas'],['AP','Amapá'],['AM','Amazonas'],['BA','Bahia'],
+  ['CE','Ceará'],['DF','Distrito Federal'],['ES','Espírito Santo'],['GO','Goiás'],
+  ['MA','Maranhão'],['MT','Mato Grosso'],['MS','Mato Grosso do Sul'],['MG','Minas Gerais'],
+  ['PA','Pará'],['PB','Paraíba'],['PR','Paraná'],['PE','Pernambuco'],['PI','Piauí'],
+  ['RJ','Rio de Janeiro'],['RN','Rio Grande do Norte'],['RS','Rio Grande do Sul'],
+  ['RO','Rondônia'],['RR','Roraima'],['SC','Santa Catarina'],['SP','São Paulo'],
+  ['SE','Sergipe'],['TO','Tocantins']
+];
+
+function carregarEstadosFiltro(){
+  const pais = document.getElementById('fltPais').value;
+  const selE = document.getElementById('fltEstado');
+  const selC = document.getElementById('fltCidade');
+  const inpOutro = document.getElementById('fltPaisOutro');
+  inpOutro.style.display = (pais === '__outro__') ? 'block' : 'none';
+  selE.innerHTML = '<option value="">Todos os estados</option>';
+  selC.innerHTML = '<option value="">Todas as cidades</option>';
+  // só o Brasil tem a lista de estados/cidades automática
+  if(pais === 'Brasil'){
+    _UFS.forEach(([uf,nome])=>{
+      selE.innerHTML += `<option value="${nome}">${nome}</option>`;
+    });
+  }
+}
+
+async function carregarCidadesFiltro(){
+  const nomeEstado = document.getElementById('fltEstado').value;
+  const selC = document.getElementById('fltCidade');
+  selC.innerHTML = '<option value="">Todas as cidades</option>';
+  if(!nomeEstado) return;
+  const uf = (_UFS.find(([s,n])=>n===nomeEstado)||[])[0];
+  if(!uf) return;
+  try{
+    selC.innerHTML = '<option value="">Carregando cidades...</option>';
+    const r = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+    const cidades = await r.json();
+    selC.innerHTML = '<option value="">Todas as cidades</option>';
+    cidades.forEach(c=>{ selC.innerHTML += `<option value="${c.nome}">${c.nome}</option>`; });
+  }catch(e){
+    selC.innerHTML = '<option value="">(erro ao carregar — digite manualmente)</option>';
+  }
+}
+// carrega os estados do Brasil ao abrir
+setTimeout(()=>{ try{ carregarEstadosFiltro(); }catch(_){} }, 500);
+
+// lê os filtros de localização e devolve uma função que testa cada participante
+function _filtroLocalizacao(){
+  let fPraw = document.getElementById('fltPais').value||'';
+  if(fPraw === '__outro__') fPraw = document.getElementById('fltPaisOutro').value||'';
+  const fP = fPraw.trim().toLowerCase();
+  const fE = (document.getElementById('fltEstado').value||'').trim().toLowerCase();
+  const fC = (document.getElementById('fltCidade').value||'').trim().toLowerCase();
+  const fB = (document.getElementById('fltBairro').value||'').trim().toLowerCase();
+  const ativo = !!(fP||fE||fC||fB);
+  return {
+    ativo,
+    testa: (p)=>{
+      const okP = !fP || (p.pais||'').toLowerCase().includes(fP);
+      const okE = !fE || (p.estado||'').toLowerCase().includes(fE);
+      const okC = !fC || (p.cidade||'').toLowerCase().includes(fC);
+      const okB = !fB || (p.bairro||'').toLowerCase().includes(fB);
+      return okP && okE && okC && okB;
+    }
+  };
+}
+
 async function sortearGanhador(){
   const id = document.getElementById('selSorteio').value;
   if(!id){ avisar('Crie uma promoção primeiro.', true); return; }
@@ -959,20 +1038,10 @@ async function sortearGanhador(){
     const d = await r.json();
     if(!d){ avisar('Essa promoção ainda não tem participações.', true); return; }
     let lista = Object.values(d);
-    // filtro de localização (opcional)
-    const fP = (document.getElementById('fltPais').value||'').trim().toLowerCase();
-    const fE = (document.getElementById('fltEstado').value||'').trim().toLowerCase();
-    const fC = (document.getElementById('fltCidade').value||'').trim().toLowerCase();
-    const fB = (document.getElementById('fltBairro').value||'').trim().toLowerCase();
-    if(fP||fE||fC||fB){
-      lista = lista.filter(p=>{
-        const okP = !fP || (p.pais||'').toLowerCase().includes(fP);
-        const okE = !fE || (p.estado||'').toLowerCase().includes(fE);
-        const okC = !fC || (p.cidade||'').toLowerCase().includes(fC);
-        const okB = !fB || (p.bairro||'').toLowerCase().includes(fB);
-        return okP && okE && okC && okB;
-      });
-      if(!lista.length){ avisar('Nenhuma participação encontrada com esse filtro de localização.', true); return; }
+    const flt = _filtroLocalizacao();
+    if(flt.ativo){
+      lista = lista.filter(flt.testa);
+      if(!lista.length){ avisar('Nenhuma participação com esse filtro de localização.', true); return; }
     }
     if(qtd > lista.length) qtd = lista.length;
     // sorteia N ganhadores distintos
@@ -1048,21 +1117,11 @@ async function mostrarRelatorioGanhadores(){
     const d = await r.json();
     if(!d){ avisar('Nenhum ganhador sorteado ainda.', true); return; }
     let lista = Object.values(d).sort((a,b)=>(b.sorteado_em||'').localeCompare(a.sorteado_em||''));
-    // filtros de localização do relatório (usa os mesmos campos do sorteador)
-    const rP = (document.getElementById('fltPais').value||'').trim().toLowerCase();
-    const rE = (document.getElementById('fltEstado').value||'').trim().toLowerCase();
-    const rC = (document.getElementById('fltCidade').value||'').trim().toLowerCase();
-    const rB = (document.getElementById('fltBairro').value||'').trim().toLowerCase();
-    if(rP||rE||rC||rB){
-      lista = lista.filter(g=>{
-        const okP = !rP || (g.pais||'').toLowerCase().includes(rP);
-        const okE = !rE || (g.estado||'').toLowerCase().includes(rE);
-        const okC = !rC || (g.cidade||'').toLowerCase().includes(rC);
-        const okB = !rB || (g.bairro||'').toLowerCase().includes(rB);
-        return okP && okE && okC && okB;
-      });
+    const flt = _filtroLocalizacao();
+    if(flt.ativo){
+      lista = lista.filter(flt.testa);
+      if(!lista.length){ avisar('Nenhum ganhador com esse filtro.', true); return; }
     }
-    if(!lista.length){ avisar('Nenhum ganhador encontrado com esse filtro.', true); return; }
     const fmt = s => s ? new Date(s).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-';
     const linhas = lista.map((g,i)=>`<tr>
       <td>${i+1}</td>
