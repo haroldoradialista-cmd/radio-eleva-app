@@ -1,7 +1,7 @@
 name: radio_eleva
 description: Aplicativo oficial da Radio Eleva
 publish_to: 'none'
-version: 2.9.6+82
+version: 2.9.8+84
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -31,6 +31,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo.png
+    - assets/redes/instagram.png
+    - assets/redes/facebook.png
+    - assets/redes/youtube.png
+    - assets/redes/tiktok.png
     - assets/marca_dagua_clara.png
     - assets/marca_dagua_escura.png
     - assets/fundo_claro.jpg

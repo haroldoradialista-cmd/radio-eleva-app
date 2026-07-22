@@ -122,6 +122,18 @@ class MenuPage extends StatelessWidget {
     if (uri != null) launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  /// Retorna o arquivo da logo oficial da rede (ou null se não houver)
+  String? _logoRede(String nome) {
+    final n = nome.toLowerCase();
+    if (n.contains('insta')) return 'assets/redes/instagram.png';
+    if (n.contains('face')) return 'assets/redes/facebook.png';
+    if (n.contains('you')) return 'assets/redes/youtube.png';
+    if (n.contains('tiktok') || n.contains('tik')) {
+      return 'assets/redes/tiktok.png';
+    }
+    return null; // WhatsApp e outros continuam usando o ícone
+  }
+
   IconData _iconeRede(String nome) {
     final n = nome.toLowerCase();
     if (n.contains('insta')) return FontAwesomeIcons.instagram;
@@ -340,12 +352,16 @@ class MenuPage extends StatelessWidget {
                                   (r['link'] ?? '').toString().trim().isNotEmpty)
                               .map((r) {
                             final nome = (r['nome'] ?? '').toString();
+                            final logo = _logoRede(nome);
                             return Padding(
                               padding: EdgeInsets.symmetric(horizontal: 10),
                               child: GestureDetector(
                                 onTap: () => _abrirLink(r['link']),
-                                child: FaIcon(_iconeRede(nome),
-                                    color: _corRede(nome), size: 34),
+                                child: logo != null
+                                    ? Image.asset(logo,
+                                        width: 44, height: 44)
+                                    : FaIcon(_iconeRede(nome),
+                                        color: _corRede(nome), size: 34),
                               ),
                             );
                           }).toList(),

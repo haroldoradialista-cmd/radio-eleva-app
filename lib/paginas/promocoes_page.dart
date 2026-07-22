@@ -492,7 +492,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
                   _campo(_ctrl(_zap, id), 'WHATSAPP COM DDD',
                       Icons.phone_rounded,
                       teclado: TextInputType.phone),
-                  _campo(_ctrl(_insta, id), 'SEUUSUARIO',
+                  _campo(_ctrl(_insta, id), 'SEU USUÁRIO',
                       Icons.camera_alt_rounded,
                       prefixo: '@'),
                   _campo(_ctrl(_bairro, id), 'SEU BAIRRO',
