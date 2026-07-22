@@ -427,6 +427,8 @@
           <div><label>Tempo de suspensão — minutos</label><input id="cfSuspMin" type="number" min="0" max="59" placeholder="0"></div>
         </div>
         <p class="rotulo-secao">Exemplos: 0h e 30min = meia hora • 1h e 30min = uma hora e meia • 24h e 0min = um dia.</p>
+        <div><label>🚫 Banir automaticamente após quantas suspensões? (0 = nunca banir)</label><input id="cfBanirApos" type="number" min="0" max="99" placeholder="3"></div>
+        <p class="rotulo-secao">Ao atingir esse número de suspensões, o ouvinte é banido do chat permanentemente. Deixe 0 para nunca banir.</p>
         <label>Palavras bloqueadas adicionais (separe por vírgula)</label>
         <textarea id="cfPalavras" placeholder="palavra1, palavra2, palavra3"></textarea>
         <button class="botao" onclick="salvarModeracao()">✅ Aplicar e salvar</button>
@@ -797,16 +799,19 @@ function preencherSorteio(){
   sel.innerHTML = (config.promocoes||[]).map(p=>`<option value="${p.id}">${p.nome||p.pergunta}</option>`).join('') || '<option value="">Nenhuma promoção</option>';
 }
 // ================== ANIMAÇÃO DO SORTEIO ==================
-function animacaoSorteio(lista, ganhador){
+function animacaoSorteio(lista, ganhador, nomePromo){
   return new Promise((resolve)=>{
     const nomes = lista.map(p => (p.nome||'Ouvinte')).filter(Boolean);
     const nomeG = ganhador.nome || 'Ouvinte';
+    const LOGO = 'https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/assets/logo.png';
 
     const ov = document.createElement('div');
     ov.id = 'ovSorteio';
     ov.style.cssText = 'position:fixed;inset:0;background:radial-gradient(circle at 50% 40%,#1a1560,#0a0730 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;overflow:hidden';
     ov.innerHTML = `
       <canvas id="cvConfete" style="position:absolute;inset:0;pointer-events:none"></canvas>
+      <img src="${LOGO}" onerror="this.style.display='none'" style="width:88px;height:88px;object-fit:contain;border-radius:18px;margin-bottom:10px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))">
+      <div style="font-size:17px;color:#bfe3ff;font-weight:700;margin-bottom:4px;padding:0 20px;text-align:center">${(nomePromo||'').replace(/</g,'&lt;')}</div>
       <div style="font-size:22px;color:#ffd65a;font-weight:800;margin-bottom:18px;letter-spacing:1px">🎲 Sorteando o ganhador...</div>
       <div style="height:96px;display:flex;align-items:center;justify-content:center;overflow:hidden;width:90%;max-width:520px">
         <div id="rolo" style="font-size:40px;font-weight:900;color:#fff;text-align:center;text-shadow:0 2px 20px rgba(255,214,90,.5);white-space:nowrap"></div>
@@ -853,14 +858,22 @@ function dispararConfete(canvas){
   canvas.width = window.innerWidth; canvas.height = window.innerHeight;
   const cores = ['#ffd65a','#35f0a0','#ff4d6d','#4da6ff','#c77dff','#fff'];
   const parts = [];
-  for(let i=0;i<160;i++){
-    parts.push({
-      x: canvas.width/2, y: canvas.height*0.42,
-      vx:(Math.random()-0.5)*14, vy:(Math.random()-1.1)*14,
-      cor:cores[Math.floor(Math.random()*cores.length)],
-      tam:4+Math.random()*6, rot:Math.random()*6, vr:(Math.random()-0.5)*0.4
-    });
-  }
+  // jato central + dois jatos laterais = explosão bem maior
+  const focos = [
+    {x:canvas.width/2,  y:canvas.height*0.42, forca:1.0},
+    {x:canvas.width*0.15,y:canvas.height*0.55, forca:0.85},
+    {x:canvas.width*0.85,y:canvas.height*0.55, forca:0.85},
+  ];
+  focos.forEach(f=>{
+    for(let i=0;i<190;i++){
+      parts.push({
+        x:f.x, y:f.y,
+        vx:(Math.random()-0.5)*20*f.forca, vy:(Math.random()-1.15)*20*f.forca,
+        cor:cores[Math.floor(Math.random()*cores.length)],
+        tam:5+Math.random()*8, rot:Math.random()*6, vr:(Math.random()-0.5)*0.5
+      });
+    }
+  });
   let frames = 0;
   (function anima(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -871,7 +884,7 @@ function dispararConfete(canvas){
       ctx.restore();
     });
     frames++;
-    if(frames < 160) requestAnimationFrame(anima);
+    if(frames < 240) requestAnimationFrame(anima);
   })();
 }
 
@@ -887,7 +900,7 @@ async function sortearGanhador(){
     const g = lista[Math.floor(Math.random()*lista.length)];
     ultimoGanhador = g;
     // animação de 10s com nomes girando até parar no ganhador
-    await animacaoSorteio(lista, g);
+    await animacaoSorteio(lista, g, promo.nome||promo.pergunta||'Promoção Rádio Eleva');
     document.getElementById('resultadoSorteio').style.display='block';
     document.getElementById('sorteioNome').textContent = `🏆 ${g.nome||'Ouvinte'} (${lista.length} participações no sorteio)`;
     document.getElementById('sorteioContato').textContent = `WhatsApp: ${g.whatsapp||'-'} • Instagram: ${g.instagram||'-'} • E-mail: ${g.email||'-'}`;
@@ -1387,17 +1400,21 @@ async function gerarRelatorioGenerico(tipo){
     </div>
     <div class="nao-imprimir">
       <button style="background:#1B7A4B" onclick="window.print()">📄 Salvar PDF</button>
-      <button style="background:#0D2B52" onclick="baixarCSV()">📊 Excel (CSV)</button>
+      <button style="background:#0D2B52" onclick="baixarCSV()">📊 Excel</button>
       <button style="background:#A97F10" onclick="baixarJPEG()">🖼️ JPEG</button>
     </div>
     <script>
       const dados = ${JSON.stringify(eventos)};
       function baixarCSV(){
-        let csv = 'item;quando;cidade;estado;pais;dispositivo\\n';
-        dados.forEach(c=>{ csv += [c.__item__,c.quando,c.cidade,c.estado,c.pais,c.dispositivo].map(x=>(x||'')).join(';')+'\\n'; });
-        const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+        let linhas = '<tr><th>Item</th><th>Quando</th><th>Cidade</th><th>Estado</th><th>País</th><th>Dispositivo</th></tr>';
+        dados.forEach(c=>{
+          const e = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+          linhas += '<tr><td>'+e(c.__item__)+'</td><td>'+e(c.quando)+'</td><td>'+e(c.cidade)+'</td><td>'+e(c.estado)+'</td><td>'+e(c.pais)+'</td><td>'+e(c.dispositivo)+'</td></tr>';
+        });
+        const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
+        const blob = new Blob(['\\ufeff'+html], {type:'application/vnd.ms-excel'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = 'relatorio_eleva_${tipo}.csv'; a.click();
+        a.download = 'relatorio_eleva_${tipo}.xls'; a.click();
       }
       function baixarJPEG(){
         html2canvas(document.getElementById('rel')).then(cv=>{
@@ -1484,11 +1501,16 @@ async function gerarRelatorioPedidos(){
         a.download = 'relatorio_pedidos_eleva.doc'; a.click();
       }
       function baixarCSV(){
-        let csv = 'quando;ouvinte;musica;interprete\\n';
-        dados.forEach(p=>{ csv += [p.quando,p.nome,p.musica,p.interprete].map(x=>(x||'')).join(';')+'\\n'; });
-        const blob = new Blob(['\\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+        // Excel de verdade (.xls) — abre direto no Excel com 2 cliques
+        let linhas = '<tr><th>Quando</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th></tr>';
+        dados.forEach(p=>{
+          const c = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+          linhas += '<tr><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td><td>'+c(p.nome)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td></tr>';
+        });
+        const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
+        const blob = new Blob(['\\ufeff'+html], {type:'application/vnd.ms-excel'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = 'relatorio_pedidos_eleva.csv'; a.click();
+        a.download = 'relatorio_pedidos_eleva.xls'; a.click();
       }
       function baixarImg(tipo){
         html2canvas(document.getElementById('rel')).then(cv=>{
@@ -1767,7 +1789,7 @@ async function gerarRelatorio(){
     </div>
     <div class="nao-imprimir">
       <button style="background:#1B7A4B" onclick="window.print()">📄 Salvar PDF</button>
-      <button style="background:#0D2B52" onclick="baixarCSV()">📊 Excel (CSV)</button>
+      <button style="background:#0D2B52" onclick="baixarCSV()">📊 Excel</button>
       <button style="background:#A97F10" onclick="baixarJPEG()">🖼️ JPEG</button>
     </div>
     <script>
@@ -1981,18 +2003,21 @@ function repetirItem(tipo, i){
 function preencherModeracao(){
   cfSuspHoras.value = (config.chat_suspensao_horas === undefined || config.chat_suspensao_horas === null) ? 24 : config.chat_suspensao_horas;
   cfSuspMin.value = (config.chat_suspensao_minutos === undefined || config.chat_suspensao_minutos === null) ? 0 : config.chat_suspensao_minutos;
+  cfBanirApos.value = (config.chat_banir_apos === undefined || config.chat_banir_apos === null) ? 3 : config.chat_banir_apos;
   cfPalavras.value = (config.chat_palavras || []).join(', ');
 }
 async function salvarModeracao(){
   config.chat_suspensao_horas = parseInt(cfSuspHoras.value) || 0;
   config.chat_suspensao_minutos = parseInt(cfSuspMin.value) || 0;
+  config.chat_banir_apos = parseInt(cfBanirApos.value) || 0;
   if(config.chat_suspensao_horas === 0 && config.chat_suspensao_minutos === 0){
     config.chat_suspensao_horas = 24;
   }
   config.chat_palavras = cfPalavras.value.split(',').map(p=>p.trim()).filter(Boolean);
   try{
     await salvarConfig('Painel: moderacao do chat');
-    avisar(`Moderação aplicada: suspensão de ${config.chat_suspensao_horas}h e ${config.chat_suspensao_minutos}min 🛡️`);
+    const banTxt = config.chat_banir_apos > 0 ? ` • banimento após ${config.chat_banir_apos} suspensões` : '';
+    avisar(`Moderação aplicada: suspensão de ${config.chat_suspensao_horas}h e ${config.chat_suspensao_minutos}min${banTxt} 🛡️`);
     preencherModeracao();
   }
   catch(e){ avisar('Falhou: '+e.message, true); }
