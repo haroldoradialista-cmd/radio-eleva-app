@@ -509,8 +509,17 @@
           <div><label>🗓️ De (data e hora)</label><input type="datetime-local" id="relDe_pedidos"></div>
           <div><label>🗓️ Até (data e hora)</label><input type="datetime-local" id="relAte_pedidos"></div>
         </div>
-        <button class="botao" onclick="gerarRelatorioPedidos()">📊 GERAR RELATÓRIO DE PEDIDOS</button>
-        <p class="rotulo-secao">Abre em nova janela com: 🖨️ Imprimir • Word • Excel • PDF • JPEG • PNG</p>
+        <button class="botao" onclick="carregarPedidosRelatorio()">📊 GERAR RELATÓRIO DE PEDIDOS</button>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center">
+          <b style="font-size:13px;color:var(--ouro)">📋 PEDIDOS DO PERÍODO</b>
+          <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="botao mini" style="background:#444" onclick="salvarPedidos('imprimir')">🖨️ Imprimir</button>
+            <button class="botao mini" style="background:#2B579A" onclick="salvarPedidos('word')">📘 Word</button>
+            <button class="botao mini" style="background:#0D2B52" onclick="salvarPedidos('excel')">📊 Excel</button>
+            <button class="botao mini" style="background:#A97F10" onclick="salvarPedidos('jpeg')">🖼️ JPEG</button>
+          </span>
+        </div>
+        <div id="listaPedidosRel"><p class="rotulo-secao">Escolha o período e clique em Gerar relatório.</p></div>
       </div>
       <div class="cartao">
         <h2>Ranking de votação das músicas</h2>
@@ -821,6 +830,7 @@ function animacaoSorteio(lista, ganhador, nomePromo){
     ov.style.cssText = 'position:fixed;inset:0;background:radial-gradient(circle at 50% 40%,#1a1560,#0a0730 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;overflow:hidden';
     ov.innerHTML = `
       <canvas id="cvConfete" style="position:absolute;inset:0;pointer-events:none"></canvas>
+      <button id="btFecharSorteio" style="display:none;position:absolute;top:18px;right:22px;width:44px;height:44px;border-radius:50%;border:2px solid #ffd65a;background:rgba(0,0,0,.4);color:#ffd65a;font-size:22px;font-weight:900;cursor:pointer;z-index:5;line-height:1">✕</button>
       <img src="${LOGO}" onerror="this.style.display='none'" style="width:88px;height:88px;object-fit:contain;border-radius:18px;margin-bottom:10px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))">
       <div style="font-size:17px;color:#bfe3ff;font-weight:700;margin-bottom:4px;padding:0 20px;text-align:center">${(nomePromo||'').replace(/</g,'&lt;')}</div>
       <div style="font-size:22px;color:#ffd65a;font-weight:800;margin-bottom:18px;letter-spacing:1px">🎲 Sorteando o ganhador...</div>
@@ -868,8 +878,14 @@ function animacaoSorteio(lista, ganhador, nomePromo){
         ct.innerHTML = htmlCt;
         setTimeout(()=>{ ct.style.opacity = '1'; }, 500);
         dispararConfete(ov.querySelector('#cvConfete'));
-        setTimeout(()=>{ ov.style.transition='opacity .5s'; ov.style.opacity='0';
-          setTimeout(()=>{ ov.remove(); resolve(); }, 500); }, 2600);
+        // a página fica ESTÁTICA — não fecha sozinha. Mostra o botão de fechar.
+        const btF = ov.querySelector('#btFecharSorteio');
+        setTimeout(()=>{ btF.style.display = 'block'; }, 900);
+        const fechar = ()=>{ ov.style.transition='opacity .4s'; ov.style.opacity='0';
+          setTimeout(()=>{ ov.remove(); resolve(); }, 400); };
+        btF.onclick = fechar;
+        // resolve a Promise já, para o resultado aparecer embaixo enquanto a tela segue aberta
+        resolve();
       }
     }
     requestAnimationFrame(frame);
@@ -2089,6 +2105,7 @@ async function carregarVotos(){
 }
 
 let rankingAtual = [], rankingResumo = '';
+let pedidosAtual = [], pedidosResumo = '';
 function desenharRanking(){
   const el = document.getElementById('listaVotos');
   if(!votosBrutos){ el.innerHTML = '<p class="rotulo-secao">Nenhum voto registrado ainda.</p>';
@@ -2129,6 +2146,70 @@ function desenharRanking(){
 }
 
 // ===== salvar/imprimir o ranking =====
+async function carregarPedidosRelatorio(){
+  try{
+    avisar('Carregando pedidos...');
+    const de = relDe_pedidos.value ? new Date(relDe_pedidos.value) : null;
+    const ate = relAte_pedidos.value ? new Date(relAte_pedidos.value) : null;
+    const r = await fetch(`${RTDB}/pedidos_musicais.json?t=${Date.now()}`);
+    const d = await r.json() || {};
+    pedidosAtual = Object.values(d).filter(p=>{
+      const q = p && p.quando ? new Date(p.quando) : null;
+      if(de && (!q || q < de)) return false;
+      if(ate && (!q || q > ate)) return false;
+      return true;
+    }).sort((a,b)=> (b.quando||'').localeCompare(a.quando||''));
+    pedidosResumo = `${de? de.toLocaleString('pt-BR'):'início'} até ${ate? ate.toLocaleString('pt-BR'):'agora'}`;
+    const el = document.getElementById('listaPedidosRel');
+    if(!pedidosAtual.length){ el.innerHTML = '<p class="rotulo-secao">Nenhum pedido no período.</p>'; return; }
+    const linhas = pedidosAtual.map(p=>`<tr><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td><td>${(p.nome||'—').replace(/</g,'&lt;')}</td><td>${(p.musica||'—').replace(/</g,'&lt;')}</td><td>${(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('');
+    el.innerHTML = `<p class="rotulo-secao">${pedidosAtual.length} pedidos • ${pedidosResumo}</p>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <tr><th style="text-align:left;padding:5px;border-bottom:1px solid #444">Quando</th><th style="text-align:left;padding:5px;border-bottom:1px solid #444">Ouvinte</th><th style="text-align:left;padding:5px;border-bottom:1px solid #444">Música</th><th style="text-align:left;padding:5px;border-bottom:1px solid #444">Intérprete</th></tr>
+      ${linhas}</table></div>`;
+    avisar('Relatório de pedidos gerado! 📋');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+function salvarPedidos(formato){
+  if(!pedidosAtual.length){ avisar('Gere o relatório de pedidos do período primeiro.', true); return; }
+  if(formato === 'excel'){
+    let linhas = '<tr><th>Quando</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th></tr>';
+    pedidosAtual.forEach(p=>{
+      const c = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      linhas += '<tr><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td><td>'+c(p.nome)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td></tr>';
+    });
+    const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
+    const blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'pedidos_eleva.xls'; a.click();
+    avisar('Pedidos salvos em Excel! 📊'); return;
+  }
+  const linhas = pedidosAtual.map(p=>`<tr><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td><td>${String(p.nome||'—').replace(/</g,'&lt;')}</td><td>${String(p.musica||'—').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('');
+  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos - Rádio Eleva</title>
+    <style>body{font-family:Arial;padding:24px;color:#14203a}h1{color:#0D2B52}h2{color:#1B7A4B;font-size:15px}
+    table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}th{background:#0D2B52;color:#fff}
+    .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}</style></head><body>
+    <div id="rel"><div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
+    <h2>RELATÓRIO DE PEDIDOS MUSICAIS</h2><div>${pedidosAtual.length} pedidos • ${pedidosResumo}</div></div>
+    <table><tr><th>Quando</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th></tr>${linhas}</table>
+    <p style="margin-top:14px;font-size:12px;color:#5a6a85;text-align:center">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva</p></div></body></html>`;
+  if(formato === 'word'){
+    const conteudo = '<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>'+doc+'</body></html>';
+    const blob = new Blob(['\ufeff'+conteudo], {type:'application/msword'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'pedidos_eleva.doc'; a.click();
+    avisar('Pedidos salvos em Word! 📘'); return;
+  }
+  const w = window.open('', '_blank');
+  w.document.write(doc + (formato==='jpeg'
+    ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+       <script>window.onload=()=>html2canvas(document.getElementById('rel')).then(cv=>{const a=document.createElement('a');a.href=cv.toDataURL('image/jpeg',0.95);a.download='pedidos_eleva.jpg';a.click();});<\/script>`
+    : `<script>window.onload=()=>window.print();<\/script>`));
+  w.document.close();
+  avisar(formato==='jpeg' ? 'Gerando imagem... 🖼️' : 'Abrindo impressão... 🖨️');
+}
+
 function salvarRanking(formato){
   if(!rankingAtual.length){ avisar('Gere o ranking do período primeiro.', true); return; }
   if(formato === 'excel'){
