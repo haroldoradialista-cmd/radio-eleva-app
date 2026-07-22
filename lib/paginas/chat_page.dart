@@ -67,6 +67,8 @@ class _TelaChatState extends State<_TelaChat> {
   List<Map<String, dynamic>> _mensagens = [];
   bool _enviando = false;
   int _suspensoAte = 0; // epoch em milissegundos; 0 = livre
+  bool _banido = false;
+  int _numSuspensoes = 0;
   Timer? _timerSuspensao;
 
   String get _chatUrl => ConfigService.instancia.config.value.chatUrl;
@@ -87,7 +89,16 @@ class _TelaChatState extends State<_TelaChat> {
       if (r.statusCode == 200 && r.body != 'null') {
         final d = jsonDecode(r.body);
         final ate = int.tryParse((d['ate'] ?? '0').toString()) ?? 0;
-        if (mounted && ate > DateTime.now().millisecondsSinceEpoch) {
+        final banido = d['banido'] == true;
+        final susp = int.tryParse((d['suspensoes'] ?? '0').toString()) ?? 0;
+        if (mounted) {
+          setState(() {
+            _numSuspensoes = susp;
+            _banido = banido;
+          });
+        }
+        if (mounted && !banido &&
+            ate > DateTime.now().millisecondsSinceEpoch) {
           setState(() => _suspensoAte = ate);
           _iniciarRelogioSuspensao();
         }
@@ -102,20 +113,43 @@ class _TelaChatState extends State<_TelaChat> {
     if (totalMinutos <= 0) totalMinutos = 24 * 60;
     final ate = DateTime.now().millisecondsSinceEpoch +
         totalMinutos * 60 * 1000;
+
+    // conta quantas vezes este usuário já foi suspenso
+    int suspensoes = 1;
+    try {
+      final rc = await http.get(Uri.parse(
+          '$_baseRtdb/chat_suspensos/${widget.usuario.uid}.json'));
+      if (rc.statusCode == 200 && rc.body != 'null' && rc.body.isNotEmpty) {
+        final atual = jsonDecode(rc.body);
+        if (atual is Map && atual['suspensoes'] != null) {
+          suspensoes = (int.tryParse(atual['suspensoes'].toString()) ?? 0) + 1;
+        }
+      }
+    } catch (_) {}
+
+    final limite = cfg.chatBanirApos;
+    final vaiBanir = limite > 0 && suspensoes >= limite;
+
     try {
       await http.put(
         Uri.parse('$_baseRtdb/chat_suspensos/${widget.usuario.uid}.json'),
         body: jsonEncode({
           'nome': widget.usuario.nome,
-          'ate': ate,
+          'ate': vaiBanir ? 4102444800000 : ate, // banido = ano 2100
           'msg': comentario,
           'quando': DateTime.now().toIso8601String(),
+          'suspensoes': suspensoes,
+          'banido': vaiBanir,
         }),
       );
     } catch (_) {}
     if (mounted) {
-      setState(() => _suspensoAte = ate);
-      _iniciarRelogioSuspensao();
+      setState(() {
+        _suspensoAte = vaiBanir ? 4102444800000 : ate;
+        _banido = vaiBanir;
+        _numSuspensoes = suspensoes;
+      });
+      if (!vaiBanir) _iniciarRelogioSuspensao();
     }
   }
 
@@ -201,6 +235,42 @@ class _TelaChatState extends State<_TelaChat> {
   @override
   Widget build(BuildContext context) {
     final agora = DateTime.now().millisecondsSinceEpoch;
+    final cfg = ConfigService.instancia.config.value;
+
+    // ===== BANIDO permanentemente =====
+    if (_banido) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(30),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.gavel_rounded, size: 64, color: Colors.red.shade400),
+              SizedBox(height: 16),
+              Text('Acesso ao chat banido',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+              SizedBox(height: 12),
+              Text(
+                'Prezado ouvinte, após reincidir nas regras de convivência do nosso bate-papo, '
+                'seu acesso ao chat foi encerrado em definitivo, conforme as normas que zelam '
+                'pelo respeito e pela ordem em nossa comunidade.\n\n'
+                'A Rádio Eleva preza por um ambiente de paz, fé e boa convivência para todos. '
+                'Se você acredita que houve um engano, fale com a nossa equipe pelos canais oficiais.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: CoresEleva.brancoSuave, height: 1.6),
+              ),
+              SizedBox(height: 10),
+              Text('Adore • Viva • Eleve',
+                  style: TextStyle(
+                      color: CoresEleva.dourado,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5)),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (_suspensoAte > agora) {
       final volta = DateTime.fromMillisecondsSinceEpoch(_suspensoAte);
       final dd = volta.day.toString().padLeft(2, '0');
@@ -215,6 +285,10 @@ class _TelaChatState extends State<_TelaChat> {
       final relogio =
           rDias > 0 ? '${rDias}d $rHor:$rMin:$rSeg' : '$rHor:$rMin:$rSeg';
       final retaFinal = resta.inMinutes < 5;
+      // aviso de quantas suspensões faltam para o banimento
+      final restamParaBanir = cfg.chatBanirApos > 0
+          ? (cfg.chatBanirApos - _numSuspensoes)
+          : 0;
       return Center(
         child: Padding(
           padding: EdgeInsets.all(30),
@@ -244,6 +318,29 @@ class _TelaChatState extends State<_TelaChat> {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: CoresEleva.brancoSuave, height: 1.5),
               ),
+              if (restamParaBanir > 0 && !retaFinal) ...[
+                SizedBox(height: 14),
+                Container(
+                  padding: EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade900.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade300, width: 1.2),
+                  ),
+                  child: Text(
+                    'Caro ouvinte, você infringiu as regras do nosso chat. '
+                    'Faltam $restamParaBanir ${restamParaBanir == 1 ? "suspensão" : "suspensões"} '
+                    'para que seu acesso seja banido em definitivo, conforme as regras de convivência. '
+                    'Contamos com o seu respeito para mantermos um ambiente de paz e harmonia. 🙏',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.red.shade100,
+                        fontSize: 12.5,
+                        height: 1.5,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
               SizedBox(height: 22),
               Container(
                 padding:

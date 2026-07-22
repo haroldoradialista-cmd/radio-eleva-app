@@ -15,6 +15,7 @@ class AppConfig {
   final String chatUrl; // URL do Firebase Realtime Database (sem .json)
   final int chatSuspensaoHoras;
   final int chatSuspensaoMinutos;
+  final int chatBanirApos; // banir após X suspensões (0 = nunca)
   final List<String> chatPalavras;
   final String linkCompartilhar;
   final bool anunciosAtivos;
@@ -35,6 +36,7 @@ class AppConfig {
     required this.chatUrl,
     required this.chatSuspensaoHoras,
     required this.chatSuspensaoMinutos,
+    required this.chatBanirApos,
     required this.chatPalavras,
     required this.linkCompartilhar,
     required this.anunciosAtivos,
@@ -56,6 +58,7 @@ class AppConfig {
         chatUrl: j['chat_url'] ?? '',
         chatSuspensaoHoras: int.tryParse((j['chat_suspensao_horas'] ?? '24').toString()) ?? 24,
         chatSuspensaoMinutos: int.tryParse((j['chat_suspensao_minutos'] ?? '0').toString()) ?? 0,
+        chatBanirApos: int.tryParse((j['chat_banir_apos'] ?? '0').toString()) ?? 0,
         chatPalavras: List<String>.from(j['chat_palavras'] ?? []),
         linkCompartilhar: j['link_compartilhar'] ?? '',
         anunciosAtivos: (j['anuncios'] ?? 'sim').toString() != 'nao',
@@ -77,6 +80,7 @@ class AppConfig {
         chatUrl: '',
         chatSuspensaoHoras: 24,
         chatSuspensaoMinutos: 0,
+        chatBanirApos: 0,
         chatPalavras: [],
         linkCompartilhar: '',
         anunciosAtivos: true,
