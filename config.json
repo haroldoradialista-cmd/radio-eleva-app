@@ -9,7 +9,8 @@
   "banners": [
     {
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783560001508_logo_eleva.png",
-      "link": ""
+      "link": "",
+      "expirar_em": "2026-07-21T21:34"
     },
     {
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783647651225_rgisdanese-lanamento20261.jpg",
