@@ -299,6 +299,12 @@
       <div class="cartao">
         <h2>Pedidos musicais dos ouvintes <button class="botao mini neutro" onclick="carregarPedidosM()">🔄 Atualizar</button></h2>
         <p class="rotulo-secao">Pedidos enviados pelo formulário PEÇA SUA MÚSICA do app, do mais recente para o mais antigo.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="botao mini" style="background:#444" onclick="exportarPedidosM('imprimir')">🖨️ Imprimir</button>
+          <button class="botao mini" style="background:#2B579A" onclick="exportarPedidosM('word')">📘 Word</button>
+          <button class="botao mini" style="background:#0D2B52" onclick="exportarPedidosM('excel')">📊 Excel</button>
+          <button class="botao mini" style="background:#A97F10" onclick="exportarPedidosM('jpeg')">🖼️ JPEG</button>
+        </div>
         <div id="listaPedidosM"><p class="rotulo-secao">Carregando...</p></div>
       </div>
     </section>
@@ -315,7 +321,16 @@
         <p class="rotulo-secao">Escolha a promoção e deixe a sorte decidir entre todas as participações.</p>
         <label>Promoção</label>
         <select id="selSorteio"></select>
-        <button class="botao" onclick="sortearGanhador()">🎲 SORTEAR GANHADOR</button>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:8px 0">
+          <div style="flex:0 0 160px">
+            <label>Quantos ganhadores?</label>
+            <input id="qtdGanhadores" type="number" min="1" max="50" value="1" style="width:100%">
+          </div>
+          <button class="botao" style="flex:1;min-width:200px" onclick="sortearGanhador()">🎲 SORTEAR GANHADOR(ES)</button>
+        </div>
+        <div style="margin-bottom:10px">
+          <button class="botao neutro" onclick="mostrarRelatorioGanhadores()">🏆 Relatório de ganhadores</button>
+        </div>
         <div id="resultadoSorteio" style="display:none;margin-top:14px">
           <div class="item" style="flex-wrap:wrap">
             <div class="info"><b id="sorteioNome"></b><span id="sorteioContato"></span></div>
@@ -931,27 +946,119 @@ async function sortearGanhador(){
   const id = document.getElementById('selSorteio').value;
   if(!id){ avisar('Crie uma promoção primeiro.', true); return; }
   const promo = (config.promocoes||[]).find(p=>p.id===id) || {};
+  const nomePromo = promo.nome||promo.pergunta||'Promoção Rádio Eleva';
+  let qtd = parseInt(document.getElementById('qtdGanhadores').value) || 1;
   try{
     const r = await fetch(`${RTDB}/promo_participacoes/${id}.json?t=${Date.now()}`);
     const d = await r.json();
     if(!d){ avisar('Essa promoção ainda não tem participações.', true); return; }
     const lista = Object.values(d);
-    const g = lista[Math.floor(Math.random()*lista.length)];
-    ultimoGanhador = g;
-    // animação de 10s com nomes girando até parar no ganhador
-    await animacaoSorteio(lista, g, promo.nome||promo.pergunta||'Promoção Rádio Eleva');
+    if(qtd > lista.length) qtd = lista.length;
+    // sorteia N ganhadores distintos
+    const pool = lista.slice();
+    const ganhadores = [];
+    for(let n=0; n<qtd; n++){
+      const idx = Math.floor(Math.random()*pool.length);
+      ganhadores.push(pool.splice(idx,1)[0]);
+    }
+    const dataSorteio = new Date().toISOString();
+    ultimoGanhador = ganhadores[0];
+
+    // anima cada ganhador em sequência
+    for(let n=0; n<ganhadores.length; n++){
+      await animacaoSorteio(lista, ganhadores[n], nomePromo + (qtd>1 ? ` — ganhador ${n+1} de ${qtd}` : ''));
+    }
+
+    // salva o histórico de ganhadores (data/hora do sorteio + dados do cadastro)
+    for(const g of ganhadores){
+      const reg = {
+        promo_id: id,
+        promo_nome: nomePromo,
+        sorteado_em: dataSorteio,
+        total_participantes: lista.length,
+        nome: g.nome||'', whatsapp: g.whatsapp||'', instagram: g.instagram||'', email: g.email||'',
+        cadastrado_em: g.quando||g.data||'',
+        cidade: g.cidade||'', estado: g.estado||''
+      };
+      try{ await fetch(`${RTDB}/ganhadores.json`, {method:'POST', body: JSON.stringify(reg)}); }catch(_){}
+    }
+
+    // resultado na tela (lista de ganhadores)
     document.getElementById('resultadoSorteio').style.display='block';
-    document.getElementById('sorteioNome').textContent = `🏆 ${g.nome||'Ouvinte'} (${lista.length} participações no sorteio)`;
-    document.getElementById('sorteioContato').textContent = `WhatsApp: ${g.whatsapp||'-'} • Instagram: ${g.instagram||'-'} • E-mail: ${g.email||'-'}`;
+    const g0 = ganhadores[0];
+    if(qtd === 1){
+      document.getElementById('sorteioNome').textContent = `🏆 ${g0.nome||'Ouvinte'} (${lista.length} participações no sorteio)`;
+      document.getElementById('sorteioContato').textContent = `WhatsApp: ${g0.whatsapp||'-'} • Instagram: ${g0.instagram||'-'} • E-mail: ${g0.email||'-'}`;
+    } else {
+      document.getElementById('sorteioNome').textContent = `🏆 ${qtd} ganhadores sorteados (${lista.length} participações)`;
+      document.getElementById('sorteioContato').innerHTML = ganhadores.map((g,i)=>`${i+1}. <b>${(g.nome||'Ouvinte').replace(/</g,'&lt;')}</b> — WhatsApp: ${g.whatsapp||'-'} • Instagram: ${g.instagram||'-'}`).join('<br>');
+    }
     const msg = document.getElementById('sorteioMsg');
     msg.readOnly = true;
-    msg.value = `🎉 PARABÉNS, ${(g.nome||'OUVINTE').toUpperCase()} 🎉\n\n`+
-`Você é o(a) grande vencedor(a) da promoção "${promo.nome||promo.pergunta||''}" da Rádio Eleva!\n\n`+
+    msg.value = `🎉 PARABÉNS, ${(g0.nome||'OUVINTE').toUpperCase()} 🎉\n\n`+
+`Você é o(a) grande vencedor(a) da promoção "${nomePromo}" da Rádio Eleva!\n\n`+
 `Sua participação foi a escolhida entre todos os ouvintes. Receba essa notícia com alegria e gratidão, desejamos que Deus continue abençoando a sua vida e sua família.\n\n`+
 `Em breve, nossa equipe entrará em contato pelo seu WhatsApp para combinar a entrega do seu prêmio.\n\n`+
 `Adore • Viva • Eleve\n📻 Rádio Eleva — inspirando vidas por meio da fé e da boa música.`;
-    avisar('Ganhador sorteado! 🏆');
+    avisar(qtd>1 ? `${qtd} ganhadores sorteados! 🏆` : 'Ganhador sorteado! 🏆');
   }catch(e){ avisar('Falhou ao sortear.', true); }
+}
+
+async function mostrarRelatorioGanhadores(){
+  try{
+    avisar('Carregando ganhadores...');
+    const r = await fetch(`${RTDB}/ganhadores.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!d){ avisar('Nenhum ganhador sorteado ainda.', true); return; }
+    const lista = Object.values(d).sort((a,b)=>(b.sorteado_em||'').localeCompare(a.sorteado_em||''));
+    const fmt = s => s ? new Date(s).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-';
+    const linhas = lista.map((g,i)=>`<tr>
+      <td>${i+1}</td>
+      <td>${String(g.nome||'-').replace(/</g,'&lt;')}</td>
+      <td>${String(g.promo_nome||'-').replace(/</g,'&lt;')}</td>
+      <td>${fmt(g.sorteado_em)}</td>
+      <td>${fmt(g.cadastrado_em)}</td>
+      <td>${String(g.whatsapp||'-').replace(/</g,'&lt;')}</td>
+      <td>${String(g.instagram||'-').replace(/</g,'&lt;')}</td>
+      <td>${String(g.email||'-').replace(/</g,'&lt;')}</td>
+      <td>${String((g.cidade||'')+((g.cidade&&g.estado)?'/':'')+(g.estado||'')||'-').replace(/</g,'&lt;')}</td>
+    </tr>`).join('');
+    const cab = '<tr><th>#</th><th>Ganhador</th><th>Promoção</th><th>Sorteado em</th><th>Cadastrou em</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Cidade</th></tr>';
+    const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ganhadores - Rádio Eleva</title>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+      <style>body{font-family:Arial;padding:22px;color:#14203a}h1{color:#0D2B52;margin:2px 0}h2{color:#1B7A4B;font-size:15px}
+      table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #cfd8e6;padding:5px 7px;text-align:left}th{background:#0D2B52;color:#fff}
+      .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}
+      .bt{text-align:center;margin-top:18px}.bt button{padding:11px 16px;margin:4px;border:none;border-radius:9px;color:#fff;font-weight:700;cursor:pointer;font-size:13px}
+      @media print{.bt{display:none}}</style></head><body>
+      <div id="rel"><div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
+      <h2>RELATÓRIO DE GANHADORES</h2><div>${lista.length} ganhadores no total</div></div>
+      <table>${cab}${linhas}</table>
+      <p style="margin-top:14px;font-size:11px;color:#5a6a85;text-align:center">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva</p></div>
+      <div class="bt">
+        <button style="background:#444" onclick="window.print()">🖨️ Imprimir</button>
+        <button style="background:#1B7A4B" onclick="window.print()">📄 PDF</button>
+        <button style="background:#2B579A" onclick="baixarWord()">📘 Word</button>
+        <button style="background:#0D2B52" onclick="baixarExcel()">📊 Excel</button>
+        <button style="background:#A97F10" onclick="baixarJPEG()">🖼️ JPEG</button>
+      </div>
+      <script>
+        function baixarWord(){
+          const c='<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>'+document.getElementById('rel').outerHTML+'</body></html>';
+          const b=new Blob(['\ufeff'+c],{type:'application/msword'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ganhadores_eleva.doc';a.click();
+        }
+        function baixarExcel(){
+          const c='<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>'+document.querySelector('#rel table').outerHTML+'</body></html>';
+          const b=new Blob(['\ufeff'+c],{type:'application/vnd.ms-excel'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ganhadores_eleva.xls';a.click();
+        }
+        function baixarJPEG(){
+          html2canvas(document.getElementById('rel')).then(cv=>{const a=document.createElement('a');a.href=cv.toDataURL('image/jpeg',0.95);a.download='ganhadores_eleva.jpg';a.click();});
+        }
+      <\/script></body></html>`;
+    const w = window.open('', '_blank');
+    w.document.write(doc); w.document.close();
+    avisar('Relatório de ganhadores aberto! 🏆');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
 }
 function baixarParabensPDF(){
   const msg = document.getElementById('sorteioMsg').value;
@@ -1005,6 +1112,46 @@ function baixarParabensPDF(){
 }
 
 // ================== PEDIDO MUSICAL ==================
+let pedidosMAtual = [];
+function exportarPedidosM(formato){
+  if(!pedidosMAtual.length){ avisar('Não há pedidos para exportar.', true); return; }
+  if(formato === 'excel'){
+    let linhas = '<tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Quando</th></tr>';
+    pedidosMAtual.forEach((p,i)=>{
+      const c = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      linhas += '<tr><td>'+(i+1)+'</td><td>'+c(p.nome)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td></tr>';
+    });
+    const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
+    const blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'pedidos_ouvintes_eleva.xls'; a.click();
+    avisar('Pedidos salvos em Excel! 📊'); return;
+  }
+  const linhas = pedidosMAtual.map((p,i)=>`<tr><td>${i+1}</td><td>${String(p.nome||'').replace(/</g,'&lt;')}</td><td>${String(p.musica||'').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'').replace(/</g,'&lt;')}</td><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('');
+  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos musicais - Rádio Eleva</title>
+    <style>body{font-family:Arial;padding:24px;color:#14203a}h1{color:#0D2B52;margin:2px 0}h2{color:#1B7A4B;font-size:15px}
+    table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}th{background:#0D2B52;color:#fff}
+    .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}</style></head><body>
+    <div id="rel"><div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
+    <h2>PEDIDOS MUSICAIS DOS OUVINTES</h2><div>${pedidosMAtual.length} pedidos recebidos</div></div>
+    <table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Quando</th></tr>${linhas}</table>
+    <p style="margin-top:14px;font-size:12px;color:#5a6a85;text-align:center">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva</p></div></body></html>`;
+  if(formato === 'word'){
+    const conteudo = '<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>'+doc+'</body></html>';
+    const blob = new Blob(['\ufeff'+conteudo], {type:'application/msword'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'pedidos_ouvintes_eleva.doc'; a.click();
+    avisar('Pedidos salvos em Word! 📘'); return;
+  }
+  const w = window.open('', '_blank');
+  w.document.write(doc + (formato==='jpeg'
+    ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+       <script>window.onload=()=>html2canvas(document.getElementById('rel')).then(cv=>{const a=document.createElement('a');a.href=cv.toDataURL('image/jpeg',0.95);a.download='pedidos_ouvintes_eleva.jpg';a.click();});<\/script>`
+    : `<script>window.onload=()=>window.print();<\/script>`));
+  w.document.close();
+  avisar(formato==='jpeg' ? 'Gerando imagem... 🖼️' : 'Abrindo impressão... 🖨️');
+}
+
 async function carregarPedidosM(){
   const el = document.getElementById('listaPedidosM');
   el.innerHTML = '<p class="rotulo-secao">Carregando pedidos...</p>';
@@ -1013,6 +1160,7 @@ async function carregarPedidosM(){
     const d = await r.json();
     if(!d){ el.innerHTML = '<p class="rotulo-secao">Nenhum pedido musical ainda.</p>'; return; }
     const lista = Object.entries(d).sort((a,b)=>(b[1].quando||'').localeCompare(a[1].quando||''));
+    pedidosMAtual = lista.map(([k,p])=>p);
     el.innerHTML = `<p class="rotulo-secao">📊 <b>${lista.length}</b> pedidos recebidos</p>` +
       `<table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Quando</th><th></th></tr>` +
       lista.map(([k,p],i)=>`<tr>
