@@ -36,11 +36,12 @@ class PlayerService {
     _fadeInTimer?.cancel();
     player.setVolume(0.03);
     var passo = 0;
-    _fadeInTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+    final totalPassos = duracaoSegundos * 2; // passos de 500ms = mais suave
+    _fadeInTimer = Timer.periodic(const Duration(milliseconds: 500), (t) {
       passo++;
-      final v = (passo / duracaoSegundos).clamp(0.03, 1.0);
+      final v = (0.03 + (1.0 - 0.03) * (passo / totalPassos)).clamp(0.03, 1.0);
       player.setVolume(v.toDouble());
-      if (passo >= duracaoSegundos) {
+      if (passo >= totalPassos) {
         t.cancel();
         player.setVolume(1.0);
       }
@@ -66,15 +67,21 @@ class PlayerService {
     }
     sleepRestante.value = minutos;
     sleepSegundos.value = minutos * 60;
-    _sleepTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      sleepSegundos.value = sleepSegundos.value - 1;
+    final fimEm = DateTime.now().add(Duration(minutes: minutos));
+    const fadeSegundos = 45; // fade-out suave nos últimos 45 segundos
+    _sleepTimer = Timer.periodic(const Duration(milliseconds: 200), (t) {
+      final restanteMs = fimEm.difference(DateTime.now()).inMilliseconds;
+      final segs = (restanteMs / 1000).ceil();
+      sleepSegundos.value = segs > 0 ? segs : 0;
       sleepRestante.value = (sleepSegundos.value / 60).ceil();
-      // Fade out: nos últimos 15 segundos o volume desce suavemente
-      if (sleepSegundos.value > 0 && sleepSegundos.value <= 15) {
-        player.setVolume(sleepSegundos.value / 15);
+      // Fade out: o som desce suavemente até o silêncio completo
+      if (restanteMs <= fadeSegundos * 1000) {
+        final v = (restanteMs / (fadeSegundos * 1000)).clamp(0.0, 1.0);
+        player.setVolume(v.toDouble());
       }
-      if (sleepSegundos.value <= 0) {
+      if (restanteMs <= 0) {
         t.cancel();
+        player.setVolume(0.0); // silêncio total antes de parar
         player.stop();
         player.setVolume(1.0); // volume restaurado para a próxima vez
         _carregado = false;

@@ -22,7 +22,8 @@ class _PromocoesPageState extends State<PromocoesPage> {
   final Map<String, TextEditingController> _nome = {};
   final Map<String, TextEditingController> _zap = {};
   final Map<String, TextEditingController> _insta = {};
-  final Map<String, TextEditingController> _bairro = {};
+  final Map<String, TextEditingController> _cidade = {};
+  final Map<String, TextEditingController> _estado = {};
   final Map<String, int> _resposta = {};
   final Set<String> _participadas = {};
   final Set<String> _regulamentoAberto = {};
@@ -110,13 +111,14 @@ class _PromocoesPageState extends State<PromocoesPage> {
     if (_ctrl(_nome, id).text.trim().isEmpty ||
         _ctrl(_zap, id).text.trim().isEmpty ||
         _ctrl(_insta, id).text.trim().isEmpty ||
-        _ctrl(_bairro, id).text.trim().isEmpty ||
+        _ctrl(_cidade, id).text.trim().isEmpty ||
+        _ctrl(_estado, id).text.trim().isEmpty ||
         resp == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.red.shade700,
           duration: Duration(seconds: 3),
           content: Text(
-              'Preencha TODOS os campos da promoção (nome, WhatsApp, Instagram, bairro) e escolha uma resposta para participar.')));
+              'Preencha TODOS os campos da promoção (nome, WhatsApp, Instagram, cidade e estado) e escolha uma resposta para participar.')));
       return;
     }
     setState(() => _enviando = true);
@@ -136,9 +138,8 @@ class _PromocoesPageState extends State<PromocoesPage> {
           'email': u.email,
           'uid': u.uid,
           'quando': DateTime.now().toIso8601String(),
-          'cidade': AnalyticsService.cidade,
-          'bairro': _ctrl(_bairro, id).text.trim(),
-          'estado': AnalyticsService.estado,
+          'cidade': _ctrl(_cidade, id).text.trim(),
+          'estado': _ctrl(_estado, id).text.trim(),
           'pais': AnalyticsService.pais,
           'dispositivo': AnalyticsService.dispositivo,
         }),
@@ -495,8 +496,21 @@ class _PromocoesPageState extends State<PromocoesPage> {
                   _campo(_ctrl(_insta, id), 'SEU USUÁRIO',
                       Icons.camera_alt_rounded,
                       prefixo: '@'),
-                  _campo(_ctrl(_bairro, id), 'SEU BAIRRO',
-                      Icons.location_on_rounded),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: _campo(_ctrl(_cidade, id), 'SUA CIDADE',
+                            Icons.location_city_rounded),
+                      ),
+                      SizedBox(width: 7),
+                      Expanded(
+                        flex: 2,
+                        child: _campo(_ctrl(_estado, id), 'ESTADO',
+                            Icons.map_rounded),
+                      ),
+                    ],
+                  ),
                   SizedBox(height: 4),
                   SizedBox(
                     width: double.infinity,
@@ -550,29 +564,35 @@ class _PromocoesPageState extends State<PromocoesPage> {
   Widget _campo(TextEditingController c, String rotulo, IconData icone,
       {TextInputType? teclado, String? prefixo}) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 7),
       child: TextField(
         controller: c,
         keyboardType: teclado,
         textCapitalization: TextCapitalization.characters,
         inputFormatters: [MaiusculasFormatter()],
         decoration: InputDecoration(
+          isDense: true,
+          contentPadding:
+              EdgeInsets.symmetric(vertical: 11, horizontal: 10),
           hintText: rotulo,
-          hintStyle: TextStyle(color: CoresEleva.textoFraco),
-          prefixIcon: Icon(icone, color: CoresEleva.dourado, size: 20),
+          hintStyle: TextStyle(
+              color: CoresEleva.textoFraco, fontSize: 13),
+          prefixIcon: Icon(icone, color: CoresEleva.dourado, size: 18),
+          prefixIconConstraints:
+              BoxConstraints(minWidth: 34, minHeight: 34),
           prefixText: prefixo,
           prefixStyle: TextStyle(
               color: CoresEleva.dourado,
               fontWeight: FontWeight.w800,
-              fontSize: 15),
+              fontSize: 14),
           filled: true,
           fillColor: CoresEleva.azulProfundo.withOpacity(0.5),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
         ),
-        style: TextStyle(color: CoresEleva.branco),
+        style: TextStyle(color: CoresEleva.branco, fontSize: 14),
       ),
     );
   }

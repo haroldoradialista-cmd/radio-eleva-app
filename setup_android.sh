@@ -31,10 +31,25 @@ sed -i 's#</application>#    <receiver android:name="com.dexterous.flutterlocaln
 
 # 5b0. Travar o app na vertical (retrato) — impede o app de girar
 M="android/app/src/main/AndroidManifest.xml"
-if grep -q 'android:name="\.MainActivity"' "$M" && ! grep -q 'screenOrientation' "$M"; then
-  sed -i 's#<activity android:name="\.MainActivity"#<activity android:name=".MainActivity" android:screenOrientation="portrait"#' "$M"
-  echo "App travado na vertical (retrato)."
-fi
+python3 - "$M" <<'PYORIENT'
+import re, sys
+caminho = sys.argv[1]
+s = open(caminho, encoding='utf-8').read()
+# acha a tag <activity ...> que contém android:name=".MainActivity"
+def add_orient(m):
+    tag = m.group(0)
+    if 'screenOrientation' not in tag:
+        tag = tag.replace('<activity',
+            '<activity android:screenOrientation="portrait"', 1)
+    return tag
+novo = re.sub(r'<activity\b[^>]*android:name="\.MainActivity"[^>]*>',
+              add_orient, s, count=1)
+if novo != s:
+    open(caminho, 'w', encoding='utf-8').write(novo)
+    print("App travado na vertical (retrato).")
+else:
+    print("AVISO: nao consegui aplicar a trava de orientacao no manifesto.")
+PYORIENT
 
 # 5b1. Logo da rádio para a tela do despertador
 mkdir -p android/app/src/main/res/drawable
@@ -835,18 +850,22 @@ class DespertadorAudioService : Service() {
         }
     }
 
-    /// O som nasce baixinho e cresce em 30s, respeitando o botão de volume
+    /// O som nasce bem baixinho e cresce suavemente em 30s até 80% do volume
     private fun fade() {
         passo = 0
+        val totalPassos = 60          // 60 passos de 500ms = 30 segundos
+        val volumeFinal = 0.80f       // teto de 80%
+        val volumeInicial = 0.03f
         val rampa = object : Runnable {
             override fun run() {
                 passo++
-                val v = (passo / 30f).coerceIn(0.03f, 1f)
+                val fracao = (passo.toFloat() / totalPassos).coerceIn(0f, 1f)
+                val v = volumeInicial + (volumeFinal - volumeInicial) * fracao
                 try { player?.setVolume(v, v) } catch (_: Exception) {}
-                if (passo < 30) alca.postDelayed(this, 1000)
+                if (passo < totalPassos) alca.postDelayed(this, 500)
             }
         }
-        alca.postDelayed(rampa, 1000)
+        alca.postDelayed(rampa, 500)
     }
 
     private fun criarCanal() {

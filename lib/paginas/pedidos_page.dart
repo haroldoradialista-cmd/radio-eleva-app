@@ -171,19 +171,21 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   final _nome = TextEditingController();
   final _musica = TextEditingController();
   final _interprete = TextEditingController();
-  final _bairro = TextEditingController();
+  final _cidade = TextEditingController();
+  final _estado = TextEditingController();
   bool _enviando = false;
 
   Future<void> _enviar() async {
     if (_nome.text.trim().isEmpty ||
         _musica.text.trim().isEmpty ||
         _interprete.text.trim().isEmpty ||
-        _bairro.text.trim().isEmpty) {
+        _cidade.text.trim().isEmpty ||
+        _estado.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.red.shade700,
           duration: Duration(seconds: 3),
           content: Text(
-              'Preencha TODOS os campos (seu nome, a música, o intérprete e o bairro) para enviar o pedido.')));
+              'Preencha TODOS os campos (seu nome, a música, o intérprete, a cidade e o estado) para enviar o pedido.')));
       return;
     }
     if (widget.cfg.chatUrl.isEmpty || _enviando) return;
@@ -196,7 +198,8 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
           'nome': _nome.text.trim(),
           'musica': _musica.text.trim(),
           'interprete': _interprete.text.trim(),
-          'bairro': _bairro.text.trim(),
+          'cidade': _cidade.text.trim(),
+          'estado': _estado.text.trim(),
           'quando': DateTime.now().toIso8601String(),
         }),
       );
@@ -249,7 +252,20 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
               _campo(_nome, 'NOME DO OUVINTE', Icons.person_rounded),
               _campo(_musica, 'MÚSICA', Icons.music_note_rounded),
               _campo(_interprete, 'INTÉRPRETE', Icons.mic_rounded),
-              _campo(_bairro, 'SEU BAIRRO', Icons.location_on_rounded),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _campo(
+                        _cidade, 'SUA CIDADE', Icons.location_city_rounded),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: _campo(_estado, 'ESTADO', Icons.map_rounded),
+                  ),
+                ],
+              ),
               SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
@@ -283,19 +299,26 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
 
   Widget _campo(TextEditingController c, String rotulo, IconData icone) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: 9),
       child: TextField(
         controller: c,
         textCapitalization: TextCapitalization.characters,
         inputFormatters: [MaiusculasFormatter()],
+        style: TextStyle(fontSize: 14),
         decoration: InputDecoration(
+          isDense: true,
+          contentPadding:
+              EdgeInsets.symmetric(vertical: 12, horizontal: 10),
           labelText: rotulo,
-          labelStyle: TextStyle(color: CoresEleva.textoFraco),
-          prefixIcon: Icon(icone, color: CoresEleva.dourado, size: 20),
+          labelStyle:
+              TextStyle(color: CoresEleva.textoFraco, fontSize: 13),
+          prefixIcon: Icon(icone, color: CoresEleva.dourado, size: 18),
+          prefixIconConstraints:
+              BoxConstraints(minWidth: 34, minHeight: 34),
           filled: true,
           fillColor: CoresEleva.azulMedio,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(13),
             borderSide: BorderSide.none,
           ),
         ),
