@@ -322,7 +322,7 @@
         <label>Promoção</label>
         <select id="selSorteio"></select>
         <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:10px;margin:8px 0">
-          <p class="rotulo-secao" style="margin:0 0 6px">🌎 Filtrar participações por localização (opcional) — deixe "Todos" para incluir todos</p>
+          <p class="rotulo-secao" style="margin:0 0 6px">🌎 Filtrar participações por localização (opcional) — deixe "Todos" para incluir todos os participantes</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <select id="fltPais" style="flex:1;min-width:120px" onchange="carregarEstadosFiltro()">
               <option value="">🌍 Todos os países</option>
@@ -337,7 +337,6 @@
             <select id="fltCidade" style="flex:1;min-width:120px">
               <option value="">Todas as cidades</option>
             </select>
-            <input id="fltBairro" placeholder="Bairro (digite)" style="flex:1;min-width:120px">
           </div>
           <input id="fltPaisOutro" placeholder="Digite o país" style="width:100%;margin-top:6px;display:none">
         </div>
@@ -1011,18 +1010,24 @@ function _filtroLocalizacao(){
   let fPraw = document.getElementById('fltPais').value||'';
   if(fPraw === '__outro__') fPraw = document.getElementById('fltPaisOutro').value||'';
   const fP = fPraw.trim().toLowerCase();
-  const fE = (document.getElementById('fltEstado').value||'').trim().toLowerCase();
+  const fEnome = (document.getElementById('fltEstado').value||'').trim().toLowerCase();
   const fC = (document.getElementById('fltCidade').value||'').trim().toLowerCase();
-  const fB = (document.getElementById('fltBairro').value||'').trim().toLowerCase();
-  const ativo = !!(fP||fE||fC||fB);
+  // o ouvinte pode digitar o nome ("Rio de Janeiro") OU a sigla ("RJ")
+  const par = _UFS.find(([s,n])=> n.toLowerCase() === fEnome);
+  const fEsigla = par ? par[0].toLowerCase() : '';
+  const ativo = !!(fP||fEnome||fC);
+  const limpa = (s)=> String(s||'').trim().toLowerCase();
   return {
     ativo,
     testa: (p)=>{
-      const okP = !fP || (p.pais||'').toLowerCase().includes(fP);
-      const okE = !fE || (p.estado||'').toLowerCase().includes(fE);
-      const okC = !fC || (p.cidade||'').toLowerCase().includes(fC);
-      const okB = !fB || (p.bairro||'').toLowerCase().includes(fB);
-      return okP && okE && okC && okB;
+      const okP = !fP || limpa(p.pais).includes(fP);
+      let okE = true;
+      if(fEnome){
+        const e = limpa(p.estado);
+        okE = e.includes(fEnome) || (fEsigla && e === fEsigla);
+      }
+      const okC = !fC || limpa(p.cidade).includes(fC);
+      return okP && okE && okC;
     }
   };
 }
@@ -1068,7 +1073,7 @@ async function sortearGanhador(){
         total_participantes: lista.length,
         nome: g.nome||'', whatsapp: g.whatsapp||'', instagram: g.instagram||'', email: g.email||'',
         cadastrado_em: g.quando||g.data||'',
-        cidade: g.cidade||'', estado: g.estado||'', bairro: g.bairro||'', pais: g.pais||''
+        cidade: g.cidade||'', estado: g.estado||'', pais: g.pais||''
       };
       try{ await fetch(`${RTDB}/ganhadores.json`, {method:'POST', body: JSON.stringify(reg)}); }catch(_){}
     }
@@ -1132,12 +1137,11 @@ async function mostrarRelatorioGanhadores(){
       <td>${String(g.whatsapp||'-').replace(/</g,'&lt;')}</td>
       <td>${String(g.instagram||'-').replace(/</g,'&lt;')}</td>
       <td>${String(g.email||'-').replace(/</g,'&lt;')}</td>
-      <td>${String(g.bairro||'-').replace(/</g,'&lt;')}</td>
       <td>${String(g.cidade||'-').replace(/</g,'&lt;')}</td>
       <td>${String(g.estado||'-').replace(/</g,'&lt;')}</td>
       <td>${String(g.pais||'-').replace(/</g,'&lt;')}</td>
     </tr>`).join('');
-    const cab = '<tr><th>#</th><th>Ganhador</th><th>Promoção</th><th>Sorteado em</th><th>Cadastrou em</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Bairro</th><th>Cidade</th><th>Estado</th><th>País</th></tr>';
+    const cab = '<tr><th>#</th><th>Ganhador</th><th>Promoção</th><th>Sorteado em</th><th>Cadastrou em</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Cidade</th><th>Estado</th><th>País</th></tr>';
     const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ganhadores - Rádio Eleva</title>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
       <style>body{font-family:Arial;padding:22px;color:#14203a}h1{color:#0D2B52;margin:2px 0}h2{color:#1B7A4B;font-size:15px}
@@ -1238,10 +1242,10 @@ let pedidosMAtual = [];
 function exportarPedidosM(formato){
   if(!pedidosMAtual.length){ avisar('Não há pedidos para exportar.', true); return; }
   if(formato === 'excel'){
-    let linhas = '<tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Bairro</th><th>Quando</th></tr>';
+    let linhas = '<tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Cidade</th><th>Estado</th><th>Quando</th></tr>';
     pedidosMAtual.forEach((p,i)=>{
       const c = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-      linhas += '<tr><td>'+(i+1)+'</td><td>'+c(p.nome)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td><td>'+c(p.bairro)+'</td><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td></tr>';
+      linhas += '<tr><td>'+(i+1)+'</td><td>'+c(p.nome)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td><td>'+c(p.cidade)+'</td><td>'+c(p.estado)+'</td><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td></tr>';
     });
     const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
     const blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel'});
@@ -1249,14 +1253,14 @@ function exportarPedidosM(formato){
     a.download = 'pedidos_ouvintes_eleva.xls'; a.click();
     avisar('Pedidos salvos em Excel! 📊'); return;
   }
-  const linhas = pedidosMAtual.map((p,i)=>`<tr><td>${i+1}</td><td>${String(p.nome||'').replace(/</g,'&lt;')}</td><td>${String(p.musica||'').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'').replace(/</g,'&lt;')}</td><td>${String(p.bairro||'').replace(/</g,'&lt;')}</td><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('');
+  const linhas = pedidosMAtual.map((p,i)=>`<tr><td>${i+1}</td><td>${String(p.nome||'').replace(/</g,'&lt;')}</td><td>${String(p.musica||'').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'').replace(/</g,'&lt;')}</td><td>${String(p.cidade||'').replace(/</g,'&lt;')}</td><td>${String(p.estado||'').replace(/</g,'&lt;')}</td><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('');
   const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos musicais - Rádio Eleva</title>
     <style>body{font-family:Arial;padding:24px;color:#14203a}h1{color:#0D2B52;margin:2px 0}h2{color:#1B7A4B;font-size:15px}
     table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}th{background:#0D2B52;color:#fff}
     .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}</style></head><body>
     <div id="rel"><div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
     <h2>PEDIDOS MUSICAIS DOS OUVINTES</h2><div>${pedidosMAtual.length} pedidos recebidos</div></div>
-    <table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Bairro</th><th>Quando</th></tr>${linhas}</table>
+    <table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Cidade</th><th>Estado</th><th>Quando</th></tr>${linhas}</table>
     <p style="margin-top:14px;font-size:12px;color:#5a6a85;text-align:center">Gerado em ${new Date().toLocaleString('pt-BR')} pelo Painel Eleva</p></div></body></html>`;
   if(formato === 'word'){
     const conteudo = '<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>'+doc+'</body></html>';
@@ -1284,10 +1288,11 @@ async function carregarPedidosM(){
     const lista = Object.entries(d).sort((a,b)=>(b[1].quando||'').localeCompare(a[1].quando||''));
     pedidosMAtual = lista.map(([k,p])=>p);
     el.innerHTML = `<p class="rotulo-secao">📊 <b>${lista.length}</b> pedidos recebidos</p>` +
-      `<table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Bairro</th><th>Quando</th><th></th></tr>` +
+      `<table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Cidade</th><th>Estado</th><th>Quando</th><th></th></tr>` +
       lista.map(([k,p],i)=>`<tr>
         <td>${i+1}</td><td>${p.nome||''}</td><td><b>${p.musica||''}</b></td><td>${p.interprete||''}</td>
-        <td>${p.bairro||'-'}</td>
+        <td>${p.cidade||'-'}</td>
+        <td>${p.estado||'-'}</td>
         <td>${(p.quando||'').replace('T',' ').slice(0,16)}</td>
         <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
       </tr>`).join('') + `</table>`;
