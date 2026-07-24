@@ -10,6 +10,7 @@ import '../widgets/enquete_card.dart';
 import '../widgets/login_widget.dart';
 import 'noticias_page.dart';
 import 'despertador_page.dart';
+import 'programacao_page.dart';
 
 class MenuPage extends StatelessWidget {
   MenuPage({super.key});
@@ -284,6 +285,12 @@ class MenuPage extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
 
+                _itemMenu(context, Icons.calendar_month_rounded,
+                    'Programação',
+                    'Veja a grade completa da rádio',
+                    () => _abrirPagina(
+                        context, 'Programação',
+                        ProgramacaoPage(comFundo: false))),
                 _itemMenu(context, Icons.newspaper_rounded, 'Notícias',
                     'Fique por dentro do que acontece',
                     () => _abrirPagina(context, 'Notícias', NoticiasPage())),

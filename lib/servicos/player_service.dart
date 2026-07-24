@@ -32,14 +32,16 @@ class PlayerService {
   Timer? _fadeInTimer;
 
   /// Sobe o volume em rampa suave (usado pelo despertador)
-  void iniciarFadeIn({int duracaoSegundos = 30}) {
+  void iniciarFadeIn({int duracaoSegundos = 60}) {
     _fadeInTimer?.cancel();
-    player.setVolume(0.03);
+    player.setVolume(0.02);
     var passo = 0;
-    final totalPassos = duracaoSegundos * 2; // passos de 500ms = mais suave
-    _fadeInTimer = Timer.periodic(const Duration(milliseconds: 500), (t) {
+    final totalPassos = duracaoSegundos * 4; // passos de 250ms
+    _fadeInTimer = Timer.periodic(const Duration(milliseconds: 250), (t) {
       passo++;
-      final v = (0.03 + (1.0 - 0.03) * (passo / totalPassos)).clamp(0.03, 1.0);
+      final fracao = (passo / totalPassos).clamp(0.0, 1.0);
+      final curva = fracao * fracao; // sobe bem devagar no início
+      final v = (0.02 + (1.0 - 0.02) * curva).clamp(0.02, 1.0);
       player.setVolume(v.toDouble());
       if (passo >= totalPassos) {
         t.cancel();
@@ -51,7 +53,7 @@ class PlayerService {
   /// Marca que o PRÓXIMO play deve nascer com fade in
   /// (chamado quando o app é aberto pelo alarme do despertador)
   void marcarFadeInParaProximoPlay() {
-    player.setVolume(0.03);
+    player.setVolume(0.02);
     player.playingStream
         .firstWhere((tocando) => tocando)
         .then((_) => iniciarFadeIn());
@@ -68,16 +70,17 @@ class PlayerService {
     sleepRestante.value = minutos;
     sleepSegundos.value = minutos * 60;
     final fimEm = DateTime.now().add(Duration(minutes: minutos));
-    const fadeSegundos = 45; // fade-out suave nos últimos 45 segundos
-    _sleepTimer = Timer.periodic(const Duration(milliseconds: 200), (t) {
+    const fadeSegundos = 60; // fade-out suave no último minuto
+    _sleepTimer = Timer.periodic(const Duration(milliseconds: 150), (t) {
       final restanteMs = fimEm.difference(DateTime.now()).inMilliseconds;
       final segs = (restanteMs / 1000).ceil();
       sleepSegundos.value = segs > 0 ? segs : 0;
       sleepRestante.value = (sleepSegundos.value / 60).ceil();
-      // Fade out: o som desce suavemente até o silêncio completo
+      // Fade out com curva suave: o som vai sumindo e os últimos
+      // segundos são um sussurro até o silêncio completo.
       if (restanteMs <= fadeSegundos * 1000) {
-        final v = (restanteMs / (fadeSegundos * 1000)).clamp(0.0, 1.0);
-        player.setVolume(v.toDouble());
+        final f = (restanteMs / (fadeSegundos * 1000)).clamp(0.0, 1.0);
+        player.setVolume((f * f).toDouble());
       }
       if (restanteMs <= 0) {
         t.cancel();

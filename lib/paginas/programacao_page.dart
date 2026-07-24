@@ -4,7 +4,9 @@ import '../tema.dart';
 import '../widgets/anuncio_banner.dart';
 
 class ProgramacaoPage extends StatefulWidget {
-  ProgramacaoPage({super.key});
+  /// Quando aberta pelo Menu, o fundo já vem da tela que a contém.
+  final bool comFundo;
+  ProgramacaoPage({super.key, this.comFundo = true});
   @override
   State<ProgramacaoPage> createState() => _ProgramacaoPageState();
 }
@@ -64,8 +66,7 @@ class _ProgramacaoPageState extends State<ProgramacaoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FundoEleva(
-      child: SafeArea(
+    final conteudo = SafeArea(
         child: ValueListenableBuilder<AppConfig>(
           valueListenable: ConfigService.instancia.config,
           builder: (context, cfg, _) {
@@ -234,7 +235,7 @@ class _ProgramacaoPageState extends State<ProgramacaoPage> {
             );
           },
         ),
-      ),
     );
+    return widget.comFundo ? FundoEleva(child: conteudo) : conteudo;
   }
 }

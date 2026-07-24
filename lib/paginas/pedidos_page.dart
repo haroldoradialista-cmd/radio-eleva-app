@@ -255,14 +255,14 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
               Row(
                 children: [
                   Expanded(
-                    flex: 3,
-                    child: _campo(
-                        _cidade, 'SUA CIDADE', Icons.location_city_rounded),
+                    flex: 2,
+                    child: _campo(_estado, 'ESTADO', Icons.map_rounded),
                   ),
                   SizedBox(width: 8),
                   Expanded(
-                    flex: 2,
-                    child: _campo(_estado, 'ESTADO', Icons.map_rounded),
+                    flex: 3,
+                    child: _campo(
+                        _cidade, 'SUA CIDADE', Icons.location_city_rounded),
                   ),
                 ],
               ),

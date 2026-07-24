@@ -499,15 +499,15 @@ class _PromocoesPageState extends State<PromocoesPage> {
                   Row(
                     children: [
                       Expanded(
-                        flex: 3,
-                        child: _campo(_ctrl(_cidade, id), 'SUA CIDADE',
-                            Icons.location_city_rounded),
-                      ),
-                      SizedBox(width: 7),
-                      Expanded(
                         flex: 2,
                         child: _campo(_ctrl(_estado, id), 'ESTADO',
                             Icons.map_rounded),
+                      ),
+                      SizedBox(width: 7),
+                      Expanded(
+                        flex: 3,
+                        child: _campo(_ctrl(_cidade, id), 'SUA CIDADE',
+                            Icons.location_city_rounded),
                       ),
                     ],
                   ),

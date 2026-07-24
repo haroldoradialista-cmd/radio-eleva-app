@@ -850,22 +850,25 @@ class DespertadorAudioService : Service() {
         }
     }
 
-    /// O som nasce bem baixinho e cresce suavemente em 30s até 80% do volume
+    /// O som nasce quase inaudível e cresce MUITO devagar em 60s até 80%.
+    /// Usa curva quadratica: o ouvido percebe volume de forma logaritmica,
+    /// entao a subida linear parece rapida demais no comeco.
     private fun fade() {
         passo = 0
-        val totalPassos = 60          // 60 passos de 500ms = 30 segundos
+        val totalPassos = 240         // 240 passos de 250ms = 60 segundos
         val volumeFinal = 0.80f       // teto de 80%
-        val volumeInicial = 0.03f
+        val volumeInicial = 0.02f
         val rampa = object : Runnable {
             override fun run() {
                 passo++
                 val fracao = (passo.toFloat() / totalPassos).coerceIn(0f, 1f)
-                val v = volumeInicial + (volumeFinal - volumeInicial) * fracao
+                val curva = fracao * fracao   // sobe devagar no inicio
+                val v = volumeInicial + (volumeFinal - volumeInicial) * curva
                 try { player?.setVolume(v, v) } catch (_: Exception) {}
-                if (passo < totalPassos) alca.postDelayed(this, 500)
+                if (passo < totalPassos) alca.postDelayed(this, 250)
             }
         }
-        alca.postDelayed(rampa, 500)
+        alca.postDelayed(rampa, 250)
     }
 
     private fun criarCanal() {
