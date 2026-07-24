@@ -99,16 +99,46 @@ class TelaPrincipal extends StatefulWidget {
   State<TelaPrincipal> createState() => _TelaPrincipalState();
 }
 
-class _TelaPrincipalState extends State<TelaPrincipal> {
+class _TelaPrincipalState extends State<TelaPrincipal>
+    with SingleTickerProviderStateMixin {
+  static const int _abaTv = 4;
   int _abaAtual = 0;
   final PageController _pageCtrl = PageController();
   Timer? _telaAcesa;
+  late final AnimationController _pulso;
+  bool _radioTocavaAntesDaTv = false;
 
   @override
   void initState() {
     super.initState();
+    // pulso do "AO VIVO" na aba TV
+    _pulso = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
     // Mantém a tela acesa por 1 minuto sempre que o app está em uso
     _manterTelaAcesa();
+  }
+
+  @override
+  void dispose() {
+    _pulso.dispose();
+    _telaAcesa?.cancel();
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Entrar na TV pausa o rádio e dá play na live.
+  /// Sair da TV pausa a live e retoma o rádio.
+  void _aoTrocarAba(int novo) {
+    final anterior = _abaAtual;
+    if (novo == _abaTv && anterior != _abaTv) {
+      _radioTocavaAntesDaTv = pausarRadioParaTv();
+      Future.delayed(const Duration(milliseconds: 250), TvControle.tocar);
+    } else if (anterior == _abaTv && novo != _abaTv) {
+      TvControle.pausar();
+      if (_radioTocavaAntesDaTv) retomarRadioDepoisDaTv();
+    }
   }
 
   /// Mantém a tela ligada por 60s e renova a cada interação
@@ -119,54 +149,96 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     WakelockEleva.ativarPorUmMinuto();
   }
 
-  /// Item do menu inferior — o selecionado ganha brilho dourado (glow)
-  Widget _itemNav(int i, IconData icone, String rotulo) {
+  /// Item do menu inferior — o selecionado ganha brilho dourado (glow).
+  /// Quando [aoVivo] é true (transmissão no ar), a aba pulsa em vermelho.
+  Widget _itemNav(int i, IconData icone, String rotulo,
+      {bool aoVivo = false}) {
     final ativo = _abaAtual == i;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _irParaAba(i),
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: 280),
-          curve: Curves.easeOut,
-          margin: EdgeInsets.symmetric(horizontal: 1),
-          padding: EdgeInsets.symmetric(horizontal: 1, vertical: 3),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            color: ativo
-                ? CoresEleva.dourado.withOpacity(0.16)
-                : Colors.transparent,
-            boxShadow: ativo
-                ? [
-                    BoxShadow(
-                      color: CoresEleva.dourado.withOpacity(0.55),
-                      blurRadius: 16,
-                      spreadRadius: 1,
-                    )
-                  ]
-                : [],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icone,
-                  size: ativo ? 22 : 19,
-                  color: ativo ? CoresEleva.dourado : CoresEleva.textoFraco),
-              SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(rotulo,
-                    maxLines: 1,
-                    style: TextStyle(
-                        fontSize: 8.5,
-                        fontWeight:
-                            ativo ? FontWeight.w900 : FontWeight.w600,
-                        color: ativo
-                            ? CoresEleva.dourado
-                            : CoresEleva.textoFraco)),
+        child: AnimatedBuilder(
+          animation: _pulso,
+          builder: (context, _) {
+            // 0 = apagado, 1 = aceso — só pulsa quando há transmissão
+            final p = aoVivo ? _pulso.value : 0.0;
+            final vermelho =
+                Color.lerp(const Color(0xFFFF6B6B), const Color(0xFFE01010), p)!;
+            final corPrincipal = aoVivo
+                ? vermelho
+                : (ativo ? CoresEleva.dourado : CoresEleva.textoFraco);
+            return AnimatedContainer(
+              duration: Duration(milliseconds: 280),
+              curve: Curves.easeOut,
+              margin: EdgeInsets.symmetric(horizontal: 1),
+              padding: EdgeInsets.symmetric(horizontal: 1, vertical: 3),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: aoVivo
+                    ? vermelho.withOpacity(0.10 + 0.14 * p)
+                    : (ativo
+                        ? CoresEleva.dourado.withOpacity(0.16)
+                        : Colors.transparent),
+                boxShadow: aoVivo
+                    ? [
+                        BoxShadow(
+                          color: vermelho.withOpacity(0.30 + 0.45 * p),
+                          blurRadius: 10 + 12 * p,
+                          spreadRadius: 1,
+                        )
+                      ]
+                    : (ativo
+                        ? [
+                            BoxShadow(
+                              color: CoresEleva.dourado.withOpacity(0.55),
+                              blurRadius: 16,
+                              spreadRadius: 1,
+                            )
+                          ]
+                        : []),
               ),
-            ],
-          ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(icone,
+                          size: ativo ? 22 : 19, color: corPrincipal),
+                      // bolinha vermelha piscando de "ao vivo"
+                      if (aoVivo)
+                        Positioned(
+                          right: -3,
+                          top: -2,
+                          child: Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.red
+                                  .withOpacity(0.45 + 0.55 * p),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(aoVivo ? 'AO VIVO' : rotulo,
+                        maxLines: 1,
+                        style: TextStyle(
+                            fontSize: 8.5,
+                            fontWeight: (ativo || aoVivo)
+                                ? FontWeight.w900
+                                : FontWeight.w600,
+                            color: corPrincipal)),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -179,12 +251,6 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         duration: Duration(milliseconds: 320), curve: Curves.easeOutCubic);
   }
 
-  @override
-  void dispose() {
-    _telaAcesa?.cancel();
-    _pageCtrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -205,8 +271,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           controller: _pageCtrl,
           onPageChanged: (i) {
             _manterTelaAcesa();
-            // ao entrar na TV, pausa o rádio para os áudios não se misturarem
-            if (i == 4) pausarRadioParaTv();
+            _aoTrocarAba(i);
             setState(() => _abaAtual = i);
           },
           children: paginas,
@@ -227,16 +292,24 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
             top: false,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _itemNav(0, Icons.home_rounded, 'Início'),
-                  _itemNav(1, Icons.forum_rounded, 'Chat'),
-                  _itemNav(2, Icons.card_giftcard_rounded, 'Promoções'),
-                  _itemNav(3, Icons.music_note_rounded, 'Pedidos'),
-                  _itemNav(4, Icons.live_tv_rounded, 'TV'),
-                  _itemNav(5, Icons.menu_rounded, 'Menu'),
-                ],
+              child: ValueListenableBuilder<AppConfig>(
+                valueListenable: ConfigService.instancia.config,
+                builder: (context, cfg, _) {
+                  // há transmissão no ar? então a aba TV pulsa em vermelho
+                  final aoVivo = cfg.tvVideo.trim().isNotEmpty;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _itemNav(0, Icons.home_rounded, 'Início'),
+                      _itemNav(1, Icons.forum_rounded, 'Chat'),
+                      _itemNav(2, Icons.card_giftcard_rounded, 'Promoções'),
+                      _itemNav(3, Icons.music_note_rounded, 'Pedidos'),
+                      _itemNav(4, Icons.live_tv_rounded, 'TV',
+                          aoVivo: aoVivo),
+                      _itemNav(5, Icons.menu_rounded, 'Menu'),
+                    ],
+                  );
+                },
               ),
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import '../servicos/config_service.dart';
 import '../servicos/player_service.dart';
 import '../tema.dart';
@@ -26,14 +27,30 @@ class _TvPageState extends State<TvPage> {
   @override
   void initState() {
     super.initState();
+    TvControle.registrar(this);
     _aplicar(ConfigService.instancia.config.value.tvVideo);
     ConfigService.instancia.config.addListener(_aoMudarConfig);
   }
 
   @override
   void dispose() {
+    TvControle.limpar(this);
     ConfigService.instancia.config.removeListener(_aoMudarConfig);
     super.dispose();
+  }
+
+  /// Dá o play na transmissão (chamado ao entrar na aba TV)
+  void tocar() {
+    try {
+      _ctrl?.runJavaScript('window.tocarVideo && window.tocarVideo();');
+    } catch (_) {}
+  }
+
+  /// Pausa a transmissão (chamado ao sair da aba TV)
+  void pausar() {
+    try {
+      _ctrl?.runJavaScript('window.pausarVideo && window.pausarVideo();');
+    } catch (_) {}
   }
 
   void _aoMudarConfig() {
@@ -51,18 +68,28 @@ class _TvPageState extends State<TvPage> {
       return;
     }
     final url = '$_base?v=${Uri.encodeComponent(video.trim())}';
-    _ctrl = WebViewController()
+    final c = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF0B0720))
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) {
           if (mounted) setState(() => _carregando = false);
+          // dá o play sozinho assim que a transmissão termina de carregar
+          Future.delayed(const Duration(milliseconds: 700), tocar);
         },
         onWebResourceError: (_) {
           if (mounted) setState(() => _carregando = false);
         },
       ))
       ..loadRequest(Uri.parse(url));
+    // No Android o vídeo só toca sozinho se liberarmos esta permissão
+    try {
+      if (c.platform is AndroidWebViewController) {
+        (c.platform as AndroidWebViewController)
+            .setMediaPlaybackRequiresUserGesture(false);
+      }
+    } catch (_) {}
+    _ctrl = c;
   }
 
   void _recarregar() {
@@ -174,11 +201,37 @@ class _TvPageState extends State<TvPage> {
   }
 }
 
+/// Ponte para o app controlar a transmissão de fora da aba TV.
+class TvControle {
+  static _TvPageState? _estado;
+  static void registrar(_TvPageState e) => _estado = e;
+  static void limpar(_TvPageState e) {
+    if (identical(_estado, e)) _estado = null;
+  }
+
+  /// Existe transmissão configurada no painel?
+  static bool get temLive =>
+      ConfigService.instancia.config.value.tvVideo.trim().isNotEmpty;
+
+  static void tocar() => _estado?.tocar();
+  static void pausar() => _estado?.pausar();
+}
+
 /// Pausa o rádio ao entrar na TV, para os áudios não se misturarem.
-void pausarRadioParaTv() {
+/// Devolve true se o rádio estava tocando (para retomar depois).
+bool pausarRadioParaTv() {
   try {
-    if (PlayerService.instancia.player.playing) {
-      PlayerService.instancia.player.pause();
-    }
+    final tocando = PlayerService.instancia.player.playing;
+    if (tocando) PlayerService.instancia.player.pause();
+    return tocando;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Retoma o rádio ao sair da aba TV.
+void retomarRadioDepoisDaTv() {
+  try {
+    PlayerService.instancia.player.play();
   } catch (_) {}
 }

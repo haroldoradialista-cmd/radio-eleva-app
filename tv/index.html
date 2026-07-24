@@ -9,9 +9,10 @@
   html, body { height:100%; background:#0b0720; color:#fff;
     font-family: -apple-system, Roboto, Arial, sans-serif; overflow:hidden; }
   #tela { display:flex; flex-direction:column; height:100%; }
-  #areaVideo { flex:0 0 45%; background:#000; position:relative; }
+  #areaVideo { flex:0 0 46%; background:#000; position:relative; }
+  #areaVideo iframe, #player { width:100%; height:100%; border:0; display:block; }
   #areaChat  { flex:1 1 auto; background:#fff; position:relative; border-top:2px solid #d4af37; }
-  iframe { width:100%; height:100%; border:0; display:block; }
+  #areaChat iframe { width:100%; height:100%; border:0; display:block; }
   .aviso { display:flex; align-items:center; justify-content:center; height:100%;
     text-align:center; padding:24px; flex-direction:column; gap:10px; }
   .aviso h2 { font-size:17px; color:#ffd65a; font-weight:800; }
@@ -22,8 +23,8 @@
 </head>
 <body>
 <div id="tela">
-  <div id="areaVideo"></div>
-  <div class="faixaChat" id="faixa">💬 CHAT DA TRANSMISSÃO</div>
+  <div id="areaVideo"><div id="player"></div></div>
+  <div class="faixaChat" id="faixa">CHAT DA TRANSMISSAO</div>
   <div id="areaChat"></div>
 </div>
 
@@ -32,7 +33,6 @@
 function extrairId(bruto){
   if(!bruto) return '';
   var s = decodeURIComponent(String(bruto)).trim();
-  // já é um ID (11 caracteres, sem barras)
   if(/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
   var m;
   m = s.match(/[?&]v=([A-Za-z0-9_-]{11})/);        if(m) return m[1];
@@ -49,48 +49,62 @@ function param(nome){
   return m ? m[1] : '';
 }
 
-var bruto = param('v');
-var id = extrairId(bruto);
-var dominio = window.location.hostname;   // precisa ser o domínio real da página
+var id = extrairId(param('v'));
+var dominio = window.location.hostname;
+var player = null;
 
 var areaVideo = document.getElementById('areaVideo');
 var areaChat  = document.getElementById('areaChat');
 var faixa     = document.getElementById('faixa');
 
+// ===== funcoes que o APP chama para controlar o video =====
+window.tocarVideo = function(){
+  try { if(player && player.playVideo) player.playVideo(); } catch(e){}
+};
+window.pausarVideo = function(){
+  try { if(player && player.pauseVideo) player.pauseVideo(); } catch(e){}
+};
+
 if(!id){
   faixa.style.display = 'none';
   areaVideo.innerHTML =
     '<div class="aviso">' +
-      '<h2>📺 Nenhuma transmissão no ar</h2>' +
-      '<p>Quando a Rádio Eleva estiver ao vivo no YouTube, o vídeo aparece aqui.</p>' +
+      '<h2>Nenhuma transmissao no ar</h2>' +
+      '<p>Quando a Radio Eleva estiver ao vivo no YouTube, o video aparece aqui.</p>' +
     '</div>';
   areaChat.innerHTML =
     '<div class="aviso" style="background:#fff">' +
-      '<p style="color:#5a5a7a">O chat da transmissão aparece nesta parte da tela.</p>' +
+      '<p style="color:#5a5a7a">O chat da transmissao aparece nesta parte da tela.</p>' +
     '</div>';
 } else {
-  // ===== metade de cima: o vídeo =====
-  var ifV = document.createElement('iframe');
-  ifV.src = 'https://www.youtube.com/embed/' + id +
-            '?autoplay=1&playsinline=1&rel=0&modestbranding=1';
-  ifV.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
-  ifV.setAttribute('allowfullscreen', '');
-  areaVideo.appendChild(ifV);
-
   // ===== metade de baixo: o chat ao vivo =====
   var ifC = document.createElement('iframe');
   ifC.src = 'https://www.youtube.com/live_chat?v=' + id +
             '&embed_domain=' + dominio;
   areaChat.appendChild(ifC);
 
-  // se o chat não carregar (vídeo não é live ou chat desativado), avisa
-  setTimeout(function(){
-    try {
-      if(ifC.contentWindow && ifC.contentWindow.length === 0){
-        // não dá para inspecionar por segurança; deixamos o iframe como está
+  // ===== metade de cima: o video, via API do YouTube =====
+  var tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+}
+
+// chamada automaticamente quando a API do YouTube termina de carregar
+function onYouTubeIframeAPIReady(){
+  if(!id) return;
+  player = new YT.Player('player', {
+    height: '100%',
+    width: '100%',
+    videoId: id,
+    playerVars: {
+      autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1
+    },
+    events: {
+      'onReady': function(e){
+        try { e.target.playVideo(); } catch(err){}
       }
-    } catch(e){ /* normal: mesma-origem bloqueada */ }
-  }, 4000);
+    }
+  });
 }
 </script>
 </body>
