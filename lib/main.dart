@@ -8,6 +8,7 @@ import 'paginas/programacao_page.dart';
 import 'paginas/promocoes_page.dart';
 import 'paginas/chat_page.dart';
 import 'paginas/pedidos_page.dart';
+import 'paginas/tv_page.dart';
 import 'paginas/menu_page.dart';
 import 'servicos/config_service.dart';
 import 'servicos/analytics_service.dart';
@@ -194,6 +195,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       ChatPage(),
       PromocoesPage(),
       PedidosPage(),
+      TvPage(),
       MenuPage(),
     ];
     return Scaffold(
@@ -203,6 +205,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           controller: _pageCtrl,
           onPageChanged: (i) {
             _manterTelaAcesa();
+            // ao entrar na TV, pausa o rádio para os áudios não se misturarem
+            if (i == 4) pausarRadioParaTv();
             setState(() => _abaAtual = i);
           },
           children: paginas,
@@ -230,7 +234,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                   _itemNav(1, Icons.forum_rounded, 'Chat'),
                   _itemNav(2, Icons.card_giftcard_rounded, 'Promoções'),
                   _itemNav(3, Icons.music_note_rounded, 'Pedidos'),
-                  _itemNav(4, Icons.menu_rounded, 'Menu'),
+                  _itemNav(4, Icons.live_tv_rounded, 'TV'),
+                  _itemNav(5, Icons.menu_rounded, 'Menu'),
                 ],
               ),
             ),

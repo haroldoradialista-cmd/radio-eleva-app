@@ -437,6 +437,9 @@
         <label>URL do streaming</label><input id="cfStream">
         <label>WhatsApp (com DDI+DDD, só números)</label><input id="cfZap">
         <label>Mensagem pronta do pedido musical</label><input id="cfMsgPedido">
+        <label>📺 TV — link da live do YouTube</label>
+        <input id="cfTvVideo" placeholder="https://www.youtube.com/watch?v=XXXXXXXXXXX">
+        <p class="rotulo-secao">Cole o link (ou só o ID) da transmissão ao vivo. A aba TV do app mostra o vídeo em cima e o chat embaixo. Deixe VAZIO quando não houver transmissão — aí o app avisa que não há live no ar.</p>
       </div>
       <div class="cartao">
         <h2>Redes sociais</h2>
@@ -1541,6 +1544,7 @@ function preencherTextos(){
   cfNome.value=config.nome||''; cfSlogan.value=config.slogan||'';
   if(document.getElementById('cfLinkComp')) cfLinkComp.value=config.link_compartilhar||'';
   cfStream.value=config.stream_url||''; cfZap.value=config.whatsapp||'';
+  if(document.getElementById('cfTvVideo')) cfTvVideo.value=config.tv_video||'';
   cfMsgPedido.value=config.mensagem_pedido||'';
   const rede = nome => (config.redes.find(r=>r.nome===nome)||{}).link||'';
   cfInsta.value=rede('Instagram'); cfFace.value=rede('Facebook'); cfYou.value=rede('YouTube'); cfTiktok.value=rede('TikTok');
@@ -1549,6 +1553,7 @@ async function salvarTextos(){
   config.nome=cfNome.value.trim(); config.slogan=cfSlogan.value.trim();
   config.stream_url=cfStream.value.trim(); config.whatsapp=cfZap.value.trim();
   config.mensagem_pedido=cfMsgPedido.value.trim();
+  if(document.getElementById('cfTvVideo')) config.tv_video=cfTvVideo.value.trim();
   if(document.getElementById('cfLinkComp')) config.link_compartilhar=cfLinkComp.value.trim();
   config.redes=[
     {nome:'Instagram',link:cfInsta.value.trim()},

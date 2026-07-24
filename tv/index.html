@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TV Rádio Eleva</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:#0b0720; color:#fff;
+    font-family: -apple-system, Roboto, Arial, sans-serif; overflow:hidden; }
+  #tela { display:flex; flex-direction:column; height:100%; }
+  #areaVideo { flex:0 0 45%; background:#000; position:relative; }
+  #areaChat  { flex:1 1 auto; background:#fff; position:relative; border-top:2px solid #d4af37; }
+  iframe { width:100%; height:100%; border:0; display:block; }
+  .aviso { display:flex; align-items:center; justify-content:center; height:100%;
+    text-align:center; padding:24px; flex-direction:column; gap:10px; }
+  .aviso h2 { font-size:17px; color:#ffd65a; font-weight:800; }
+  .aviso p  { font-size:14px; color:#cfc9f2; line-height:1.5; }
+  .faixaChat { background:#0b0720; color:#ffd65a; font-size:11.5px;
+    font-weight:700; padding:6px 10px; letter-spacing:.5px; }
+</style>
+</head>
+<body>
+<div id="tela">
+  <div id="areaVideo"></div>
+  <div class="faixaChat" id="faixa">💬 CHAT DA TRANSMISSÃO</div>
+  <div id="areaChat"></div>
+</div>
+
+<script>
+// Aceita ID puro OU qualquer formato de link do YouTube
+function extrairId(bruto){
+  if(!bruto) return '';
+  var s = decodeURIComponent(String(bruto)).trim();
+  // já é um ID (11 caracteres, sem barras)
+  if(/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+  var m;
+  m = s.match(/[?&]v=([A-Za-z0-9_-]{11})/);        if(m) return m[1];
+  m = s.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);   if(m) return m[1];
+  m = s.match(/\/live\/([A-Za-z0-9_-]{11})/);      if(m) return m[1];
+  m = s.match(/\/embed\/([A-Za-z0-9_-]{11})/);     if(m) return m[1];
+  m = s.match(/\/shorts\/([A-Za-z0-9_-]{11})/);    if(m) return m[1];
+  return '';
+}
+
+function param(nome){
+  var r = new RegExp('[?&]' + nome + '=([^&#]*)');
+  var m = r.exec(window.location.search);
+  return m ? m[1] : '';
+}
+
+var bruto = param('v');
+var id = extrairId(bruto);
+var dominio = window.location.hostname;   // precisa ser o domínio real da página
+
+var areaVideo = document.getElementById('areaVideo');
+var areaChat  = document.getElementById('areaChat');
+var faixa     = document.getElementById('faixa');
+
+if(!id){
+  faixa.style.display = 'none';
+  areaVideo.innerHTML =
+    '<div class="aviso">' +
+      '<h2>📺 Nenhuma transmissão no ar</h2>' +
+      '<p>Quando a Rádio Eleva estiver ao vivo no YouTube, o vídeo aparece aqui.</p>' +
+    '</div>';
+  areaChat.innerHTML =
+    '<div class="aviso" style="background:#fff">' +
+      '<p style="color:#5a5a7a">O chat da transmissão aparece nesta parte da tela.</p>' +
+    '</div>';
+} else {
+  // ===== metade de cima: o vídeo =====
+  var ifV = document.createElement('iframe');
+  ifV.src = 'https://www.youtube.com/embed/' + id +
+            '?autoplay=1&playsinline=1&rel=0&modestbranding=1';
+  ifV.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
+  ifV.setAttribute('allowfullscreen', '');
+  areaVideo.appendChild(ifV);
+
+  // ===== metade de baixo: o chat ao vivo =====
+  var ifC = document.createElement('iframe');
+  ifC.src = 'https://www.youtube.com/live_chat?v=' + id +
+            '&embed_domain=' + dominio;
+  areaChat.appendChild(ifC);
+
+  // se o chat não carregar (vídeo não é live ou chat desativado), avisa
+  setTimeout(function(){
+    try {
+      if(ifC.contentWindow && ifC.contentWindow.length === 0){
+        // não dá para inspecionar por segurança; deixamos o iframe como está
+      }
+    } catch(e){ /* normal: mesma-origem bloqueada */ }
+  }, 4000);
+}
+</script>
+</body>
+</html>
