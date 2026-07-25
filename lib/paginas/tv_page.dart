@@ -23,6 +23,7 @@ class _TvPageState extends State<TvPage> {
   WebViewController? _ctrl;
   String _videoAtual = '';
   bool _carregando = true;
+  bool _estaAoVivoDeVerdade = false;
 
   @override
   void initState() {
@@ -37,6 +38,23 @@ class _TvPageState extends State<TvPage> {
     TvControle.limpar(this);
     ConfigService.instancia.config.removeListener(_aoMudarConfig);
     super.dispose();
+  }
+
+  /// Recebe o status real da transmissão vindo da página (YouTube).
+  /// Só corta o rádio quando a live está MESMO no ar.
+  void _aoReceberStatus(String status) {
+    final aoVivo = status == 'AO_VIVO';
+    if (aoVivo != _estaAoVivoDeVerdade) {
+      _estaAoVivoDeVerdade = aoVivo;
+      TvControle.aoVivoConfirmado.value = aoVivo;
+      if (aoVivo) {
+        // transmissão confirmada no ar → agora sim pausa o rádio
+        TvControle.pedirPausaDoRadio();
+      } else {
+        // não há live de verdade → mantém/retoma o som da Eleva
+        TvControle.pedirRetomadaDoRadio();
+      }
+    }
   }
 
   /// Dá o play na transmissão (chamado ao entrar na aba TV)
@@ -71,6 +89,8 @@ class _TvPageState extends State<TvPage> {
     final c = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF0B0720))
+      ..addJavaScriptChannel('CanalTV',
+          onMessageReceived: (msg) => _aoReceberStatus(msg.message))
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) {
           if (mounted) setState(() => _carregando = false);
@@ -209,29 +229,41 @@ class TvControle {
     if (identical(_estado, e)) _estado = null;
   }
 
-  /// Existe transmissão configurada no painel?
-  static bool get temLive =>
+  /// true quando o YouTube confirmou que a live está REALMENTE no ar
+  static final ValueNotifier<bool> aoVivoConfirmado = ValueNotifier(false);
+
+  /// Existe link de transmissão configurado no painel?
+  static bool get temLink =>
       ConfigService.instancia.config.value.tvVideo.trim().isNotEmpty;
 
   static void tocar() => _estado?.tocar();
   static void pausar() => _estado?.pausar();
-}
 
-/// Pausa o rádio ao entrar na TV, para os áudios não se misturarem.
-/// Devolve true se o rádio estava tocando (para retomar depois).
-bool pausarRadioParaTv() {
-  try {
-    final tocando = PlayerService.instancia.player.playing;
-    if (tocando) PlayerService.instancia.player.pause();
-    return tocando;
-  } catch (_) {
-    return false;
+  // guardado aqui para o main saber se deve retomar o rádio ao sair
+  static bool radioEstavaTocando = false;
+
+  static void pedirPausaDoRadio() {
+    try {
+      final p = PlayerService.instancia.player;
+      radioEstavaTocando = p.playing;
+      if (p.playing) p.pause();
+    } catch (_) {}
+  }
+
+  static void pedirRetomadaDoRadio() {
+    try {
+      if (radioEstavaTocando) {
+        PlayerService.instancia.player.play();
+        radioEstavaTocando = false;
+      }
+    } catch (_) {}
   }
 }
 
-/// Retoma o rádio ao sair da aba TV.
-void retomarRadioDepoisDaTv() {
-  try {
-    PlayerService.instancia.player.play();
-  } catch (_) {}
+/// Quando o app sai da aba TV: pausa o vídeo e garante que o rádio volte
+/// (se ele havia sido pausado por causa de uma live).
+void aoSairDaTv() {
+  TvControle.pausar();
+  TvControle.aoVivoConfirmado.value = false;
+  TvControle.pedirRetomadaDoRadio();
 }

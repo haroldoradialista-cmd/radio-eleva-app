@@ -537,7 +537,10 @@ class _HomePageState extends State<HomePage> {
                                       snap.data?.info?.title?.trim() ?? '');
                                   if (titulo != _musicaAtual) {
                                     _musicaAtual = titulo;
-                                    _curtiu = false;
+                                    // NÃO zera _curtiu aqui: quem decide é o
+                                    // _conferirCurtida, que lê do disco se
+                                    // este usuário já curtiu esta música.
+                                    // (evita "descurtir" ao trocar de tema)
                                     _conferirCurtida(titulo);
                                   }
                                   return Text(

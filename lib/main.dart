@@ -106,7 +106,6 @@ class _TelaPrincipalState extends State<TelaPrincipal>
   final PageController _pageCtrl = PageController();
   Timer? _telaAcesa;
   late final AnimationController _pulso;
-  bool _radioTocavaAntesDaTv = false;
 
   @override
   void initState() {
@@ -128,16 +127,16 @@ class _TelaPrincipalState extends State<TelaPrincipal>
     super.dispose();
   }
 
-  /// Entrar na TV pausa o rádio e dá play na live.
-  /// Sair da TV pausa a live e retoma o rádio.
+  /// Entrar na TV dá play na live (o rádio só é cortado quando a página
+  /// confirmar que a transmissão está mesmo no ar). Sair da TV pausa o
+  /// vídeo e retoma o rádio, se ele havia sido pausado.
   void _aoTrocarAba(int novo) {
     final anterior = _abaAtual;
     if (novo == _abaTv && anterior != _abaTv) {
-      _radioTocavaAntesDaTv = pausarRadioParaTv();
+      // só tenta tocar o vídeo; o corte do rádio vem depois, se houver live
       Future.delayed(const Duration(milliseconds: 250), TvControle.tocar);
     } else if (anterior == _abaTv && novo != _abaTv) {
-      TvControle.pausar();
-      if (_radioTocavaAntesDaTv) retomarRadioDepoisDaTv();
+      aoSairDaTv();
     }
   }
 

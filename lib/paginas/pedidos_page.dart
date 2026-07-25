@@ -81,6 +81,19 @@ class PedidosPage extends StatelessWidget {
                       'Recados, oração, anúncios e parcerias — direto no nosso WhatsApp.',
                   aoTocar: () => _abrirZapDireto(context, cfg),
                 ),
+                SizedBox(height: 14),
+                _cartaoOpcao(
+                  context,
+                  icone: Icons.campaign_rounded,
+                  titulo: 'ANUNCIE NA RÁDIO ELEVA',
+                  descricao:
+                      'Divulgue sua empresa para milhares de ouvintes. Preencha e nossa equipe comercial entra em contato.',
+                  aoTocar: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => AnuncioPage(cfg: cfg)),
+                  ),
+                ),
                 SizedBox(height: 18),
                 Center(
                   child: Text('Atendemos durante a programação ao vivo 🎶',
@@ -319,6 +332,226 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
           fillColor: CoresEleva.azulMedio,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(13),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// ANUNCIE NA RÁDIO ELEVA — formulário para anunciantes
+// ============================================================
+class AnuncioPage extends StatefulWidget {
+  final AppConfig cfg;
+  const AnuncioPage({super.key, required this.cfg});
+
+  @override
+  State<AnuncioPage> createState() => _AnuncioPageState();
+}
+
+class _AnuncioPageState extends State<AnuncioPage> {
+  final _nome = TextEditingController();
+  final _empresa = TextEditingController();
+  final _email = TextEditingController();
+  final _whatsapp = TextEditingController();
+  bool _enviando = false;
+
+  // Chave pública do Web3Forms (não é secreta) — entrega no e-mail comercial.
+  static const _web3formsKey = 'COLE_AQUI_SUA_ACCESS_KEY';
+  static const _emailComercial = 'comercialradioeleva@gmail.com';
+
+  @override
+  void dispose() {
+    _nome.dispose();
+    _empresa.dispose();
+    _email.dispose();
+    _whatsapp.dispose();
+    super.dispose();
+  }
+
+  Future<void> _enviar() async {
+    if (_nome.text.trim().isEmpty ||
+        _empresa.text.trim().isEmpty ||
+        _email.text.trim().isEmpty ||
+        _whatsapp.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: Colors.red.shade700,
+          duration: Duration(seconds: 3),
+          content: Text(
+              'Preencha TODOS os campos (nome, empresa, e-mail e WhatsApp) para enviar seu anúncio.')));
+      return;
+    }
+    if (_enviando) return;
+    setState(() => _enviando = true);
+
+    final nome = _nome.text.trim();
+    final empresa = _empresa.text.trim();
+    final email = _email.text.trim();
+    final zap = _whatsapp.text.trim();
+    bool sucesso = false;
+
+    // 1) Salva no Firebase (registro sempre fica guardado)
+    try {
+      final base = widget.cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
+      await http.post(
+        Uri.parse('$base/anuncios.json'),
+        body: jsonEncode({
+          'nome': nome,
+          'empresa': empresa,
+          'email': email,
+          'whatsapp': zap,
+          'quando': DateTime.now().toIso8601String(),
+        }),
+      );
+      sucesso = true;
+    } catch (_) {}
+
+    // 2) Envia por e-mail para o comercial via Web3Forms (sem servidor)
+    if (_web3formsKey != 'COLE_AQUI_SUA_ACCESS_KEY') {
+      try {
+        await http.post(
+          Uri.parse('https://api.web3forms.com/submit'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({
+            'access_key': _web3formsKey,
+            'subject': 'Novo anúncio - Rádio Eleva',
+            'from_name': 'App Rádio Eleva',
+            'to': _emailComercial,
+            'Nome': nome,
+            'Empresa': empresa,
+            'E-mail': email,
+            'WhatsApp': zap,
+          }),
+        );
+        sucesso = true;
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      if (sucesso) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: CoresEleva.verdeEscuro,
+            duration: Duration(seconds: 4),
+            content: Text(
+                'Anúncio enviado! Nossa equipe comercial entrará em contato. 📣')));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.red.shade700,
+            content: Text('Falha ao enviar. Verifique sua internet.')));
+      }
+      setState(() => _enviando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: FundoEleva(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.arrow_back_rounded,
+                        color: CoresEleva.dourado),
+                  ),
+                  Text('Anuncie na Rádio Eleva',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: CoresEleva.branco)),
+                ],
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(20, 6, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Icon(Icons.campaign_rounded,
+                          size: 54, color: CoresEleva.dourado),
+                      SizedBox(height: 10),
+                      Text(
+                        'Leve a sua empresa para milhares de ouvintes! Preencha os dados abaixo e nossa equipe comercial entrará em contato com você.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: CoresEleva.brancoSuave,
+                            height: 1.5,
+                            fontSize: 14),
+                      ),
+                      SizedBox(height: 20),
+                      _campoAnuncio(_nome, 'SEU NOME', Icons.person_rounded),
+                      _campoAnuncio(
+                          _empresa, 'EMPRESA', Icons.storefront_rounded),
+                      _campoAnuncio(_email, 'E-MAIL', Icons.email_rounded,
+                          teclado: TextInputType.emailAddress,
+                          maiusculas: false),
+                      _campoAnuncio(
+                          _whatsapp, 'WHATSAPP COM DDD', Icons.phone_rounded,
+                          teclado: TextInputType.phone),
+                      SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _enviando ? null : _enviar,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: CoresEleva.verde,
+                          padding: EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        icon: _enviando
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : Icon(Icons.send_rounded, color: Colors.white),
+                        label: Text(_enviando ? 'ENVIANDO...' : 'ENVIAR',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _campoAnuncio(
+      TextEditingController c, String rotulo, IconData icone,
+      {TextInputType? teclado, bool maiusculas = true}) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: c,
+        keyboardType: teclado,
+        textCapitalization: maiusculas
+            ? TextCapitalization.characters
+            : TextCapitalization.none,
+        inputFormatters: maiusculas ? [MaiusculasFormatter()] : [],
+        style: TextStyle(color: CoresEleva.branco),
+        decoration: InputDecoration(
+          labelText: rotulo,
+          labelStyle: TextStyle(color: CoresEleva.textoFraco),
+          prefixIcon: Icon(icone, color: CoresEleva.dourado, size: 20),
+          filled: true,
+          fillColor: CoresEleva.azulMedio,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
           ),
         ),

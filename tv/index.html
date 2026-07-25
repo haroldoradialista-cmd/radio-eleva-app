@@ -29,7 +29,6 @@
 </div>
 
 <script>
-// Aceita ID puro OU qualquer formato de link do YouTube
 function extrairId(bruto){
   if(!bruto) return '';
   var s = decodeURIComponent(String(bruto)).trim();
@@ -42,7 +41,6 @@ function extrairId(bruto){
   m = s.match(/\/shorts\/([A-Za-z0-9_-]{11})/);    if(m) return m[1];
   return '';
 }
-
 function param(nome){
   var r = new RegExp('[?&]' + nome + '=([^&#]*)');
   var m = r.exec(window.location.search);
@@ -57,7 +55,15 @@ var areaVideo = document.getElementById('areaVideo');
 var areaChat  = document.getElementById('areaChat');
 var faixa     = document.getElementById('faixa');
 
-// ===== funcoes que o APP chama para controlar o video =====
+// avisa o app se a transmissao esta MESMO ao vivo (ou nao)
+function avisarApp(status){
+  try {
+    if(window.CanalTV && window.CanalTV.postMessage){
+      window.CanalTV.postMessage(status);
+    }
+  } catch(e){}
+}
+
 window.tocarVideo = function(){
   try { if(player && player.playVideo) player.playVideo(); } catch(e){}
 };
@@ -76,32 +82,35 @@ if(!id){
     '<div class="aviso" style="background:#fff">' +
       '<p style="color:#5a5a7a">O chat da transmissao aparece nesta parte da tela.</p>' +
     '</div>';
+  avisarApp('SEM_VIDEO');
 } else {
-  // ===== metade de baixo: o chat ao vivo =====
   var ifC = document.createElement('iframe');
-  ifC.src = 'https://www.youtube.com/live_chat?v=' + id +
-            '&embed_domain=' + dominio;
+  ifC.src = 'https://www.youtube.com/live_chat?v=' + id + '&embed_domain=' + dominio;
   areaChat.appendChild(ifC);
 
-  // ===== metade de cima: o video, via API do YouTube =====
   var tag = document.createElement('script');
   tag.src = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(tag);
 }
 
-// chamada automaticamente quando a API do YouTube termina de carregar
 function onYouTubeIframeAPIReady(){
   if(!id) return;
   player = new YT.Player('player', {
-    height: '100%',
-    width: '100%',
-    videoId: id,
-    playerVars: {
-      autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1
-    },
+    height: '100%', width: '100%', videoId: id,
+    playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 },
     events: {
       'onReady': function(e){
         try { e.target.playVideo(); } catch(err){}
+      },
+      'onStateChange': function(e){
+        // 1 = tocando  -> transmissao no ar
+        if(e.data === YT.PlayerState.PLAYING){ avisarApp('AO_VIVO'); }
+        // 0 = terminou -> live encerrada
+        if(e.data === YT.PlayerState.ENDED){ avisarApp('ENCERRADO'); }
+      },
+      'onError': function(e){
+        // 100/101/150 = video indisponivel, privado ou removido
+        avisarApp('INDISPONIVEL');
       }
     }
   });
