@@ -359,7 +359,7 @@ class _AnuncioPageState extends State<AnuncioPage> {
   bool _enviando = false;
 
   // Chave pública do Web3Forms (não é secreta) — entrega no e-mail comercial.
-  static const _web3formsKey = 'COLE_AQUI_SUA_ACCESS_KEY';
+  static const _web3formsKey = '055828af-d485-494f-b1e0-f61a35e3aebf';
   static const _emailComercial = 'comercialradioeleva@gmail.com';
 
   @override
