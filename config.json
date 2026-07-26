@@ -272,20 +272,6 @@
   "campanha": {},
   "campanhas": [
     {
-      "id": "c1785101484980",
-      "nome": "Supermercados Ville Fort",
-      "nivel": "cidade",
-      "estado": "Minas Gerais",
-      "cidade": "Uberlândia",
-      "tamanho": "cheia",
-      "link": "https://www.villefort.com.br/oferta/ofertas-de-hortifruti-%E2%80%93-2307-26072026-8",
-      "segundos_fechar": 10,
-      "frequencia": "sempre",
-      "tipo": "imagem",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785101481214_Designsemnome1.png",
-      "publicar_em": "2026-07-26T19:22"
-    },
-    {
       "id": "c1785101569541",
       "nome": "Mercado Livre",
       "nivel": "cidade",
@@ -298,6 +284,20 @@
       "tipo": "imagem",
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785106852027_Designsemnome.png",
       "publicar_em": "2026-07-26T19:42"
+    },
+    {
+      "id": "c1785101484980",
+      "nome": "Supermercados Ville Fort",
+      "nivel": "cidade",
+      "estado": "Minas Gerais",
+      "cidade": "Uberlândia",
+      "tamanho": "retrato",
+      "link": "https://www.villefort.com.br/oferta/ofertas-de-hortifruti-%E2%80%93-2307-26072026-8",
+      "segundos_fechar": 10,
+      "frequencia": "sempre",
+      "tipo": "imagem",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785106880379_Designsemnome1.png",
+      "publicar_em": "2026-07-26T19:22"
     }
   ]
 }
