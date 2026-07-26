@@ -162,6 +162,7 @@
   </div>
     </div>
     <button class="aba ativa" data-aba="banners" onclick="trocarAba(this)">🖼️ Banners</button>
+    <button class="aba" data-aba="campanha" onclick="trocarAba(this)">📢 Campanha</button>
     <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
     <button class="aba" data-aba="enquetes" onclick="trocarAba(this)">📊 Enquetes</button>
     <button class="aba" data-aba="pedidosm" onclick="trocarAba(this)">🎶 Pedido Musical</button>
@@ -206,6 +207,27 @@
           <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados do banner anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
         </label>
         <button class="botao" onclick="adicionarBanner()">➕ Adicionar banner</button>
+      </div>
+    </section>
+
+    <!-- CAMPANHA DE ABERTURA -->
+    <section id="sec-campanha" class="oculto">
+      <div class="cartao">
+        <h2>📢 Campanha de abertura (pop-up)</h2>
+        <p class="rotulo-secao">Uma imagem que abre em <b>tela cheia assim que o ouvinte abre o app</b>, com o X para fechar aparecendo depois de alguns segundos. Aparece <b>uma vez por dia</b> por aparelho. Tamanho ideal: <b>1080 x 1350</b> (retrato). Ótima para divulgar uma promoção, um evento ou um patrocinador.</p>
+        <div id="campanhaAtual"></div>
+        <hr style="border-color:#20365555;margin:16px 0">
+        <label>Imagem da campanha</label>
+        <input type="file" id="arqCampanha" accept="image/png,image/jpeg">
+        <label>Link ao tocar na imagem (opcional)</label>
+        <input id="linkCampanha" placeholder="https://... (deixe vazio se não tiver)">
+        <div class="grade2">
+          <div><label>⏱️ Segundos até aparecer o X</label><input type="number" id="segCampanha" min="0" max="15" value="5"></div>
+          <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="cpFim"></div>
+        </div>
+        <label>⏰ Publicar em (opcional)</label>
+        <input type="datetime-local" id="cpInicio">
+        <button class="botao" onclick="salvarCampanha()" style="margin-top:12px">✅ Publicar campanha</button>
       </div>
     </section>
 
@@ -626,7 +648,7 @@ async function entrarPainel(){
     localStorage.setItem('tokenEleva', token);
     document.getElementById('telaAcesso').classList.add('oculto');
     document.getElementById('painel').classList.remove('oculto');
-    desenharBanners(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
+    desenharBanners(); desenharCampanha(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
@@ -669,7 +691,7 @@ async function subirImagem(arquivo, pasta){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif'].forEach(s=>
+  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
 }
 
@@ -721,6 +743,48 @@ async function removerBanner(i){
   if(!confirm('Remover este banner?')) return;
   config.banners.splice(i,1);
   try{ await salvarConfig('Painel: banner removido'); desenharBanners(); avisar('Banner removido.'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== CAMPANHA DE ABERTURA ==================
+function desenharCampanha(){
+  const el = document.getElementById('campanhaAtual');
+  const c = config.campanha || {};
+  if(!c.imagem){
+    el.innerHTML = '<p class="rotulo-secao">Nenhuma campanha ativa. O app abre direto, sem pop-up.</p>';
+    return;
+  }
+  el.innerHTML = `<div class="item">
+    <img src="${c.imagem}" style="width:60px;height:75px;object-fit:cover;border-radius:6px">
+    <div class="info"><b>Campanha ativa ${etiquetaAgenda(c)}</b><span>${c.link||'sem link'} • X em ${c.segundos_fechar||5}s</span></div>
+    <button class="botao mini perigo" onclick="removerCampanha()">🗑️ Tirar do ar</button>
+  </div>`;
+}
+async function salvarCampanha(){
+  const arq = document.getElementById('arqCampanha').files[0];
+  const jaTem = config.campanha && config.campanha.imagem;
+  if(!arq && !jaTem){ avisar('Escolha a imagem da campanha primeiro.', true); return; }
+  try{
+    let url = jaTem ? config.campanha.imagem : '';
+    if(arq){ avisar('Enviando imagem...'); url = await subirImagem(arq, 'imagens'); }
+    const nova = {
+      id: 'c'+Date.now(),
+      imagem: url,
+      link: document.getElementById('linkCampanha').value.trim(),
+      segundos_fechar: parseInt(document.getElementById('segCampanha').value||'5',10)
+    };
+    if(cpInicio.value) nova.publicar_em = cpInicio.value;
+    if(cpFim.value) nova.expirar_em = cpFim.value;
+    config.campanha = nova;
+    await salvarConfig('Painel: campanha de abertura');
+    document.getElementById('arqCampanha').value=''; document.getElementById('linkCampanha').value=''; cpInicio.value=''; cpFim.value='';
+    desenharCampanha(); avisar('Campanha publicada! ✅');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function removerCampanha(){
+  if(!confirm('Tirar a campanha do ar? O app volta a abrir sem pop-up.')) return;
+  config.campanha = {};
+  try{ await salvarConfig('Painel: campanha removida'); desenharCampanha(); avisar('Campanha retirada.'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
 }
 
