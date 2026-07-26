@@ -10,6 +10,7 @@ import 'paginas/chat_page.dart';
 import 'paginas/pedidos_page.dart';
 import 'paginas/tv_page.dart';
 import 'paginas/menu_page.dart';
+import 'widgets/campanha_popup.dart';
 import 'servicos/config_service.dart';
 import 'servicos/analytics_service.dart';
 import 'servicos/notificacoes_service.dart';
@@ -117,6 +118,30 @@ class _TelaPrincipalState extends State<TelaPrincipal>
     )..repeat(reverse: true);
     // Mantém a tela acesa por 1 minuto sempre que o app está em uso
     _manterTelaAcesa();
+    // Campanha de abertura: mostra o pop-up assim que o app abre (uma vez/dia)
+    WidgetsBinding.instance.addPostFrameCallback((_) => _mostrarCampanha());
+  }
+
+  /// Exibe o pop-up de campanha na abertura. Se o config.json ainda não
+  /// tiver chegado, espera a primeira atualização (com prazo) e tenta.
+  void _mostrarCampanha() {
+    final cfg = ConfigService.instancia.config;
+    if (cfg.value.campanha.isNotEmpty) {
+      CampanhaPopup.talvezMostrar(context, cfg.value);
+      return;
+    }
+    // ainda não carregou: espera a próxima atualização, no máximo 6s
+    Timer? prazo;
+    void ouvinte() {
+      if (cfg.value.campanha.isNotEmpty && mounted) {
+        cfg.removeListener(ouvinte);
+        prazo?.cancel();
+        CampanhaPopup.talvezMostrar(context, cfg.value);
+      }
+    }
+
+    cfg.addListener(ouvinte);
+    prazo = Timer(const Duration(seconds: 6), () => cfg.removeListener(ouvinte));
   }
 
   @override
