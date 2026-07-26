@@ -148,7 +148,11 @@ class _CampanhaDialogState extends State<_CampanhaDialog> {
   Widget build(BuildContext context) {
     final podeFechar = _resta <= 0;
     final telaCheia = widget.tamanho == 'cheia';
-    return Dialog(
+    // Bloqueia o botão VOLTAR do Android: o anúncio só fecha pelo X.
+    // Enquanto a contagem não zera, nem o X nem o Voltar fecham.
+    return PopScope(
+      canPop: false,
+      child: Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: telaCheia
           ? EdgeInsets.zero
@@ -241,6 +245,7 @@ class _CampanhaDialogState extends State<_CampanhaDialog> {
               ),
             ),
         ],
+      ),
       ),
     );
   }
