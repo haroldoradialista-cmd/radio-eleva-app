@@ -10,7 +10,7 @@ class DespertadorPage extends StatefulWidget {
 }
 
 class _DespertadorPageState extends State<DespertadorPage> {
-  String _tipo = 'diario'; // 'diario', 'dias' ou 'unico'
+  String _tipo = 'dias'; // 'dias' ou 'unico'
   TimeOfDay _hora = TimeOfDay(hour: 7, minute: 0);
   DateTime? _data;
   Set<int> _dias = {}; // dias da semana no padrão Calendar (dom=1..sáb=7)
@@ -30,7 +30,10 @@ class _DespertadorPageState extends State<DespertadorPage> {
     if (!mounted) return;
     setState(() {
       _ativo = prefs.getBool('desp_ativo') ?? false;
-      _tipo = prefs.getString('desp_tipo') ?? 'diario';
+      _tipo = prefs.getString('desp_tipo') ?? 'dias';
+      // "TODO DIA" foi substituído por "DIAS DA SEMANA" com todos os dias:
+      // converte configurações antigas automaticamente.
+      if (_tipo == 'diario') _tipo = 'dias';
       _hora = TimeOfDay(
           hour: prefs.getInt('desp_hora') ?? 7,
           minute: prefs.getInt('desp_min') ?? 0);
@@ -44,6 +47,11 @@ class _DespertadorPageState extends State<DespertadorPage> {
               .map((e) => int.tryParse(e.trim()) ?? 0)
               .where((e) => e >= 1 && e <= 7)
               .toSet();
+      // Se veio do antigo "TODO DIA" e ficou sem dias, marca a semana toda
+      if (_tipo == 'dias' && _dias.isEmpty &&
+          (prefs.getString('desp_tipo') ?? '') == 'diario') {
+        _dias = {1, 2, 3, 4, 5, 6, 7};
+      }
       _resumo = prefs.getString('desp_resumo') ?? '';
     });
   }
@@ -322,7 +330,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
         SizedBox(height: 8),
         Center(
           child: Text(
-            'Acorde com a Rádio Eleva tocando,\nmesmo com o app fechado.',
+            'Acorde com a Rádio Eleva',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13.5, color: CoresEleva.brancoSuave),
           ),
@@ -361,13 +369,11 @@ class _DespertadorPageState extends State<DespertadorPage> {
             ),
           ),
 
-        // Tipo: TODO DIA, DIAS DA SEMANA ou UMA VEZ
+        // Tipo: DIAS DA SEMANA ou UMA VEZ
         Row(
           children: [
-            _chipTipo('diario', 'TODO DIA', Icons.repeat_rounded),
-            SizedBox(width: 8),
             _chipTipo('dias', 'DIAS DA SEMANA', Icons.date_range_rounded),
-            SizedBox(width: 8),
+            SizedBox(width: 10),
             _chipTipo('unico', 'UMA VEZ', Icons.event_rounded),
           ],
         ),
@@ -390,6 +396,26 @@ class _DespertadorPageState extends State<DespertadorPage> {
           valor: _fmtHora(_hora),
           aoTocar: _escolherHora,
         ),
+
+        // Botão principal logo abaixo do horário
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _ativar,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: CoresEleva.verde,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28)),
+              textStyle:
+                  TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            ),
+            icon: Icon(Icons.alarm_add_rounded),
+            label: Text(_ativo ? 'ATUALIZAR DESPERTADOR' : 'ATIVAR DESPERTADOR'),
+          ),
+        ),
+        SizedBox(height: 16),
         // ===== PERMISSÕES DO DESPERTADOR =====
         Container(
           margin: EdgeInsets.only(bottom: 12),
@@ -466,24 +492,6 @@ class _DespertadorPageState extends State<DespertadorPage> {
           ),
         ),
 
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _ativar,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CoresEleva.verde,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28)),
-              textStyle:
-                  TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-            icon: Icon(Icons.alarm_add_rounded),
-            label: Text(_ativo ? 'ATUALIZAR DESPERTADOR' : 'ATIVAR DESPERTADOR'),
-          ),
-        ),
-        SizedBox(height: 16),
         Container(
           padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -584,13 +592,14 @@ class _DespertadorPageState extends State<DespertadorPage> {
             children: _ordemDias.map(bolinha).toList(),
           ),
           SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
+          Row(
             children: [
               _atalhoDias('Seg a Sex', () => _marcar({2, 3, 4, 5, 6})),
-              _atalhoDias('Fim de semana', () => _marcar({1, 7})),
+              SizedBox(width: 6),
+              _atalhoDias('Sáb e Dom', () => _marcar({1, 7})),
+              SizedBox(width: 6),
               _atalhoDias('Todos', () => _marcar({1, 2, 3, 4, 5, 6, 7})),
+              SizedBox(width: 6),
               _atalhoDias('Limpar', () => _marcar({})),
             ],
           ),
@@ -600,20 +609,25 @@ class _DespertadorPageState extends State<DespertadorPage> {
   }
 
   Widget _atalhoDias(String rotulo, VoidCallback aoTocar) {
-    return GestureDetector(
-      onTap: aoTocar,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: CoresEleva.azulProfundo,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: CoresEleva.dourado.withOpacity(0.5)),
+    return Expanded(
+      child: GestureDetector(
+        onTap: aoTocar,
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: CoresEleva.azulProfundo,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: CoresEleva.dourado.withOpacity(0.5)),
+          ),
+          child: Text(rotulo,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: CoresEleva.dourado)),
         ),
-        child: Text(rotulo,
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: CoresEleva.dourado)),
       ),
     );
   }
