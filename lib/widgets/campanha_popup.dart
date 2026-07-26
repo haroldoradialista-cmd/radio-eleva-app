@@ -31,14 +31,30 @@ class CampanhaPopup {
     if (ini != null && agora.isBefore(ini)) return;
     if (fim != null && agora.isAfter(fim)) return;
 
-    // Mostra no máximo uma vez por dia (por versão da campanha)
-    final assinatura = '$imagem|${c['publicar_em'] ?? ''}';
+    // FREQUÊNCIA (definida no painel):
+    //   'sempre'  -> toda vez que o app abre (padrão)
+    //   'hora'    -> no máximo 1 vez por hora
+    //   'dia'     -> no máximo 1 vez por dia
+    final freq = (c['frequencia'] ?? 'sempre').toString();
+    final assinatura = '${(c['id'] ?? imagem)}';
     try {
       final prefs = await SharedPreferences.getInstance();
-      final hoje = '${agora.year}-${agora.month}-${agora.day}';
-      final marca = prefs.getString('campanha_vista') ?? '';
-      if (marca == '$hoje|$assinatura') return; // já viu hoje
-      await prefs.setString('campanha_vista', '$hoje|$assinatura');
+      final ultimaMs = prefs.getInt('campanha_vista_ms') ?? 0;
+      final ultimaAssin = prefs.getString('campanha_vista_id') ?? '';
+      final ultima = DateTime.fromMillisecondsSinceEpoch(ultimaMs);
+      final mesmaCampanha = ultimaAssin == assinatura;
+
+      if (freq == 'dia' && mesmaCampanha) {
+        final mesmoDia = ultima.year == agora.year &&
+            ultima.month == agora.month &&
+            ultima.day == agora.day;
+        if (mesmoDia) return; // já viu hoje
+      } else if (freq == 'hora' && mesmaCampanha) {
+        if (agora.difference(ultima).inMinutes < 60) return; // viu na última hora
+      }
+      // 'sempre' não bloqueia nunca; só registra
+      await prefs.setInt('campanha_vista_ms', agora.millisecondsSinceEpoch);
+      await prefs.setString('campanha_vista_id', assinatura);
     } catch (_) {}
 
     if (!context.mounted) return;
@@ -47,13 +63,14 @@ class CampanhaPopup {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.88),
+      barrierColor: Colors.black.withOpacity(0.92),
       builder: (_) => _CampanhaDialog(
         cfg: cfg,
         imagem: imagem,
         link: (c['link'] ?? '').toString(),
         idCampanha: (c['id'] ?? imagem).toString(),
         segundos: segundos,
+        tamanho: (c['tamanho'] ?? 'retrato').toString(),
       ),
     );
   }
@@ -65,12 +82,14 @@ class _CampanhaDialog extends StatefulWidget {
   final String link;
   final String idCampanha;
   final int segundos;
+  final String tamanho;
   const _CampanhaDialog({
     required this.cfg,
     required this.imagem,
     required this.link,
     required this.idCampanha,
     required this.segundos,
+    required this.tamanho,
   });
   @override
   State<_CampanhaDialog> createState() => _CampanhaDialogState();
@@ -128,9 +147,12 @@ class _CampanhaDialogState extends State<_CampanhaDialog> {
   @override
   Widget build(BuildContext context) {
     final podeFechar = _resta <= 0;
+    final telaCheia = widget.tamanho == 'cheia';
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(20),
+      insetPadding: telaCheia
+          ? EdgeInsets.zero
+          : const EdgeInsets.all(20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -140,10 +162,14 @@ class _CampanhaDialogState extends State<_CampanhaDialog> {
               GestureDetector(
                 onTap: widget.link.isEmpty ? null : _abrir,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(telaCheia ? 0 : 16),
                   child: Image.network(
                     widget.imagem,
-                    fit: BoxFit.contain,
+                    fit: telaCheia ? BoxFit.cover : BoxFit.contain,
+                    width: telaCheia ? double.infinity : null,
+                    height: telaCheia
+                        ? MediaQuery.of(context).size.height
+                        : null,
                     loadingBuilder: (c, filho, prog) {
                       if (prog == null) return filho;
                       return Container(
