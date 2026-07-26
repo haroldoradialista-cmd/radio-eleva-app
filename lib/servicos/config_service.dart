@@ -20,7 +20,8 @@ class AppConfig {
   final List<String> chatPalavras;
   final String linkCompartilhar;
   final bool anunciosAtivos;
-  final Map<String, dynamic> campanha; // pop-up de abertura (imagem/link/agendamento)
+  final Map<String, dynamic> campanha; // compatibilidade (campanha única antiga)
+  final List<Map<String, dynamic>> campanhas; // várias campanhas geolocalizadas
   final List<Map<String, dynamic>> banners;
   final List<Map<String, dynamic>> noticias;
   final List<Map<String, dynamic>> redes;
@@ -44,6 +45,7 @@ class AppConfig {
     required this.linkCompartilhar,
     required this.anunciosAtivos,
     required this.campanha,
+    required this.campanhas,
     required this.banners,
     required this.noticias,
     required this.redes,
@@ -68,6 +70,7 @@ class AppConfig {
         linkCompartilhar: j['link_compartilhar'] ?? '',
         anunciosAtivos: (j['anuncios'] ?? 'sim').toString() != 'nao',
         campanha: Map<String, dynamic>.from(j['campanha'] ?? {}),
+        campanhas: List<Map<String, dynamic>>.from((j['campanhas'] ?? []).map((e) => Map<String, dynamic>.from(e))),
         banners: List<Map<String, dynamic>>.from(j['banners'] ?? []),
         noticias: List<Map<String, dynamic>>.from(j['noticias'] ?? []),
         redes: List<Map<String, dynamic>>.from(j['redes'] ?? []),
@@ -92,6 +95,7 @@ class AppConfig {
         linkCompartilhar: '',
         anunciosAtivos: true,
         campanha: {},
+        campanhas: [],
         banners: [],
         noticias: [],
         redes: [],
