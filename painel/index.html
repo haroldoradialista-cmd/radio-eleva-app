@@ -272,7 +272,7 @@
         </select>
         <div id="campoEstado" style="display:none">
           <label>Estado</label>
-          <select id="estadoCampanha">
+          <select id="estadoCampanha" onchange="carregarCidadesCampanha()">
             <option value="">— escolha o estado —</option>
             <option>Acre</option><option>Alagoas</option><option>Amapá</option><option>Amazonas</option>
             <option>Bahia</option><option>Ceará</option><option>Distrito Federal</option><option>Espírito Santo</option>
@@ -284,8 +284,8 @@
           </select>
         </div>
         <div id="campoCidade" style="display:none">
-          <label>Cidade (escreva igual aparece nos acessos, ex.: Uberlândia)</label>
-          <input id="cidadeCampanha" placeholder="Nome da cidade">
+          <label>Cidade</label>
+          <select id="cidadeCampanha"><option value="">— escolha o estado primeiro —</option></select>
         </div>
 
         <label>📐 Tamanho do banner</label>
@@ -324,8 +324,10 @@
 
       <div class="cartao">
         <h2>📊 Relatório de campanhas (pós-venda)</h2>
-        <p class="rotulo-secao">Visualizações, cliques e alcance geográfico de cada campanha — para você mostrar resultado ao cliente.</p>
-        <button class="botao" onclick="gerarRelatorioCampanhas()">📈 Gerar relatório agora</button>
+        <p class="rotulo-secao">Visualizações, cliques e alcance geográfico — para você mostrar resultado ao cliente.</p>
+        <label>Escolha a campanha</label>
+        <select id="relCampanhaSel"><option value="">— todas as campanhas —</option></select>
+        <button class="botao" onclick="gerarRelatorioCampanhas()" style="margin-top:10px">📈 Gerar relatório</button>
         <div id="relatorioCampanhas" style="margin-top:14px"></div>
       </div>
     </section>
@@ -863,6 +865,28 @@ function atualizarCamposGeo(){
   document.getElementById('campoEstado').style.display = (n==='estado'||n==='cidade') ? 'block' : 'none';
   document.getElementById('campoCidade').style.display = (n==='cidade') ? 'block' : 'none';
 }
+// carrega as cidades do estado escolhido (API do IBGE), opcionalmente pré-selecionando uma
+async function carregarCidadesCampanha(cidadeSel){
+  const nomeEstado = document.getElementById('estadoCampanha').value;
+  const selC = document.getElementById('cidadeCampanha');
+  if(!selC) return;
+  selC.innerHTML = '<option value="">— escolha o estado primeiro —</option>';
+  if(!nomeEstado) return;
+  const uf = (_UFS.find(([s,n])=>n===nomeEstado)||[])[0];
+  if(!uf) return;
+  try{
+    selC.innerHTML = '<option value="">Carregando cidades...</option>';
+    const r = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+    const cidades = await r.json();
+    selC.innerHTML = '<option value="">— escolha a cidade —</option>';
+    cidades.forEach(c=>{
+      const sel = (cidadeSel && c.nome===cidadeSel) ? ' selected' : '';
+      selC.innerHTML += `<option value="${c.nome}"${sel}>${c.nome}</option>`;
+    });
+  }catch(e){
+    selC.innerHTML = '<option value="">(erro ao carregar cidades)</option>';
+  }
+}
 function nomeFreq(f){ return f==='sempre' ? 'toda vez que abrir' : (f==='hora' ? '1x por hora' : '1x por dia'); }
 function textoAlvo(c){
   if(c.nivel==='pais' || !c.nivel) return '🌎 Todo o país';
@@ -896,6 +920,14 @@ function desenharListaCampanhas(){
       <button class="botao mini perigo" onclick="removerCampanha('${c.id}')">🗑️</button>
     </div>`;
   }).join('');
+  // preenche o seletor do relatório
+  const sel = document.getElementById('relCampanhaSel');
+  if(sel){
+    const atual = sel.value;
+    sel.innerHTML = '<option value="">— todas as campanhas —</option>' +
+      arr.map(c=>`<option value="${c.id}">${c.nome||c.id}</option>`).join('');
+    sel.value = atual;
+  }
 }
 function _limparFormCampanha(){
   document.getElementById('editandoCampanha').value='';
@@ -920,7 +952,11 @@ function editarCampanha(id){
   document.getElementById('nomeCampanha').value=c.nome||'';
   document.getElementById('nivelCampanha').value=c.nivel||'pais';
   document.getElementById('estadoCampanha').value=c.estado||'';
-  document.getElementById('cidadeCampanha').value=c.cidade||'';
+  atualizarCamposGeo(); atualizarDicaTamanho();
+  // se for campanha de cidade, carrega a lista do IBGE e seleciona a cidade salva
+  if((c.nivel==='cidade') && c.estado){
+    carregarCidadesCampanha(c.cidade||'');
+  }
   document.getElementById('tamCampanha').value=c.tamanho||'retrato';
   document.getElementById('linkCampanha').value=c.link||'';
   document.getElementById('segCampanha').value=c.segundos_fechar||5;
@@ -1001,18 +1037,21 @@ async function gerarRelatorioCampanhas(){
     const dados = await r.json() || {};
     const eventos = Object.values(dados);
     if(eventos.length===0){ alvo.innerHTML='<p class="rotulo-secao">Ainda não há visualizações nem cliques registrados.</p>'; return; }
+    const filtroId = document.getElementById('relCampanhaSel').value;
     const arr = _todasCampanhas();
     const nomePorId = {}; arr.forEach(c=>nomePorId[c.id]=c.nome||c.id);
-    // agrupa por campanha
+    // agrupa por campanha (respeitando o filtro escolhido)
     const porCamp = {};
     eventos.forEach(e=>{
       const id = e.campanha||'?';
+      if(filtroId && id!==filtroId) return; // pula quem não é a campanha escolhida
       porCamp[id] = porCamp[id] || {views:0, cliques:0, cidades:{}, estados:{}};
       if(e.tipo==='clique') porCamp[id].cliques++; else porCamp[id].views++;
       const est = e.estado||'—'; const cid = e.cidade||'—';
       porCamp[id].estados[est] = (porCamp[id].estados[est]||0)+1;
       porCamp[id].cidades[cid] = (porCamp[id].cidades[cid]||0)+1;
     });
+    if(Object.keys(porCamp).length===0){ alvo.innerHTML='<p class="rotulo-secao">Sem eventos para esta campanha ainda.</p>'; return; }
     let html = '';
     Object.keys(porCamp).forEach(id=>{
       const d = porCamp[id];
