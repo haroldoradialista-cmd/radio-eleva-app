@@ -38,6 +38,22 @@
   body[data-tema="day"] label{color:#33475f}
   body[data-tema="day"] input,body[data-tema="day"] select,body[data-tema="day"] textarea{background:#f3f6fb;color:#20364f;border-color:#cfd9e8}
   body[data-tema="day"] .item{background:#f3f6fb;border-color:#dae2ee}
+  /* textos que no escuro eram brancos/claros — escurece no tema Day */
+  body[data-tema="day"] .cartao h2{color:#0D2B52}
+  body[data-tema="day"] .item .info b{color:#0D2B52}
+  body[data-tema="day"] .item .info span{color:#5a6f88}
+  body[data-tema="day"] .msgchat p{color:#20364f}
+  body[data-tema="day"] .msgchat small{color:#6b7f96}
+  body[data-tema="day"] .kpi b{color:#0D2B52}
+  body[data-tema="day"] table{color:#20364f}
+  body[data-tema="day"] th,body[data-tema="day"] td{border-bottom-color:#dce4f0}
+  body[data-tema="day"] .barrasV .bv small{color:#33475f}
+  body[data-tema="day"] h1,body[data-tema="day"] h3{color:#0D2B52}
+  body[data-tema="day"] p,body[data-tema="day"] span,body[data-tema="day"] li,body[data-tema="day"] div{color:inherit}
+  body[data-tema="day"] .abas .marca small{color:#c9922e}
+  body[data-tema="day"] .topo small{color:#c9922e}
+  /* botões coloridos (verde/azul/gradiente) mantêm texto branco */
+  body[data-tema="day"] .botao,body[data-tema="day"] .aba.ativa,body[data-tema="day"] #aviso,body[data-tema="day"] .botao *{color:#fff}
   /* ===== MENU LATERAL FIXO ===== */
   .abas{position:fixed;top:0;left:0;bottom:0;width:196px;display:flex;flex-direction:column;gap:5px;
         padding:14px 10px;background:var(--navy3);border-right:2px solid var(--ouro);overflow-y:auto;z-index:50}
