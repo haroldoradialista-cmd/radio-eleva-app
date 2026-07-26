@@ -126,14 +126,16 @@ class _TelaPrincipalState extends State<TelaPrincipal>
   /// tiver chegado, espera a primeira atualização (com prazo) e tenta.
   void _mostrarCampanha() {
     final cfg = ConfigService.instancia.config;
-    if (cfg.value.campanha.isNotEmpty) {
+    bool temCampanha(AppConfig c) =>
+        c.campanha.isNotEmpty || c.campanhas.isNotEmpty;
+    if (temCampanha(cfg.value)) {
       CampanhaPopup.talvezMostrar(context, cfg.value);
       return;
     }
     // ainda não carregou: espera a próxima atualização, no máximo 6s
     Timer? prazo;
     void ouvinte() {
-      if (cfg.value.campanha.isNotEmpty && mounted) {
+      if (temCampanha(cfg.value) && mounted) {
         cfg.removeListener(ouvinte);
         prazo?.cancel();
         CampanhaPopup.talvezMostrar(context, cfg.value);
