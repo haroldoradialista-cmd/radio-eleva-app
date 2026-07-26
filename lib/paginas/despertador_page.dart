@@ -10,9 +10,10 @@ class DespertadorPage extends StatefulWidget {
 }
 
 class _DespertadorPageState extends State<DespertadorPage> {
-  String _tipo = 'diario'; // 'diario' ou 'unico'
+  String _tipo = 'diario'; // 'diario', 'dias' ou 'unico'
   TimeOfDay _hora = TimeOfDay(hour: 7, minute: 0);
   DateTime? _data;
+  Set<int> _dias = {}; // dias da semana no padrão Calendar (dom=1..sáb=7)
   bool _ativo = false;
   String _resumo = '';
   Map<String, bool> _perms = {};
@@ -35,6 +36,14 @@ class _DespertadorPageState extends State<DespertadorPage> {
           minute: prefs.getInt('desp_min') ?? 0);
       final d = prefs.getString('desp_data') ?? '';
       _data = d.isEmpty ? null : DateTime.tryParse(d);
+      final diasStr = prefs.getString('desp_dias') ?? '';
+      _dias = diasStr.isEmpty
+          ? <int>{}
+          : diasStr
+              .split(',')
+              .map((e) => int.tryParse(e.trim()) ?? 0)
+              .where((e) => e >= 1 && e <= 7)
+              .toSet();
       _resumo = prefs.getString('desp_resumo') ?? '';
     });
   }
@@ -228,6 +237,15 @@ class _DespertadorPageState extends State<DespertadorPage> {
     if (_tipo == 'diario') {
       await DespertadorService.agendarDiario(_hora.hour, _hora.minute);
       resumo = 'TODO DIA às ${_fmtHora(_hora)}';
+    } else if (_tipo == 'dias') {
+      if (_dias.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: Colors.red.shade700,
+            content: Text('Escolha pelo menos um dia da semana.')));
+        return;
+      }
+      await DespertadorService.agendarDias(_hora.hour, _hora.minute, _dias);
+      resumo = '${_resumoDias()} às ${_fmtHora(_hora)}';
     } else {
       if (_data == null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -253,6 +271,8 @@ class _DespertadorPageState extends State<DespertadorPage> {
     await prefs.setInt('desp_hora', _hora.hour);
     await prefs.setInt('desp_min', _hora.minute);
     await prefs.setString('desp_data', _data?.toIso8601String() ?? '');
+    await prefs.setString(
+        'desp_dias', (_dias.toList()..sort()).join(','));
     await prefs.setString('desp_resumo', resumo);
     await prefs.setInt('desp_sonecas', 0); // as 3 sonecas voltam a valer
     if (mounted) {
@@ -341,15 +361,19 @@ class _DespertadorPageState extends State<DespertadorPage> {
             ),
           ),
 
-        // Tipo: TODO DIA ou UMA VEZ
+        // Tipo: TODO DIA, DIAS DA SEMANA ou UMA VEZ
         Row(
           children: [
             _chipTipo('diario', 'TODO DIA', Icons.repeat_rounded),
+            SizedBox(width: 8),
+            _chipTipo('dias', 'DIAS DA SEMANA', Icons.date_range_rounded),
             SizedBox(width: 8),
             _chipTipo('unico', 'UMA VEZ', Icons.event_rounded),
           ],
         ),
         SizedBox(height: 14),
+
+        if (_tipo == 'dias') _seletorDias(),
 
         if (_tipo == 'unico')
           _botaoEscolha(
@@ -481,13 +505,126 @@ class _DespertadorPageState extends State<DespertadorPage> {
     );
   }
 
+  // Rótulos dos dias no padrão Calendar (índice = dom=1 .. sáb=7)
+  static const List<String> _abrevDias = [
+    '', 'DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'
+  ];
+
+  // Ordem de exibição começando na segunda (mais natural no Brasil)
+  static const List<int> _ordemDias = [2, 3, 4, 5, 6, 7, 1];
+
+  String _resumoDias() {
+    if (_dias.length == 7) return 'TODO DIA';
+    final semana = {2, 3, 4, 5, 6};
+    if (_dias.length == 5 && _dias.containsAll(semana)) {
+      return 'SEG A SEX';
+    }
+    if (_dias.length == 2 && _dias.contains(1) && _dias.contains(7)) {
+      return 'FIM DE SEMANA';
+    }
+    final marcados =
+        _ordemDias.where((d) => _dias.contains(d)).map((d) => _abrevDias[d]);
+    return marcados.join(', ');
+  }
+
+  Widget _seletorDias() {
+    Widget bolinha(int dia) {
+      final marcado = _dias.contains(dia);
+      return GestureDetector(
+        onTap: () => setState(() {
+          if (marcado) {
+            _dias.remove(dia);
+          } else {
+            _dias.add(dia);
+          }
+        }),
+        child: Container(
+          width: 42,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: marcado ? CoresEleva.botaoPlay : null,
+            color: marcado ? null : CoresEleva.azulMedio,
+            shape: BoxShape.circle,
+            border: Border.all(
+                color: marcado ? CoresEleva.verde : CoresEleva.borda,
+                width: marcado ? 1.8 : 1),
+          ),
+          child: Text(
+            _abrevDias[dia],
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+              color: marcado ? Colors.white : CoresEleva.brancoSuave,
+            ),
+          ),
+        ),
+      );
+    }
+
+    void _marcar(Set<int> novos) => setState(() => _dias = {...novos});
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: CoresEleva.azulMedio,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CoresEleva.borda),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Toque nos dias em que quer acordar',
+              style: TextStyle(
+                  fontSize: 12, color: CoresEleva.textoFraco)),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: _ordemDias.map(bolinha).toList(),
+          ),
+          SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _atalhoDias('Seg a Sex', () => _marcar({2, 3, 4, 5, 6})),
+              _atalhoDias('Fim de semana', () => _marcar({1, 7})),
+              _atalhoDias('Todos', () => _marcar({1, 2, 3, 4, 5, 6, 7})),
+              _atalhoDias('Limpar', () => _marcar({})),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _atalhoDias(String rotulo, VoidCallback aoTocar) {
+    return GestureDetector(
+      onTap: aoTocar,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: CoresEleva.azulProfundo,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: CoresEleva.dourado.withOpacity(0.5)),
+        ),
+        child: Text(rotulo,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: CoresEleva.dourado)),
+      ),
+    );
+  }
+
   Widget _chipTipo(String valor, String rotulo, IconData icone) {
     final marcado = _tipo == valor;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _tipo = valor),
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           decoration: BoxDecoration(
             gradient: marcado ? CoresEleva.botaoPlay : null,
             color: marcado ? null : CoresEleva.azulMedio,
@@ -496,17 +633,20 @@ class _DespertadorPageState extends State<DespertadorPage> {
                 color: marcado ? CoresEleva.verde : CoresEleva.borda,
                 width: marcado ? 1.8 : 1),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icone,
-                  size: 18,
+                  size: 22,
                   color: marcado ? Colors.white : CoresEleva.dourado),
-              SizedBox(width: 6),
+              SizedBox(height: 6),
               Text(rotulo,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
                   style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                      fontSize: 11.5,
+                      height: 1.15,
                       color:
                           marcado ? Colors.white : CoresEleva.brancoSuave)),
             ],
