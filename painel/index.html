@@ -254,10 +254,39 @@
     <!-- CAMPANHA DE ABERTURA -->
     <section id="sec-campanha" class="oculto">
       <div class="cartao">
-        <h2>📢 Campanha de abertura (pop-up)</h2>
-        <p class="rotulo-secao">Uma imagem que abre em tela cheia assim que o ouvinte abre o app, com o X para fechar aparecendo depois de alguns segundos. Ótima para divulgar uma promoção, um evento ou um patrocinador.</p>
-        <div id="campanhaAtual"></div>
+        <h2>📢 Campanhas de abertura (pop-up)</h2>
+        <p class="rotulo-secao">Anúncios em tela cheia na abertura do app. Cada campanha pode ser direcionada por <b>região</b> — para todo o país, um estado inteiro ou uma cidade específica. Ideal para vender espaço a clientes locais.</p>
+        <div id="listaCampanhas"></div>
         <hr style="border-color:#20365555;margin:16px 0">
+        <h3 id="tituloFormCampanha" style="margin-bottom:10px">➕ Nova campanha</h3>
+        <input type="hidden" id="editandoCampanha" value="">
+
+        <label>🏷️ Nome do cliente / campanha (só você vê)</label>
+        <input id="nomeCampanha" placeholder="Ex.: Supermercado Preço Bom — RJ">
+
+        <label>📍 Onde este anúncio deve aparecer?</label>
+        <select id="nivelCampanha" onchange="atualizarCamposGeo()">
+          <option value="pais">🌎 Todo o país (Brasil inteiro)</option>
+          <option value="estado">🗺️ Um estado inteiro</option>
+          <option value="cidade">🏙️ Uma cidade específica</option>
+        </select>
+        <div id="campoEstado" style="display:none">
+          <label>Estado</label>
+          <select id="estadoCampanha">
+            <option value="">— escolha o estado —</option>
+            <option>Acre</option><option>Alagoas</option><option>Amapá</option><option>Amazonas</option>
+            <option>Bahia</option><option>Ceará</option><option>Distrito Federal</option><option>Espírito Santo</option>
+            <option>Goiás</option><option>Maranhão</option><option>Mato Grosso</option><option>Mato Grosso do Sul</option>
+            <option>Minas Gerais</option><option>Pará</option><option>Paraíba</option><option>Paraná</option>
+            <option>Pernambuco</option><option>Piauí</option><option>Rio de Janeiro</option><option>Rio Grande do Norte</option>
+            <option>Rio Grande do Sul</option><option>Rondônia</option><option>Roraima</option><option>Santa Catarina</option>
+            <option>São Paulo</option><option>Sergipe</option><option>Tocantins</option>
+          </select>
+        </div>
+        <div id="campoCidade" style="display:none">
+          <label>Cidade (escreva igual aparece nos acessos, ex.: Uberlândia)</label>
+          <input id="cidadeCampanha" placeholder="Nome da cidade">
+        </div>
 
         <label>📐 Tamanho do banner</label>
         <select id="tamCampanha" onchange="atualizarDicaTamanho()">
@@ -284,10 +313,20 @@
         </div>
 
         <div class="grade2">
-          <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="cpInicio"></div>
-          <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="cpFim"></div>
+          <div><label>▶️ Começar a exibir em (opcional)</label><input type="datetime-local" id="cpInicio"></div>
+          <div><label>⏸️ Pausar/tirar do ar em (opcional)</label><input type="datetime-local" id="cpFim"></div>
         </div>
-        <button class="botao" onclick="salvarCampanha()" style="margin-top:12px">✅ Publicar campanha</button>
+        <p class="rotulo-secao">Deixe as datas vazias para começar agora e ficar no ar até você tirar. Use-as para programar início e pausa automáticos.</p>
+
+        <button class="botao" onclick="salvarCampanha()" style="margin-top:12px">✅ Salvar campanha</button>
+        <button class="botao" id="btnCancelarEdicao" onclick="cancelarEdicaoCampanha()" style="margin-top:12px;background:#555;display:none">Cancelar edição</button>
+      </div>
+
+      <div class="cartao">
+        <h2>📊 Relatório de campanhas (pós-venda)</h2>
+        <p class="rotulo-secao">Visualizações, cliques e alcance geográfico de cada campanha — para você mostrar resultado ao cliente.</p>
+        <button class="botao" onclick="gerarRelatorioCampanhas()">📈 Gerar relatório agora</button>
+        <div id="relatorioCampanhas" style="margin-top:14px"></div>
       </div>
     </section>
 
@@ -808,6 +847,7 @@ async function removerBanner(i){
 }
 
 // ================== CAMPANHA DE ABERTURA ==================
+// ================== CAMPANHAS (multi + geo + relatório) ==================
 const DIMENSOES_CAMPANHA = {
   cheia:   { rotulo:'Tela cheia', dim:'1080 x 1920 px', obs:'retrato inteiro (9:16), cobre a tela toda' },
   retrato: { rotulo:'Retrato',    dim:'1080 x 1350 px', obs:'quase toda a tela (4:5), com bordas' }
@@ -818,35 +858,100 @@ function atualizarDicaTamanho(){
   document.getElementById('dicaTamanho').innerHTML =
     `📏 Produza a imagem em <b>${d.dim}</b> — ${d.obs}.`;
 }
-function nomeFreq(f){
-  return f==='sempre' ? 'toda vez que abrir' : (f==='hora' ? '1x por hora' : '1x por dia');
+function atualizarCamposGeo(){
+  const n = document.getElementById('nivelCampanha').value;
+  document.getElementById('campoEstado').style.display = (n==='estado'||n==='cidade') ? 'block' : 'none';
+  document.getElementById('campoCidade').style.display = (n==='cidade') ? 'block' : 'none';
 }
-function desenharCampanha(){
-  const el = document.getElementById('campanhaAtual');
-  const c = config.campanha || {};
-  atualizarDicaTamanho();
-  if(!c.imagem){
-    el.innerHTML = '<p class="rotulo-secao">Nenhuma campanha ativa. O app abre direto, sem pop-up.</p>';
-    return;
+function nomeFreq(f){ return f==='sempre' ? 'toda vez que abrir' : (f==='hora' ? '1x por hora' : '1x por dia'); }
+function textoAlvo(c){
+  if(c.nivel==='pais' || !c.nivel) return '🌎 Todo o país';
+  if(c.nivel==='estado') return '🗺️ '+(c.estado||'estado?');
+  if(c.nivel==='cidade') return '🏙️ '+(c.cidade||'cidade?')+(c.estado?(' / '+c.estado):'');
+  return '';
+}
+// migra a campanha única antiga para a lista, se existir
+function _todasCampanhas(){
+  const arr = Array.isArray(config.campanhas) ? config.campanhas.slice() : [];
+  if(config.campanha && config.campanha.imagem){
+    if(!arr.some(c=>c.id===config.campanha.id)) arr.push(config.campanha);
   }
-  const d = DIMENSOES_CAMPANHA[c.tamanho] || DIMENSOES_CAMPANHA.retrato;
-  const expirada = estaForaDoAr(c);
-  el.innerHTML = `<div class="item">
-    <img src="${c.imagem}" style="width:56px;height:70px;object-fit:cover;border-radius:6px">
-    <div class="info"><b>Campanha ${etiquetaAgenda(c)}</b><span>${d.rotulo} • ${nomeFreq(c.frequencia||'sempre')} • X em ${c.segundos_fechar||5}s</span></div>
-    ${expirada ? `<button class="botao mini" style="background:#35C733" onclick="renovarCampanha()" title="Fazer a campanha voltar ao ar">🔄 Renovar</button>` : ''}
-    <button class="botao mini perigo" onclick="removerCampanha()">🗑️ Tirar do ar</button>
-  </div>`;
+  return arr;
+}
+function desenharCampanha(){ desenharListaCampanhas(); }
+function desenharListaCampanhas(){
+  atualizarDicaTamanho(); atualizarCamposGeo();
+  const el = document.getElementById('listaCampanhas');
+  const arr = _todasCampanhas();
+  if(arr.length===0){ el.innerHTML = '<p class="rotulo-secao">Nenhuma campanha cadastrada ainda.</p>'; return; }
+  el.innerHTML = arr.map((c,i)=>{
+    const d = DIMENSOES_CAMPANHA[c.tamanho] || DIMENSOES_CAMPANHA.retrato;
+    const expirada = estaForaDoAr(c);
+    return `<div class="item">
+      <img src="${c.imagem}" style="width:52px;height:66px;object-fit:cover;border-radius:6px">
+      <div class="info"><b>${c.nome||'(sem nome)'} ${etiquetaAgenda(c)}</b>
+        <span>${textoAlvo(c)} • ${d.rotulo} • ${nomeFreq(c.frequencia||'sempre')}</span></div>
+      <button class="botao mini" onclick="editarCampanha('${c.id}')">✏️</button>
+      ${expirada ? `<button class="botao mini" style="background:#35C733" onclick="renovarCampanha('${c.id}')">🔄</button>` : ''}
+      <button class="botao mini perigo" onclick="removerCampanha('${c.id}')">🗑️</button>
+    </div>`;
+  }).join('');
+}
+function _limparFormCampanha(){
+  document.getElementById('editandoCampanha').value='';
+  document.getElementById('nomeCampanha').value='';
+  document.getElementById('nivelCampanha').value='pais';
+  document.getElementById('estadoCampanha').value='';
+  document.getElementById('cidadeCampanha').value='';
+  document.getElementById('tamCampanha').value='retrato';
+  document.getElementById('linkCampanha').value='';
+  document.getElementById('segCampanha').value='5';
+  document.getElementById('freqCampanha').value='sempre';
+  document.getElementById('arqCampanha').value='';
+  cpInicio.value=''; cpFim.value='';
+  document.getElementById('tituloFormCampanha').textContent='➕ Nova campanha';
+  document.getElementById('btnCancelarEdicao').style.display='none';
+  atualizarCamposGeo(); atualizarDicaTamanho();
+}
+function cancelarEdicaoCampanha(){ _limparFormCampanha(); }
+function editarCampanha(id){
+  const c = _todasCampanhas().find(x=>x.id===id); if(!c) return;
+  document.getElementById('editandoCampanha').value=id;
+  document.getElementById('nomeCampanha').value=c.nome||'';
+  document.getElementById('nivelCampanha').value=c.nivel||'pais';
+  document.getElementById('estadoCampanha').value=c.estado||'';
+  document.getElementById('cidadeCampanha').value=c.cidade||'';
+  document.getElementById('tamCampanha').value=c.tamanho||'retrato';
+  document.getElementById('linkCampanha').value=c.link||'';
+  document.getElementById('segCampanha').value=c.segundos_fechar||5;
+  document.getElementById('freqCampanha').value=c.frequencia||'sempre';
+  cpInicio.value=c.publicar_em||''; cpFim.value=c.expirar_em||'';
+  document.getElementById('tituloFormCampanha').textContent='✏️ Editando: '+(c.nome||'campanha');
+  document.getElementById('btnCancelarEdicao').style.display='inline-block';
+  atualizarCamposGeo(); atualizarDicaTamanho();
+  window.scrollTo({top:document.getElementById('tituloFormCampanha').offsetTop-80, behavior:'smooth'});
 }
 async function salvarCampanha(){
+  const id = document.getElementById('editandoCampanha').value;
   const arq = document.getElementById('arqCampanha').files[0];
-  const jaTem = config.campanha && config.campanha.imagem;
-  if(!arq && !jaTem){ avisar('Escolha a imagem da campanha primeiro.', true); return; }
+  const nivel = document.getElementById('nivelCampanha').value;
+  const estado = document.getElementById('estadoCampanha').value;
+  const cidade = document.getElementById('cidadeCampanha').value.trim();
+  if((nivel==='estado'||nivel==='cidade') && !estado){ avisar('Escolha o estado.', true); return; }
+  if(nivel==='cidade' && !cidade){ avisar('Escreva o nome da cidade.', true); return; }
+
+  if(!config.campanhas) config.campanhas = [];
+  const existente = id ? _todasCampanhas().find(x=>x.id===id) : null;
+  if(!arq && !existente){ avisar('Escolha a imagem da campanha.', true); return; }
   try{
-    let url = jaTem ? config.campanha.imagem : '';
+    let url = existente ? existente.imagem : '';
     if(arq){ avisar('Enviando imagem...'); url = await subirImagem(arq, 'imagens'); }
     const nova = {
-      id: 'c'+Date.now(),
+      id: id || ('c'+Date.now()),
+      nome: document.getElementById('nomeCampanha').value.trim() || 'Campanha',
+      nivel: nivel,
+      estado: (nivel==='pais') ? '' : estado,
+      cidade: (nivel==='cidade') ? cidade : '',
       imagem: url,
       tamanho: document.getElementById('tamCampanha').value,
       link: document.getElementById('linkCampanha').value.trim(),
@@ -855,34 +960,81 @@ async function salvarCampanha(){
     };
     if(cpInicio.value) nova.publicar_em = cpInicio.value;
     if(cpFim.value) nova.expirar_em = cpFim.value;
-    config.campanha = nova;
-    await salvarConfig('Painel: campanha de abertura');
-    document.getElementById('arqCampanha').value=''; document.getElementById('linkCampanha').value=''; cpInicio.value=''; cpFim.value='';
-    desenharCampanha(); avisar('Campanha publicada! ✅');
+    // grava na lista (substitui se editando; migra a antiga p/ lista)
+    let arr = _todasCampanhas().filter(c=>c.id!==nova.id);
+    arr.push(nova);
+    config.campanhas = arr;
+    config.campanha = {}; // a antiga única foi migrada para a lista
+    await salvarConfig('Painel: campanha '+(id?'editada':'criada'));
+    _limparFormCampanha(); desenharListaCampanhas();
+    avisar('Campanha salva! ✅');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
-async function renovarCampanha(){
-  const c = config.campanha || {};
-  if(!c.imagem){ avisar('Não há campanha para renovar.', true); return; }
-  const dias = prompt('Renovar a campanha por quantos DIAS a partir de agora?', '7');
+async function renovarCampanha(id){
+  const arr = _todasCampanhas(); const c = arr.find(x=>x.id===id); if(!c) return;
+  const dias = prompt('Reativar a campanha por quantos DIAS a partir de agora?', '7');
   if(dias===null) return;
   const n = parseInt(dias,10);
-  if(isNaN(n) || n<=0){ avisar('Digite um número de dias válido.', true); return; }
-  const fim = new Date(Date.now() + n*24*60*60*1000);
-  // formato datetime-local: YYYY-MM-DDTHH:MM
-  const pad = x => String(x).padStart(2,'0');
+  if(isNaN(n)||n<=0){ avisar('Número de dias inválido.', true); return; }
+  const fim = new Date(Date.now()+n*24*60*60*1000);
+  const pad = x=>String(x).padStart(2,'0');
   c.expirar_em = `${fim.getFullYear()}-${pad(fim.getMonth()+1)}-${pad(fim.getDate())}T${pad(fim.getHours())}:${pad(fim.getMinutes())}`;
-  delete c.publicar_em;   // volta ao ar agora
-  delete c.finalizado;    // desfaz o "tirar do ar" manual
-  config.campanha = c;
-  try{ await salvarConfig('Painel: campanha renovada'); desenharCampanha(); avisar(`Campanha renovada por ${n} dia(s)! ✅`); }
+  delete c.publicar_em; delete c.finalizado;
+  config.campanhas = arr.filter(x=>x.id!==id).concat([c]);
+  config.campanha = {};
+  try{ await salvarConfig('Painel: campanha reativada'); desenharListaCampanhas(); avisar(`Reativada por ${n} dia(s)! ✅`); }
   catch(e){ avisar('Falhou: '+e.message, true); }
 }
-async function removerCampanha(){
-  if(!confirm('Tirar a campanha do ar? O app volta a abrir sem pop-up.')) return;
-  config.campanha = {};
-  try{ await salvarConfig('Painel: campanha removida'); desenharCampanha(); avisar('Campanha retirada.'); }
+async function removerCampanha(id){
+  if(!confirm('Tirar esta campanha do ar definitivamente?')) return;
+  config.campanhas = _todasCampanhas().filter(c=>c.id!==id);
+  if(config.campanha && config.campanha.id===id) config.campanha = {};
+  try{ await salvarConfig('Painel: campanha removida'); desenharListaCampanhas(); avisar('Campanha removida.'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
+}
+// ---------- RELATÓRIO DE CAMPANHAS (pós-venda) ----------
+async function gerarRelatorioCampanhas(){
+  const alvo = document.getElementById('relatorioCampanhas');
+  alvo.innerHTML = '<p class="rotulo-secao">Carregando eventos...</p>';
+  try{
+    const r = await fetch(`${RTDB}/campanha_eventos.json?t=${Date.now()}`);
+    const dados = await r.json() || {};
+    const eventos = Object.values(dados);
+    if(eventos.length===0){ alvo.innerHTML='<p class="rotulo-secao">Ainda não há visualizações nem cliques registrados.</p>'; return; }
+    const arr = _todasCampanhas();
+    const nomePorId = {}; arr.forEach(c=>nomePorId[c.id]=c.nome||c.id);
+    // agrupa por campanha
+    const porCamp = {};
+    eventos.forEach(e=>{
+      const id = e.campanha||'?';
+      porCamp[id] = porCamp[id] || {views:0, cliques:0, cidades:{}, estados:{}};
+      if(e.tipo==='clique') porCamp[id].cliques++; else porCamp[id].views++;
+      const est = e.estado||'—'; const cid = e.cidade||'—';
+      porCamp[id].estados[est] = (porCamp[id].estados[est]||0)+1;
+      porCamp[id].cidades[cid] = (porCamp[id].cidades[cid]||0)+1;
+    });
+    let html = '';
+    Object.keys(porCamp).forEach(id=>{
+      const d = porCamp[id];
+      const ctr = d.views>0 ? ((d.cliques/d.views)*100).toFixed(1) : '0';
+      const topEst = Object.entries(d.estados).sort((a,b)=>b[1]-a[1]).slice(0,6);
+      const topCid = Object.entries(d.cidades).sort((a,b)=>b[1]-a[1]).slice(0,8);
+      html += `<div class="cartao" style="margin-bottom:12px">
+        <h3>${nomePorId[id]||id}</h3>
+        <div class="grade2" style="margin:8px 0">
+          <div class="kpi"><b>${d.views}</b><small>visualizações</small></div>
+          <div class="kpi"><b>${d.cliques}</b><small>cliques (${ctr}%)</small></div>
+        </div>
+        <p class="rotulo-secao" style="margin-top:6px"><b>Por estado:</b></p>
+        <table><tr><th>Estado</th><th>Eventos</th></tr>
+          ${topEst.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
+        <p class="rotulo-secao" style="margin-top:10px"><b>Por cidade:</b></p>
+        <table><tr><th>Cidade</th><th>Eventos</th></tr>
+          ${topCid.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
+      </div>`;
+    });
+    alvo.innerHTML = html;
+  }catch(e){ alvo.innerHTML = '<p class="rotulo-secao">Erro ao carregar: '+e.message+'</p>'; }
 }
 
 // ================== NOTÍCIAS ==================
