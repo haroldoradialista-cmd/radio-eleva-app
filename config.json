@@ -269,13 +269,28 @@
     "encher o saco"
   ],
   "chat_suspensao_minutos": 10,
-  "campanha": {
-    "id": "c1785075984699",
-    "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785075982437_Designsemnome.png",
-    "tamanho": "retrato",
-    "link": "https://www.mercadolivre.com.br/camera-inteligente-im7-3mp-de-resolucao-branca-intelbras/p/MLB47535705",
-    "segundos_fechar": 8,
-    "frequencia": "sempre",
-    "publicar_em": "2026-07-26T11:26"
-  }
+  "campanha": {},
+  "campanhas": [
+    {
+      "id": "c1785075984699",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785075982437_Designsemnome.png",
+      "tamanho": "retrato",
+      "link": "https://www.mercadolivre.com.br/camera-inteligente-im7-3mp-de-resolucao-branca-intelbras/p/MLB47535705",
+      "segundos_fechar": 8,
+      "frequencia": "sempre",
+      "publicar_em": "2026-07-26T11:26"
+    },
+    {
+      "id": "c1785098434204",
+      "nome": "Campanha",
+      "nivel": "cidade",
+      "estado": "Minas Gerais",
+      "cidade": "Uberlândia",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785098432191_Designsemnome.png",
+      "tamanho": "cheia",
+      "link": "",
+      "segundos_fechar": 5,
+      "frequencia": "sempre"
+    }
+  ]
 }
