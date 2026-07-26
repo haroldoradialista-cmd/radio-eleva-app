@@ -271,11 +271,10 @@
   ],
   "chat_suspensao_minutos": 10,
   "campanha": {
-    "id": "c1785066913275",
-    "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785066910708_Designsemnome.png",
+    "id": "c1785067803884",
+    "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785067799582_Designsemnome.png",
     "link": "https://www.mercadolivre.com.br/camera-inteligente-intelbras-im5sc-con-wi-fi-full-hd-color-branca/p/MLB27705742",
-    "segundos_fechar": 5,
-    "publicar_em": "2026-07-26T08:55",
-    "expirar_em": "2026-07-26T08:58"
+    "segundos_fechar": 8,
+    "publicar_em": "2026-07-26T09:09"
   }
 }
