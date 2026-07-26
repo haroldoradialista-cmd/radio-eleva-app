@@ -272,19 +272,6 @@
   "campanha": {},
   "campanhas": [
     {
-      "id": "c1785098434204",
-      "nome": "Campanha",
-      "nivel": "cidade",
-      "estado": "Minas Gerais",
-      "cidade": "Uberlândia",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785098500551_Designsemnome1.png",
-      "tamanho": "cheia",
-      "link": "",
-      "segundos_fechar": 5,
-      "frequencia": "sempre",
-      "publicar_em": "2026-07-26T17:42"
-    },
-    {
       "id": "c1785075984699",
       "nome": "ML",
       "nivel": "cidade",
