@@ -65,6 +65,30 @@ class DespertadorService {
     await _gravarAlarme(primeiro, true);
   }
 
+  /// Converte o dia da semana do Dart (seg=1..dom=7) para o padrão do
+  /// Android/Calendar (dom=1, seg=2 ... sáb=7), que é o usado no Kotlin.
+  static int paraCalendar(int diaDart) => (diaDart % 7) + 1;
+
+  /// Alarme que repete só nos dias escolhidos da semana.
+  /// [dias] é o conjunto no padrão Calendar (dom=1..sáb=7).
+  /// Agenda a próxima ocorrência; o Kotlin reagenda sozinho a cada disparo.
+  static Future<void> agendarDias(int hora, int minuto, Set<int> dias) async {
+    final agora = DateTime.now();
+    DateTime? alvo;
+    // procura, de hoje até 7 dias à frente, o próximo dia marcado que ainda não passou
+    for (int i = 0; i < 8; i++) {
+      final d = DateTime(agora.year, agora.month, agora.day, hora, minuto)
+          .add(Duration(days: i));
+      if (dias.contains(paraCalendar(d.weekday)) && d.isAfter(agora)) {
+        alvo = d;
+        break;
+      }
+    }
+    alvo ??= DateTime(agora.year, agora.month, agora.day, hora, minuto)
+        .add(Duration(days: 1));
+    await _gravarAlarme(alvo, true);
+  }
+
   /// Estado de cada permissão que o despertador precisa
   static Future<Map<String, bool>> statusPermissoes() async {
     try {
