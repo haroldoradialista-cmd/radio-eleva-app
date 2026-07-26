@@ -736,9 +736,9 @@ async function gh(caminho, opcoes={}){
 }
 
 // ================== ACESSO ==================
-async function entrarPainel(){
+async function entrarPainel(silencioso){
   token = document.getElementById('campoToken').value.trim() || token;
-  if(!token){ avisar('Cole o token primeiro.', true); return; }
+  if(!token){ if(!silencioso) avisar('Cole o token primeiro.', true); return; }
   try{
     await carregarConfig();
     localStorage.setItem('tokenEleva', token);
@@ -748,9 +748,10 @@ async function entrarPainel(){
     desenharBanners(); desenharCampanha(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
     ['bn','cp','nt','eq','pr'].forEach(pref=>{ const box=document.getElementById('midiaBox_'+pref); if(box){ box.innerHTML=camposMidiaHTML(pref); trocarTipoMidia(pref); } });
     carregarChat(); carregarVotos();
-    avisar('Bem-vindo ao Painel Eleva! 🎉');
+    if(!silencioso) avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
-    avisar('Token inválido ou sem permissão. Confira e tente de novo.', true);
+    if(!silencioso) avisar('Token inválido ou sem permissão. Confira e tente de novo.', true);
+    throw e;
   }
 }
 
@@ -868,6 +869,7 @@ function trocarAba(botao){
   botao.classList.add('ativa');
   ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
+  try{ sessionStorage.setItem('painel_aba', botao.dataset.aba); }catch(_){}
 }
 
 // ================== BANNERS ==================
@@ -2731,6 +2733,28 @@ function alternarTema(){
   try{ salvo = localStorage.getItem('temaEleva') || 'dark'; }catch(e){}
   document.addEventListener('DOMContentLoaded', ()=> aplicarTema(salvo));
 })();
+
+// Ao atualizar a página (F5): se já estava logado e há token salvo,
+// religa a sessão e volta direto para a aba onde você estava.
+async function restaurarSessao(){
+  let logado = false, temToken = false;
+  try{ logado = sessionStorage.getItem('painel_logado')==='sim'; }catch(_){}
+  try{ temToken = !!localStorage.getItem('tokenEleva'); }catch(_){}
+  if(logado){
+    const tl = document.getElementById('telaLogin');
+    if(tl) tl.style.display = 'none'; // pula a tela de login do Firebase
+  }
+  if(logado && temToken){
+    try{
+      await entrarPainel(true); // silencioso: usa o token guardado no localStorage
+      let aba = 'banners';
+      try{ aba = sessionStorage.getItem('painel_aba') || 'banners'; }catch(_){}
+      const btn = document.querySelector('.aba[data-aba="'+aba+'"]');
+      if(btn) trocarAba(btn);
+    }catch(_){}
+  }
+}
+document.addEventListener('DOMContentLoaded', restaurarSessao);
 
 
 // ============ REPETIR POSTAGENS (banners, notícias, enquetes, promoções) ============
