@@ -27,6 +27,8 @@ class CampanhaPopup {
   }
 
   /// A campanha é para este ouvinte? (país / estado / cidade)
+  /// Regra de ouro: se a localização do ouvinte é DESCONHECIDA, só campanha
+  /// de nível 'pais' pode aparecer — nunca uma regional (evita vazar região).
   static bool _alcanca(Map<String, dynamic> c) {
     final nivel = (c['nivel'] ?? 'pais').toString(); // pais | estado | cidade
     if (nivel == 'pais') return true; // todo o país
@@ -35,30 +37,34 @@ class CampanhaPopup {
     final estadoOuvinte = _norm(AnalyticsService.estado);
     final ufOuvinte = _norm(AnalyticsService.uf);
 
-    // compara pelo nome do estado OU pela sigla (RJ, MG...)
-    bool estadoBate = estadoAlvo.isNotEmpty &&
-        (estadoOuvinte == estadoAlvo ||
-            ufOuvinte == estadoAlvo ||
-            estadoOuvinte.contains(estadoAlvo) ||
-            estadoAlvo.contains(estadoOuvinte));
+    // Sem localização confiável do ouvinte, campanha regional NÃO aparece.
+    if (estadoOuvinte.isEmpty && ufOuvinte.isEmpty) return false;
+    if (estadoAlvo.isEmpty) return false;
+
+    // Casa o estado: igualdade pelo nome OU pela sigla (RJ, MG...).
+    // Nada de "contains" solto — evita casar por engano.
+    final bool estadoBate =
+        estadoOuvinte == estadoAlvo || ufOuvinte == estadoAlvo;
     if (nivel == 'estado') return estadoBate;
 
     if (nivel == 'cidade') {
       final cidadeAlvo = _norm((c['cidade'] ?? '').toString());
       final cidadeOuvinte = _norm(AnalyticsService.cidade);
-      final cidadeBate = cidadeAlvo.isNotEmpty &&
-          (cidadeOuvinte == cidadeAlvo ||
-              cidadeOuvinte.contains(cidadeAlvo) ||
-              cidadeAlvo.contains(cidadeOuvinte));
-      // se informou estado junto, exige os dois; senão, só a cidade
-      return estadoAlvo.isEmpty ? cidadeBate : (cidadeBate && estadoBate);
+      // exige cidade do ouvinte conhecida E igual à cidade-alvo
+      if (cidadeAlvo.isEmpty || cidadeOuvinte.isEmpty) return false;
+      final cidadeBate = cidadeOuvinte == cidadeAlvo;
+      // cidade só vale se o estado também bater (duas cidades homônimas existem)
+      return cidadeBate && estadoBate;
     }
     return false;
   }
 
-  /// Está no ar? (agendamento e não finalizada)
+  /// Está no ar? (tem mídia, não finalizada e dentro do agendamento)
   static bool _noAr(Map<String, dynamic> c) {
-    if ((c['imagem'] ?? '').toString().isEmpty) return false;
+    final temMidia = (c['imagem'] ?? '').toString().isNotEmpty ||
+        (c['video'] ?? '').toString().isNotEmpty ||
+        (c['youtube'] ?? '').toString().isNotEmpty;
+    if (!temMidia) return false;
     if ((c['finalizado'] ?? '').toString() == 'sim') return false;
     final agora = DateTime.now();
     final ini = DateTime.tryParse((c['publicar_em'] ?? '').toString());
@@ -76,6 +82,15 @@ class CampanhaPopup {
     lista.addAll(cfg.campanhas);
     if (cfg.campanha.isNotEmpty) lista.add(cfg.campanha);
     if (lista.isEmpty) return;
+
+    // Se existe alguma campanha REGIONAL, espera a localização carregar antes
+    // de decidir (senão o anúncio de outra região pode vazar).
+    final temRegional =
+        lista.any((c) => (c['nivel'] ?? 'pais').toString() != 'pais');
+    if (temRegional) {
+      await AnalyticsService.garantirLocalizacao();
+    }
+    if (!context.mounted) return;
 
     // filtra: no ar E que alcança a região deste ouvinte
     final elegiveis =
@@ -135,16 +150,22 @@ class CampanhaPopup {
       AppConfig cfg, String idCampanha, String tipo) {
     if (cfg.chatUrl.isEmpty) return;
     final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
+    // Grava no nó banner_cliques (já gravável no Firebase) com marca CAMPANHA:
+    // e também no nó campanha_eventos (caso as regras permitam) — o que der.
+    final corpo = jsonEncode({
+      'banner': 'CAMPANHA:$idCampanha',
+      'campanha': idCampanha,
+      'tipo': tipo, // 'view' ou 'clique'
+      'quando': DateTime.now().toIso8601String(),
+      'cidade': AnalyticsService.cidade,
+      'estado': AnalyticsService.estado,
+      'pais': AnalyticsService.pais,
+    });
     try {
-      http.post(Uri.parse('$base/campanha_eventos.json'),
-          body: jsonEncode({
-            'campanha': idCampanha,
-            'tipo': tipo, // 'view' ou 'clique'
-            'quando': DateTime.now().toIso8601String(),
-            'cidade': AnalyticsService.cidade,
-            'estado': AnalyticsService.estado,
-            'pais': AnalyticsService.pais,
-          }));
+      http.post(Uri.parse('$base/banner_cliques.json'), body: corpo);
+    } catch (_) {}
+    try {
+      http.post(Uri.parse('$base/campanha_eventos.json'), body: corpo);
     } catch (_) {}
   }
 }
