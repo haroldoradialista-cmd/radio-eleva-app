@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../servicos/analytics_service.dart';
 import '../servicos/config_service.dart';
+import 'midia_eleva.dart';
 
 /// Pop-up de campanha na abertura do app.
 ///
@@ -124,6 +125,7 @@ class CampanhaPopup {
         idCampanha: assinatura,
         segundos: segundos,
         tamanho: (c['tamanho'] ?? 'retrato').toString(),
+        item: c,
       ),
     );
   }
@@ -154,6 +156,7 @@ class _CampanhaDialog extends StatefulWidget {
   final String idCampanha;
   final int segundos;
   final String tamanho;
+  final Map<String, dynamic> item;
   const _CampanhaDialog({
     required this.cfg,
     required this.imagem,
@@ -161,6 +164,7 @@ class _CampanhaDialog extends StatefulWidget {
     required this.idCampanha,
     required this.segundos,
     required this.tamanho,
+    required this.item,
   });
   @override
   State<_CampanhaDialog> createState() => _CampanhaDialogState();
@@ -224,24 +228,34 @@ class _CampanhaDialogState extends State<_CampanhaDialog> {
                 onTap: widget.link.isEmpty ? null : _abrir,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(telaCheia ? 0 : 16),
-                  child: Image.network(
-                    widget.imagem,
-                    fit: telaCheia ? BoxFit.cover : BoxFit.contain,
-                    width: telaCheia ? double.infinity : null,
-                    height: telaCheia
-                        ? MediaQuery.of(context).size.height
-                        : null,
-                    loadingBuilder: (c, filho, prog) {
-                      if (prog == null) return filho;
-                      return Container(
-                        height: 320,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(
-                            color: Colors.white),
-                      );
-                    },
-                    errorBuilder: (c, e, s) => const SizedBox.shrink(),
-                  ),
+                  child: MidiaEleva.ehVideo(widget.item)
+                      ? SizedBox(
+                          width: telaCheia
+                              ? double.infinity
+                              : MediaQuery.of(context).size.width,
+                          height: telaCheia
+                              ? MediaQuery.of(context).size.height
+                              : MediaQuery.of(context).size.width * 1.25,
+                          child: MidiaEleva(item: widget.item),
+                        )
+                      : Image.network(
+                          widget.imagem,
+                          fit: telaCheia ? BoxFit.cover : BoxFit.contain,
+                          width: telaCheia ? double.infinity : null,
+                          height: telaCheia
+                              ? MediaQuery.of(context).size.height
+                              : null,
+                          loadingBuilder: (c, filho, prog) {
+                            if (prog == null) return filho;
+                            return Container(
+                              height: 320,
+                              alignment: Alignment.center,
+                              child: const CircularProgressIndicator(
+                                  color: Colors.white),
+                            );
+                          },
+                          errorBuilder: (c, e, s) => const SizedBox.shrink(),
+                        ),
                 ),
               ),
               // Botão X: só aparece depois da contagem
