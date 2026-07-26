@@ -878,7 +878,7 @@ async function carregarCliquesBanner(){
     const r = await fetch(`${RTDB}/banner_cliques.json?t=${Date.now()}`);
     const d = await r.json();
     cliquesBanner = {};
-    if(d) Object.values(d).forEach(c=>{ const k=(c.banner||'').toString(); cliquesBanner[k]=(cliquesBanner[k]||0)+1; });
+    if(d) Object.values(d).forEach(c=>{ const k=(c.banner||'').toString(); if(k.startsWith('CAMPANHA:')) return; cliquesBanner[k]=(cliquesBanner[k]||0)+1; });
   }catch(e){}
 }
 function trocarImagemBanner(i){ idxTroca = i; document.getElementById('arqTroca').click(); }
@@ -1104,16 +1104,35 @@ async function gerarRelatorioCampanhas(){
   const alvo = document.getElementById('relatorioCampanhas');
   alvo.innerHTML = '<p class="rotulo-secao">Carregando eventos...</p>';
   try{
-    const r = await fetch(`${RTDB}/campanha_eventos.json?t=${Date.now()}`);
-    const dados = await r.json() || {};
-    const eventos = Object.values(dados);
-    if(eventos.length===0){ alvo.innerHTML='<p class="rotulo-secao">Ainda não há visualizações nem cliques registrados.</p>'; return; }
+    // Lê dos dois nós possíveis e junta (banner_cliques é onde o app grava com marca CAMPANHA:)
+    let eventos = [];
+    try{
+      const r1 = await fetch(`${RTDB}/campanha_eventos.json?t=${Date.now()}`);
+      const d1 = await r1.json();
+      if(d1) eventos = eventos.concat(Object.entries(d1).map(([k,v])=>({k:'ce_'+k, ...v})));
+    }catch(_){}
+    try{
+      const r2 = await fetch(`${RTDB}/banner_cliques.json?t=${Date.now()}`);
+      const d2 = await r2.json();
+      if(d2) Object.entries(d2).forEach(([k,v])=>{
+        if((v.banner||'').toString().startsWith('CAMPANHA:')){
+          eventos.push({k:'bc_'+k, campanha: v.campanha || (v.banner||'').toString().slice(9), tipo: v.tipo||'clique', cidade:v.cidade, estado:v.estado, pais:v.pais, quando:v.quando});
+        }
+      });
+    }catch(_){}
+    // remove duplicatas (o app grava o MESMO evento nos dois nós): usa quando+campanha+tipo
+    const vistos = {}; const unicos = [];
+    eventos.forEach(e=>{
+      const chave = (e.campanha||'')+'|'+(e.tipo||'')+'|'+(e.quando||'');
+      if(!vistos[chave]){ vistos[chave]=1; unicos.push(e); }
+    });
+    if(unicos.length===0){ alvo.innerHTML='<p class="rotulo-secao">Ainda não há visualizações nem cliques registrados. Assim que um ouvinte abrir o app e ver a campanha, os dados aparecem aqui.</p>'; return; }
     const filtroId = document.getElementById('relCampanhaSel').value;
     const arr = _todasCampanhas();
     const nomePorId = {}; arr.forEach(c=>nomePorId[c.id]=c.nome||c.id);
     // agrupa por campanha (respeitando o filtro escolhido)
     const porCamp = {};
-    eventos.forEach(e=>{
+    unicos.forEach(e=>{
       const id = e.campanha||'?';
       if(filtroId && id!==filtroId) return; // pula quem não é a campanha escolhida
       porCamp[id] = porCamp[id] || {views:0, cliques:0, cidades:{}, estados:{}};
@@ -1122,7 +1141,7 @@ async function gerarRelatorioCampanhas(){
       porCamp[id].estados[est] = (porCamp[id].estados[est]||0)+1;
       porCamp[id].cidades[cid] = (porCamp[id].cidades[cid]||0)+1;
     });
-    if(Object.keys(porCamp).length===0){ alvo.innerHTML='<p class="rotulo-secao">Sem eventos para esta campanha ainda.</p>'; return; }
+    if(Object.keys(porCamp).length===0){ alvo.innerHTML='<p class="rotulo-secao">Sem eventos para esta campanha ainda. Escolha "todas as campanhas" ou aguarde novas aberturas do app.</p>'; return; }
     let html = '';
     Object.keys(porCamp).forEach(id=>{
       const d = porCamp[id];
@@ -2476,6 +2495,7 @@ async function gerarRelatorio(){
     const d = await r.json();
     let cliques = d ? Object.values(d) : [];
     cliques = cliques.filter(c=>{
+      if((c.banner||'').toString().startsWith('CAMPANHA:')) return false; // eventos de campanha não entram aqui
       if(alvo !== '__todos__' && (c.banner||'') !== alvo) return false;
       const q = c.quando ? new Date(c.quando) : null;
       if(de && (!q || q < de)) return false;
