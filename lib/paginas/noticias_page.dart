@@ -4,6 +4,7 @@ import '../servicos/config_service.dart';
 import '../tema.dart';
 import '../servicos/analytics_service.dart';
 import '../widgets/anuncio_banner.dart';
+import '../widgets/midia_eleva.dart';
 
 class NoticiasPage extends StatelessWidget {
   NoticiasPage({super.key});
@@ -66,13 +67,15 @@ class NoticiasPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if ((n['imagem'] ?? '').toString().isNotEmpty)
-              Image.network(
-                n['imagem'],
+            if ((n['imagem'] ?? '').toString().isNotEmpty ||
+                MidiaEleva.ehVideo(n))
+              SizedBox(
                 height: 160,
                 width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => SizedBox.shrink(),
+                child: MidiaEleva(
+                    item: n,
+                    fit: BoxFit.cover,
+                    placeholder: () => const SizedBox.shrink()),
               ),
             Padding(
               padding: EdgeInsets.all(14),
