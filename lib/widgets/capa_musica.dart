@@ -53,7 +53,7 @@ class _CapaMusicaState extends State<CapaMusica> {
     try {
       // separa "Artista - Título"
       String artista = '', titulo = bruto.trim();
-      for (final sep in [' - ', ' – ', ' — ']) {
+      for (final sep in [' - ', ' – ', ' — ', ' _ ']) {
         final idx = bruto.indexOf(sep);
         if (idx > 0) {
           artista = bruto.substring(0, idx).trim();
@@ -61,61 +61,114 @@ class _CapaMusicaState extends State<CapaMusica> {
           break;
         }
       }
-      // limpa "(ao vivo)", "[clipe]" etc.
-      String limpar(String s) => s
-          .replaceAll(RegExp(r'[\[\](){}].*?[\[\](){}]'), ' ')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
-      final artL = limpar(artista);
-      final titL = limpar(titulo);
-
-      // busca pelo conjunto artista+título (bem mais preciso que só o título)
-      final termo = Uri.encodeComponent(
-          (artL.isNotEmpty ? '$artL $titL' : titL));
-      final r = await http
-          .get(Uri.parse(
-              'https://itunes.apple.com/search?term=$termo&country=br&media=music&limit=5'))
-          .timeout(Duration(seconds: 8));
-      String? url;
-      if (r.statusCode == 200) {
-        final d = jsonDecode(r.body);
-        final results = (d['results'] ?? []) as List;
-        String semAcento(String s) {
-          const de = 'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ';
-          const pa = 'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC';
-          var x = s.toLowerCase();
-          for (var i = 0; i < de.length; i++) {
-            x = x.replaceAll(de[i].toLowerCase(), pa[i].toLowerCase());
-          }
-          return x.replaceAll(RegExp(r'[^a-z0-9 ]'), '').trim();
-        }
-
-        for (final item in results) {
-          final aResp = semAcento((item['artistName'] ?? '').toString());
-          final tResp = semAcento((item['trackName'] ?? '').toString());
-          final aBusca = semAcento(artL);
-          final tBusca = semAcento(titL);
-          // valida: o TÍTULO precisa bater, e o artista bate (ou não temos artista)
-          final tituloOk = tResp.contains(tBusca) || tBusca.contains(tResp);
-          final artistaOk = aBusca.isEmpty ||
-              aResp.contains(aBusca) ||
-              aBusca.contains(aResp);
-          if (tituloOk && artistaOk) {
-            final u = (item['artworkUrl100'] ?? '')
-                .toString()
-                .replaceAll('100x100', '600x600');
-            if (u.isNotEmpty) {
-              url = u;
-              break;
-            }
-          }
-        }
+      final artL = _limparNome(artista);
+      final titL = _limparNome(titulo);
+      if (titL.isEmpty) {
+        if (mounted) setState(() => _capaUrl = null);
+        return;
       }
-      // se nada foi validado, NÃO usa capa aleatória — deixa a reserva/logo
+
+      // Estratégias em cascata (para na primeira que validar):
+      //  1) artista+título no Brasil   2) artista+título nos EUA
+      //  3) título+artista (invertido) 4) só o título (validação forte)
+      final tentativas = <Map<String, dynamic>>[
+        if (artL.isNotEmpty) {'termo': '$artL $titL', 'pais': 'br', 'soTitulo': false},
+        if (artL.isNotEmpty) {'termo': '$artL $titL', 'pais': 'us', 'soTitulo': false},
+        if (artL.isNotEmpty) {'termo': '$titL $artL', 'pais': 'br', 'soTitulo': false},
+        {'termo': titL, 'pais': 'br', 'soTitulo': true},
+        {'termo': titL, 'pais': 'us', 'soTitulo': true},
+      ];
+
+      String? url;
+      for (final t in tentativas) {
+        url = await _tentarItunes(
+            t['termo'] as String, t['pais'] as String, artL, titL,
+            soTitulo: t['soTitulo'] as bool);
+        if (url != null) break;
+      }
+      // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo
       if (mounted) setState(() => _capaUrl = url);
     } catch (_) {
       if (mounted) setState(() => _capaUrl = null);
     }
+  }
+
+  /// Limpa nomes: tira "(ao vivo)", "feat.", "playback", "clipe oficial" etc.
+  String _limparNome(String s) {
+    var r = ' $s ';
+    r = r.replaceAll(RegExp(r'[\[\](){}].*?[\[\](){}]'), ' '); // (ao vivo), [clipe]
+    r = r.replaceAll(
+        RegExp(
+            r'\b(feat|ft|part|participacao|participação|com)\.?\s.*$',
+            caseSensitive: false),
+        ' ');
+    r = r.replaceAll(
+        RegExp(
+            r'\b(ao vivo|acustico|acústico|playback|clipe|clip|video oficial|vídeo oficial|official video|official music video|lyric video|lyrics|cover|remix|versao|versão)\b',
+            caseSensitive: false),
+        ' ');
+    r = r.replaceAll(RegExp(r'[|/•].*$'), ' ');
+    r = r.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return r;
+  }
+
+  String _semAcento(String s) {
+    const de = 'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ';
+    const pa = 'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC';
+    var x = s.toLowerCase();
+    for (var i = 0; i < de.length; i++) {
+      x = x.replaceAll(de[i].toLowerCase(), pa[i].toLowerCase());
+    }
+    return x.replaceAll(RegExp(r'[^a-z0-9 ]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  /// Faz uma busca no iTunes e devolve a URL da capa se um resultado validar.
+  Future<String?> _tentarItunes(
+      String termo, String pais, String artL, String titL,
+      {required bool soTitulo}) async {
+    try {
+      final url = Uri.parse(
+          'https://itunes.apple.com/search?term=${Uri.encodeComponent(termo)}&country=$pais&media=music&limit=8');
+      final r = await http.get(url).timeout(const Duration(seconds: 8));
+      if (r.statusCode != 200) return null;
+      final d = jsonDecode(r.body);
+      final results = (d['results'] ?? []) as List;
+      final aBusca = _semAcento(artL);
+      final tBusca = _semAcento(titL);
+      for (final item in results) {
+        final aResp = _semAcento((item['artistName'] ?? '').toString());
+        final tResp = _semAcento((item['trackName'] ?? '').toString());
+        final tituloOk = tResp == tBusca ||
+            tResp.contains(tBusca) ||
+            tBusca.contains(tResp);
+        if (!tituloOk) continue;
+        if (soTitulo) {
+          // sem artista na busca: exige título forte para não pegar capa errada
+          final forte = tResp == tBusca ||
+              (tBusca.length >= 5 &&
+                  (tResp.contains(tBusca) || tBusca.contains(tResp)));
+          if (!forte) continue;
+        } else {
+          final artistaOk = aBusca.isEmpty ||
+              aResp.contains(aBusca) ||
+              aBusca.contains(aResp) ||
+              // artista pode vir invertido/parcial: aceita 1ª palavra em comum
+              _primeiraPalavraComum(aResp, aBusca);
+          if (!artistaOk) continue;
+        }
+        final u = (item['artworkUrl100'] ?? '')
+            .toString()
+            .replaceAll('100x100', '600x600');
+        if (u.isNotEmpty) return u;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  bool _primeiraPalavraComum(String a, String b) {
+    final pa = a.split(' ').where((w) => w.length >= 3).toSet();
+    final pb = b.split(' ').where((w) => w.length >= 3).toSet();
+    return pa.intersection(pb).isNotEmpty;
   }
 
   @override
