@@ -27,10 +27,15 @@ class LetraService {
   }
 
   static String _limpar(String s) {
-    var r = s;
+    var r = ' $s ';
     r = r.replaceAll(RegExp(r'[\(\[].*?[\)\]]'), ' ');
     r = r.replaceAll(
         RegExp(r'\b(feat|ft|part|participacao|participação|com)\.?\s.*$',
+            caseSensitive: false),
+        ' ');
+    r = r.replaceAll(
+        RegExp(
+            r'\b(ao vivo|acustico|acústico|playback|clipe|clip|video oficial|vídeo oficial|official video|official music video|lyric video|lyrics|cover|remix|versao|versão)\b',
             caseSensitive: false),
         ' ');
     r = r.replaceAll(RegExp(r'[|/•].*$'), ' ');
@@ -168,9 +173,19 @@ class LetraService {
       }
     }
 
-    // 3) lyrics.ovh como último reforço
+    // 3) lyrics.ovh como reforço
     for (final (a, t) in combos) {
       final letra = await _lyricsOvh(a, t);
+      if (letra != null) {
+        _cache[chave] = letra;
+        return letra;
+      }
+    }
+
+    // 4) último reforço: LRCLIB só pelo título (aceita se o título conferir);
+    //    ajuda quando o artista vem bagunçado no metadado do streaming.
+    if (tL.isNotEmpty) {
+      final letra = await _lrclibBusca(tL, '', tL);
       if (letra != null) {
         _cache[chave] = letra;
         return letra;
