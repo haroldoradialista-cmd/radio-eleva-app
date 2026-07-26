@@ -270,19 +270,5 @@
   ],
   "chat_suspensao_minutos": 10,
   "campanha": {},
-  "campanhas": [
-    {
-      "id": "c1785075984699",
-      "nome": "ML",
-      "nivel": "cidade",
-      "estado": "Rio de Janeiro",
-      "cidade": "Rio de Janeiro",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785098593239_Designsemnome.png",
-      "tamanho": "cheia",
-      "link": "https://www.mercadolivre.com.br/camera-inteligente-im7-3mp-de-resolucao-branca-intelbras/p/MLB47535705",
-      "segundos_fechar": 8,
-      "frequencia": "sempre",
-      "publicar_em": "2026-07-26T11:26"
-    }
-  ]
+  "campanhas": []
 }
