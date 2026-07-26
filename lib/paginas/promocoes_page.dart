@@ -11,6 +11,7 @@ import '../servicos/analytics_service.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/login_widget.dart';
 import 'pedidos_page.dart' show MaiusculasFormatter;
+import '../widgets/midia_eleva.dart';
 
 class PromocoesPage extends StatefulWidget {
   PromocoesPage({super.key});
@@ -303,14 +304,17 @@ class _PromocoesPageState extends State<PromocoesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (banner.isNotEmpty)
+          if (banner.isNotEmpty || MidiaEleva.ehVideo(promo))
             ClipRRect(
               borderRadius: BorderRadius.vertical(top: Radius.circular(19)),
-              child: Image.network(banner,
-                  height: 140,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => SizedBox.shrink()),
+              child: SizedBox(
+                height: 140,
+                width: double.infinity,
+                child: MidiaEleva(
+                    item: promo,
+                    fit: BoxFit.cover,
+                    placeholder: () => SizedBox.shrink()),
+              ),
             ),
           Padding(
             padding: EdgeInsets.all(14),
