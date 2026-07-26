@@ -31,7 +31,7 @@ class MenuPage extends StatelessWidget {
                   style:
                       TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             ),
-            ...[15, 30, 45, 60, 90].map((m) => ListTile(
+            ...[5, 10, 15, 30, 45, 60, 90].map((m) => ListTile(
                   leading:
                       Icon(Icons.bedtime_rounded, color: CoresEleva.dourado),
                   title: Text('$m minutos'),
