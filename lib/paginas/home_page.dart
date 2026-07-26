@@ -13,6 +13,7 @@ import '../servicos/letra_service.dart';
 import '../servicos/auth_service.dart';
 import '../tema.dart';
 import '../widgets/anuncio_banner.dart';
+import '../widgets/midia_eleva.dart';
 import '../widgets/capa_musica.dart';
 
 class HomePage extends StatefulWidget {
@@ -378,18 +379,10 @@ class _HomePageState extends State<HomePage> {
                                       final b = banners[i];
                                       return GestureDetector(
                                         onTap: () => _tocarBanner(cfg, b),
-                                        child: Image.network(
-                                          b['imagem'] ?? '',
+                                        child: MidiaEleva(
+                                          item: b,
                                           fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          errorBuilder: (_, __, ___) =>
-                                              _bannerPadrao(),
-                                          loadingBuilder: (_, w, p) =>
-                                              p == null
-                                                  ? w
-                                                  : Container(
-                                                      color: CoresEleva
-                                                          .azulMedio),
+                                          placeholder: _bannerPadrao,
                                         ),
                                       );
                                     },
