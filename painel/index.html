@@ -16,6 +16,28 @@
   .topo img{width:42px;height:42px;border-radius:10px}
   .topo h1{font-size:18px;color:var(--branco)}
   .topo small{color:var(--ouro);display:block;font-size:11px;letter-spacing:1px}
+  .topo-acoes{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .btn-tema,.btn-sair{border:1px solid var(--ouro);background:transparent;color:var(--suave);
+        border-radius:20px;padding:7px 14px;cursor:pointer;font-weight:700;font-size:12.5px;white-space:nowrap;transition:.15s}
+  .btn-tema:hover{background:var(--navy2)}
+  .btn-sair{border-color:#ff9a9a;color:#ffd4d4}
+  .btn-sair:hover{background:#7a1b1b;color:#fff}
+  /* ===== TEMA CLARO (DAY) ===== */
+  body[data-tema="day"]{background:linear-gradient(180deg,#EEF3FA,#E3EAF4 40%,#DCE4F0);color:#20364f}
+  body[data-tema="day"] .topo{background:#fff;border-bottom-color:var(--ouro)}
+  body[data-tema="day"] .topo h1{color:#0D2B52}
+  body[data-tema="day"] .btn-tema{color:#20364f;border-color:#c9a537}
+  body[data-tema="day"] .abas{background:#fff;border-right-color:var(--ouro)}
+  body[data-tema="day"] .abas .marca b{color:#0D2B52}
+  body[data-tema="day"] .aba{color:#33475f}
+  body[data-tema="day"] .aba:hover{background:#eef3fa}
+  body[data-tema="day"] .aba.ativa{background:var(--verde2);color:#fff}
+  body[data-tema="day"] .cartao{background:#fff;border-color:#d5deeb;color:#20364f}
+  body[data-tema="day"] h2{color:#0D2B52}
+  body[data-tema="day"] .rotulo-secao{color:#5a6f88}
+  body[data-tema="day"] label{color:#33475f}
+  body[data-tema="day"] input,body[data-tema="day"] select,body[data-tema="day"] textarea{background:#f3f6fb;color:#20364f;border-color:#cfd9e8}
+  body[data-tema="day"] .item{background:#f3f6fb;border-color:#dae2ee}
   /* ===== MENU LATERAL FIXO ===== */
   .abas{position:fixed;top:0;left:0;bottom:0;width:196px;display:flex;flex-direction:column;gap:5px;
         padding:14px 10px;background:var(--navy3);border-right:2px solid var(--ouro);overflow-y:auto;z-index:50}
@@ -140,6 +162,10 @@
 <div class="topo">
   <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
   <div><h1>Painel Eleva</h1><small>GERENCIADOR DO APLICATIVO</small></div>
+  <div class="topo-acoes">
+    <button class="btn-tema" onclick="alternarTema()" title="Alternar tema claro/escuro"><span id="iconeTema">🌙</span> <span id="rotuloTema">Escuro</span></button>
+    <button class="btn-sair" id="btnSairTopo" onclick="sairDoPainel()" style="display:none">🚪 Sair</button>
+  </div>
 </div>
 
 <!-- ===== TELA DE ACESSO ===== -->
@@ -158,20 +184,19 @@
   <div class="abas">
     <div class="marca">
       <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
-      <div><b>Painel Eleva</b><small>ADORE • VIVA • ELEVE</small>    <button class="aba sair" onclick="sairDoPainel()">🚪 Sair</button>
-  </div>
+      <div><b>Painel Eleva</b><small>ADORE • VIVA • ELEVE</small></div>
     </div>
     <button class="aba ativa" data-aba="banners" onclick="trocarAba(this)">🖼️ Banners</button>
     <button class="aba" data-aba="campanha" onclick="trocarAba(this)">📢 Campanha</button>
-    <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
-    <button class="aba" data-aba="enquetes" onclick="trocarAba(this)">📊 Enquetes</button>
-    <button class="aba" data-aba="pedidosm" onclick="trocarAba(this)">🎶 Pedido Musical</button>
-    <button class="aba" data-aba="promos" onclick="trocarAba(this)">🎁 Promoções</button>
-    <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
-    <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="chat" onclick="trocarAba(this)">💬 Chat</button>
-    <button class="aba" data-aba="notif" onclick="trocarAba(this)">🔔 Notificações</button>
+    <button class="aba" data-aba="enquetes" onclick="trocarAba(this)">📊 Enquetes</button>
     <button class="aba" data-aba="stats" onclick="trocarAba(this)">📈 Estatísticas</button>
+    <button class="aba" data-aba="noticias" onclick="trocarAba(this)">📰 Notícias</button>
+    <button class="aba" data-aba="notif" onclick="trocarAba(this)">🔔 Notificações</button>
+    <button class="aba" data-aba="pedidosm" onclick="trocarAba(this)">🎶 Pedido Musical</button>
+    <button class="aba" data-aba="programacao" onclick="trocarAba(this)">📅 Programação</button>
+    <button class="aba" data-aba="promos" onclick="trocarAba(this)">🎁 Promoções</button>
+    <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
   </div>
 
@@ -214,19 +239,38 @@
     <section id="sec-campanha" class="oculto">
       <div class="cartao">
         <h2>📢 Campanha de abertura (pop-up)</h2>
-        <p class="rotulo-secao">Uma imagem que abre em <b>tela cheia assim que o ouvinte abre o app</b>, com o X para fechar aparecendo depois de alguns segundos. Aparece <b>uma vez por dia</b> por aparelho. Tamanho ideal: <b>1080 x 1350</b> (retrato). Ótima para divulgar uma promoção, um evento ou um patrocinador.</p>
+        <p class="rotulo-secao">Uma imagem que abre em tela cheia assim que o ouvinte abre o app, com o X para fechar aparecendo depois de alguns segundos. Ótima para divulgar uma promoção, um evento ou um patrocinador.</p>
         <div id="campanhaAtual"></div>
         <hr style="border-color:#20365555;margin:16px 0">
+
+        <label>📐 Tamanho do banner</label>
+        <select id="tamCampanha" onchange="atualizarDicaTamanho()">
+          <option value="cheia">Tela cheia (cobre a tela toda)</option>
+          <option value="retrato" selected>Retrato (quase toda a tela, com bordas)</option>
+        </select>
+        <p id="dicaTamanho" class="rotulo-secao" style="background:#20365533;border-radius:8px;padding:8px 10px;margin-top:8px"></p>
+
         <label>Imagem da campanha</label>
         <input type="file" id="arqCampanha" accept="image/png,image/jpeg">
         <label>Link ao tocar na imagem (opcional)</label>
         <input id="linkCampanha" placeholder="https://... (deixe vazio se não tiver)">
+
         <div class="grade2">
           <div><label>⏱️ Segundos até aparecer o X</label><input type="number" id="segCampanha" min="0" max="15" value="5"></div>
+          <div>
+            <label>🔁 Com que frequência aparece?</label>
+            <select id="freqCampanha">
+              <option value="sempre" selected>Toda vez que abrir o app</option>
+              <option value="hora">No máximo 1 vez por hora</option>
+              <option value="dia">No máximo 1 vez por dia</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grade2">
+          <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="cpInicio"></div>
           <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="cpFim"></div>
         </div>
-        <label>⏰ Publicar em (opcional)</label>
-        <input type="datetime-local" id="cpInicio">
         <button class="botao" onclick="salvarCampanha()" style="margin-top:12px">✅ Publicar campanha</button>
       </div>
     </section>
@@ -648,6 +692,7 @@ async function entrarPainel(){
     localStorage.setItem('tokenEleva', token);
     document.getElementById('telaAcesso').classList.add('oculto');
     document.getElementById('painel').classList.remove('oculto');
+    document.getElementById('btnSairTopo').style.display = 'inline-block';
     desenharBanners(); desenharCampanha(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
@@ -747,16 +792,33 @@ async function removerBanner(i){
 }
 
 // ================== CAMPANHA DE ABERTURA ==================
+const DIMENSOES_CAMPANHA = {
+  cheia:   { rotulo:'Tela cheia', dim:'1080 x 1920 px', obs:'retrato inteiro (9:16), cobre a tela toda' },
+  retrato: { rotulo:'Retrato',    dim:'1080 x 1350 px', obs:'quase toda a tela (4:5), com bordas' }
+};
+function atualizarDicaTamanho(){
+  const t = document.getElementById('tamCampanha').value;
+  const d = DIMENSOES_CAMPANHA[t] || DIMENSOES_CAMPANHA.retrato;
+  document.getElementById('dicaTamanho').innerHTML =
+    `📏 Produza a imagem em <b>${d.dim}</b> — ${d.obs}.`;
+}
+function nomeFreq(f){
+  return f==='sempre' ? 'toda vez que abrir' : (f==='hora' ? '1x por hora' : '1x por dia');
+}
 function desenharCampanha(){
   const el = document.getElementById('campanhaAtual');
   const c = config.campanha || {};
+  atualizarDicaTamanho();
   if(!c.imagem){
     el.innerHTML = '<p class="rotulo-secao">Nenhuma campanha ativa. O app abre direto, sem pop-up.</p>';
     return;
   }
+  const d = DIMENSOES_CAMPANHA[c.tamanho] || DIMENSOES_CAMPANHA.retrato;
+  const expirada = estaForaDoAr(c);
   el.innerHTML = `<div class="item">
-    <img src="${c.imagem}" style="width:60px;height:75px;object-fit:cover;border-radius:6px">
-    <div class="info"><b>Campanha ativa ${etiquetaAgenda(c)}</b><span>${c.link||'sem link'} • X em ${c.segundos_fechar||5}s</span></div>
+    <img src="${c.imagem}" style="width:56px;height:70px;object-fit:cover;border-radius:6px">
+    <div class="info"><b>Campanha ${etiquetaAgenda(c)}</b><span>${d.rotulo} • ${nomeFreq(c.frequencia||'sempre')} • X em ${c.segundos_fechar||5}s</span></div>
+    ${expirada ? `<button class="botao mini" style="background:#35C733" onclick="renovarCampanha()" title="Fazer a campanha voltar ao ar">🔄 Renovar</button>` : ''}
     <button class="botao mini perigo" onclick="removerCampanha()">🗑️ Tirar do ar</button>
   </div>`;
 }
@@ -770,8 +832,10 @@ async function salvarCampanha(){
     const nova = {
       id: 'c'+Date.now(),
       imagem: url,
+      tamanho: document.getElementById('tamCampanha').value,
       link: document.getElementById('linkCampanha').value.trim(),
-      segundos_fechar: parseInt(document.getElementById('segCampanha').value||'5',10)
+      segundos_fechar: parseInt(document.getElementById('segCampanha').value||'5',10),
+      frequencia: document.getElementById('freqCampanha').value
     };
     if(cpInicio.value) nova.publicar_em = cpInicio.value;
     if(cpFim.value) nova.expirar_em = cpFim.value;
@@ -780,6 +844,23 @@ async function salvarCampanha(){
     document.getElementById('arqCampanha').value=''; document.getElementById('linkCampanha').value=''; cpInicio.value=''; cpFim.value='';
     desenharCampanha(); avisar('Campanha publicada! ✅');
   }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function renovarCampanha(){
+  const c = config.campanha || {};
+  if(!c.imagem){ avisar('Não há campanha para renovar.', true); return; }
+  const dias = prompt('Renovar a campanha por quantos DIAS a partir de agora?', '7');
+  if(dias===null) return;
+  const n = parseInt(dias,10);
+  if(isNaN(n) || n<=0){ avisar('Digite um número de dias válido.', true); return; }
+  const fim = new Date(Date.now() + n*24*60*60*1000);
+  // formato datetime-local: YYYY-MM-DDTHH:MM
+  const pad = x => String(x).padStart(2,'0');
+  c.expirar_em = `${fim.getFullYear()}-${pad(fim.getMonth()+1)}-${pad(fim.getDate())}T${pad(fim.getHours())}:${pad(fim.getMinutes())}`;
+  delete c.publicar_em;   // volta ao ar agora
+  delete c.finalizado;    // desfaz o "tirar do ar" manual
+  config.campanha = c;
+  try{ await salvarConfig('Painel: campanha renovada'); desenharCampanha(); avisar(`Campanha renovada por ${n} dia(s)! ✅`); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
 }
 async function removerCampanha(){
   if(!confirm('Tirar a campanha do ar? O app volta a abrir sem pop-up.')) return;
@@ -2331,6 +2412,26 @@ function sairDoPainel(){
   modToken=''; modUid='';
   location.reload();
 }
+
+// ============ TEMA CLARO / ESCURO ============
+function aplicarTema(tema){
+  document.body.setAttribute('data-tema', tema);
+  const claro = tema === 'day';
+  const ic = document.getElementById('iconeTema');
+  const rot = document.getElementById('rotuloTema');
+  if(ic) ic.textContent = claro ? '☀️' : '🌙';
+  if(rot) rot.textContent = claro ? 'Claro' : 'Escuro';
+  try{ localStorage.setItem('temaEleva', tema); }catch(e){}
+}
+function alternarTema(){
+  const atual = document.body.getAttribute('data-tema') || 'dark';
+  aplicarTema(atual === 'day' ? 'dark' : 'day');
+}
+(function(){
+  let salvo = 'dark';
+  try{ salvo = localStorage.getItem('temaEleva') || 'dark'; }catch(e){}
+  document.addEventListener('DOMContentLoaded', ()=> aplicarTema(salvo));
+})();
 
 
 // ============ REPETIR POSTAGENS (banners, notícias, enquetes, promoções) ============
