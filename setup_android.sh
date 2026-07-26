@@ -667,6 +667,31 @@ class DespertadorReceiver : BroadcastReceiver() {
             }
             agendar(context, cal.timeInMillis, true)
         }
+
+        // DIAS DA SEMANA: reagenda para o próximo dia marcado (dom=1..sáb=7)
+        if (!ehSoneca && prefs.getString("flutter.desp_tipo", "") == "dias") {
+            val h = prefs.getLong("flutter.desp_hora", 7L).toInt()
+            val m = prefs.getLong("flutter.desp_min", 0L).toInt()
+            val diasStr = prefs.getString("flutter.desp_dias", "") ?: ""
+            val dias = diasStr.split(",")
+                .mapNotNull { it.trim().toIntOrNull() }.toSet()
+            if (dias.isNotEmpty()) {
+                val cal = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, h)
+                    set(Calendar.MINUTE, m)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                // acabou de tocar hoje: procura a partir de amanhã
+                var tentativas = 0
+                do {
+                    cal.add(Calendar.DAY_OF_YEAR, 1)
+                    tentativas++
+                } while (!dias.contains(cal.get(Calendar.DAY_OF_WEEK)) &&
+                    tentativas < 8)
+                agendar(context, cal.timeInMillis, true)
+            }
+        }
     }
 
     companion object {
