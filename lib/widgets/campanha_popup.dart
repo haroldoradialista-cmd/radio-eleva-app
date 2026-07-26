@@ -14,48 +14,101 @@ import '../servicos/config_service.dart';
 /// link da campanha (se houver) e registra o clique para o relatório.
 /// Aparece no máximo UMA vez por dia por aparelho.
 class CampanhaPopup {
-  /// Decide se deve mostrar e, em caso positivo, exibe o pop-up.
-  static Future<void> talvezMostrar(
-      BuildContext context, AppConfig cfg) async {
-    final c = cfg.campanha;
-    if (c.isEmpty) return;
+  /// Remove acentos e deixa minúsculo, para comparar cidade/estado com folga.
+  static String _norm(String s) {
+    s = s.toLowerCase().trim();
+    const de = 'áàâãäéèêëíìîïóòôõöúùûüç';
+    const para = 'aaaaaeeeeiiiiooooouuuuc';
+    for (int i = 0; i < de.length; i++) {
+      s = s.replaceAll(de[i], para[i]);
+    }
+    return s;
+  }
 
-    final imagem = (c['imagem'] ?? '').toString();
-    if (imagem.isEmpty) return;
+  /// A campanha é para este ouvinte? (país / estado / cidade)
+  static bool _alcanca(Map<String, dynamic> c) {
+    final nivel = (c['nivel'] ?? 'pais').toString(); // pais | estado | cidade
+    if (nivel == 'pais') return true; // todo o país
 
-    // Respeita o agendamento (publicar_em / expirar_em), igual aos banners
+    final estadoAlvo = _norm((c['estado'] ?? '').toString());
+    final estadoOuvinte = _norm(AnalyticsService.estado);
+    final ufOuvinte = _norm(AnalyticsService.uf);
+
+    // compara pelo nome do estado OU pela sigla (RJ, MG...)
+    bool estadoBate = estadoAlvo.isNotEmpty &&
+        (estadoOuvinte == estadoAlvo ||
+            ufOuvinte == estadoAlvo ||
+            estadoOuvinte.contains(estadoAlvo) ||
+            estadoAlvo.contains(estadoOuvinte));
+    if (nivel == 'estado') return estadoBate;
+
+    if (nivel == 'cidade') {
+      final cidadeAlvo = _norm((c['cidade'] ?? '').toString());
+      final cidadeOuvinte = _norm(AnalyticsService.cidade);
+      final cidadeBate = cidadeAlvo.isNotEmpty &&
+          (cidadeOuvinte == cidadeAlvo ||
+              cidadeOuvinte.contains(cidadeAlvo) ||
+              cidadeAlvo.contains(cidadeOuvinte));
+      // se informou estado junto, exige os dois; senão, só a cidade
+      return estadoAlvo.isEmpty ? cidadeBate : (cidadeBate && estadoBate);
+    }
+    return false;
+  }
+
+  /// Está no ar? (agendamento e não finalizada)
+  static bool _noAr(Map<String, dynamic> c) {
+    if ((c['imagem'] ?? '').toString().isEmpty) return false;
+    if ((c['finalizado'] ?? '').toString() == 'sim') return false;
     final agora = DateTime.now();
     final ini = DateTime.tryParse((c['publicar_em'] ?? '').toString());
     final fim = DateTime.tryParse((c['expirar_em'] ?? '').toString());
-    if ((c['finalizado'] ?? '').toString() == 'sim') return;
-    if (ini != null && agora.isBefore(ini)) return;
-    if (fim != null && agora.isAfter(fim)) return;
+    if (ini != null && agora.isBefore(ini)) return false;
+    if (fim != null && agora.isAfter(fim)) return false;
+    return true;
+  }
 
-    // FREQUÊNCIA (definida no painel):
-    //   'sempre'  -> toda vez que o app abre (padrão)
-    //   'hora'    -> no máximo 1 vez por hora
-    //   'dia'     -> no máximo 1 vez por dia
+  /// Decide se deve mostrar e, em caso positivo, exibe o pop-up.
+  static Future<void> talvezMostrar(
+      BuildContext context, AppConfig cfg) async {
+    // monta a lista: novas campanhas + a campanha única antiga (compatibilidade)
+    final lista = <Map<String, dynamic>>[];
+    lista.addAll(cfg.campanhas);
+    if (cfg.campanha.isNotEmpty) lista.add(cfg.campanha);
+    if (lista.isEmpty) return;
+
+    // filtra: no ar E que alcança a região deste ouvinte
+    final elegiveis =
+        lista.where((c) => _noAr(c) && _alcanca(c)).toList();
+    if (elegiveis.isEmpty) return;
+
+    // se houver mais de uma, sorteia (divide a exposição entre clientes)
+    elegiveis.shuffle();
+    final c = elegiveis.first;
+
+    final imagem = (c['imagem'] ?? '').toString();
+    final agora = DateTime.now();
+
+    // FREQUÊNCIA por campanha: sempre | hora | dia
     final freq = (c['frequencia'] ?? 'sempre').toString();
     final assinatura = '${(c['id'] ?? imagem)}';
     try {
       final prefs = await SharedPreferences.getInstance();
-      final ultimaMs = prefs.getInt('campanha_vista_ms') ?? 0;
-      final ultimaAssin = prefs.getString('campanha_vista_id') ?? '';
+      final ultimaMs = prefs.getInt('campanha_vista_ms_$assinatura') ?? 0;
       final ultima = DateTime.fromMillisecondsSinceEpoch(ultimaMs);
-      final mesmaCampanha = ultimaAssin == assinatura;
-
-      if (freq == 'dia' && mesmaCampanha) {
+      if (freq == 'dia') {
         final mesmoDia = ultima.year == agora.year &&
             ultima.month == agora.month &&
             ultima.day == agora.day;
-        if (mesmoDia) return; // já viu hoje
-      } else if (freq == 'hora' && mesmaCampanha) {
-        if (agora.difference(ultima).inMinutes < 60) return; // viu na última hora
+        if (mesmoDia) return;
+      } else if (freq == 'hora') {
+        if (agora.difference(ultima).inMinutes < 60) return;
       }
-      // 'sempre' não bloqueia nunca; só registra
-      await prefs.setInt('campanha_vista_ms', agora.millisecondsSinceEpoch);
-      await prefs.setString('campanha_vista_id', assinatura);
+      await prefs.setInt(
+          'campanha_vista_ms_$assinatura', agora.millisecondsSinceEpoch);
     } catch (_) {}
+
+    // registra a VISUALIZAÇÃO (impressão) para o relatório
+    _registrarEvento(cfg, assinatura, 'view');
 
     if (!context.mounted) return;
     final segundos = int.tryParse((c['segundos_fechar'] ?? '5').toString()) ?? 5;
@@ -68,11 +121,29 @@ class CampanhaPopup {
         cfg: cfg,
         imagem: imagem,
         link: (c['link'] ?? '').toString(),
-        idCampanha: (c['id'] ?? imagem).toString(),
+        idCampanha: assinatura,
         segundos: segundos,
         tamanho: (c['tamanho'] ?? 'retrato').toString(),
       ),
     );
+  }
+
+  /// Grava um evento (view/clique) com a localização, para os relatórios.
+  static void _registrarEvento(
+      AppConfig cfg, String idCampanha, String tipo) {
+    if (cfg.chatUrl.isEmpty) return;
+    final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
+    try {
+      http.post(Uri.parse('$base/campanha_eventos.json'),
+          body: jsonEncode({
+            'campanha': idCampanha,
+            'tipo': tipo, // 'view' ou 'clique'
+            'quando': DateTime.now().toIso8601String(),
+            'cidade': AnalyticsService.cidade,
+            'estado': AnalyticsService.estado,
+            'pais': AnalyticsService.pais,
+          }));
+    } catch (_) {}
   }
 }
 
@@ -121,22 +192,8 @@ class _CampanhaDialogState extends State<_CampanhaDialog> {
   }
 
   void _abrir() {
-    // registra o clique (mesmo relatório dos banners) e abre o link
-    final cfg = widget.cfg;
-    if (widget.link.isNotEmpty && cfg.chatUrl.isNotEmpty) {
-      final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
-      try {
-        http.post(Uri.parse('$base/banner_cliques.json'),
-            body: jsonEncode({
-              'banner': 'CAMPANHA:${widget.idCampanha}',
-              'quando': DateTime.now().toIso8601String(),
-              'cidade': AnalyticsService.cidade,
-              'estado': AnalyticsService.estado,
-              'pais': AnalyticsService.pais,
-              'dispositivo': 'Android',
-            }));
-      } catch (_) {}
-    }
+    // registra o CLIQUE no relatório da campanha (mesma coleção da visualização)
+    CampanhaPopup._registrarEvento(widget.cfg, widget.idCampanha, 'clique');
     final uri = Uri.tryParse(widget.link);
     if (widget.link.isNotEmpty && uri != null) {
       launchUrl(uri, mode: LaunchMode.externalApplication);
