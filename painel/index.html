@@ -235,8 +235,7 @@
         <p class="rotulo-secao">O relatório abre em uma nova janela com opções de PDF, Excel e JPEG.</p>
         <input type="file" id="arqTroca" accept="image/png,image/jpeg" style="display:none">
         <input type="file" id="arqTrocaGeral" accept="image/png,image/jpeg" style="display:none">
-        <label>Nova imagem de banner</label>
-        <input type="file" id="arqBanner" accept="image/png,image/jpeg">
+        <div id="midiaBox_bn"></div>
         <label>Link ao tocar no banner (opcional)</label>
         <input id="linkBanner" placeholder="https://... (deixe vazio se não tiver)">
         <div class="grade2">
@@ -295,8 +294,7 @@
         </select>
         <p id="dicaTamanho" class="rotulo-secao" style="background:#20365533;border-radius:8px;padding:8px 10px;margin-top:8px"></p>
 
-        <label>Imagem da campanha</label>
-        <input type="file" id="arqCampanha" accept="image/png,image/jpeg">
+        <div id="midiaBox_cp"></div>
         <label>Link ao tocar na imagem (opcional)</label>
         <input id="linkCampanha" placeholder="https://... (deixe vazio se não tiver)">
 
@@ -358,8 +356,7 @@
           <div><label>Data (ex.: 10 de julho de 2026)</label><input id="ntData"></div>
           <div><label>Link externo (opcional)</label><input id="ntLink" placeholder="https://..."></div>
         </div>
-        <label>Imagem da notícia (opcional)</label>
-        <input type="file" id="ntImagem" accept="image/png,image/jpeg">
+        <div id="midiaBox_nt"></div>
         <div class="grade2">
           <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="ntInicio"></div>
           <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="ntFim"></div>
@@ -393,8 +390,7 @@
       </div>
       <div class="cartao">
         <h2>Nova enquete</h2>
-        <label>Imagem da enquete (opcional • 800 x 300 px)</label>
-        <input type="file" id="eqFoto" accept="image/png,image/jpeg">
+        <div id="midiaBox_eq"></div>
         <label>Pergunta</label><input id="eqPergunta" placeholder="Ex.: Qual louvor você quer ouvir no domingo?">
         <label>Opção 1</label><input id="eqOp1">
         <label>Opção 2</label><input id="eqOp2">
@@ -493,8 +489,7 @@
       </div>
       <div class="cartao">
         <h2>Nova promoção</h2>
-        <label>Banner da promoção (ideal: 1200 x 500 px)</label>
-        <input type="file" id="prFoto" accept="image/png,image/jpeg">
+        <div id="midiaBox_pr"></div>
         <label>Nome da promoção</label><input id="prNome" placeholder="Ex.: Qual é a Rádio?">
         <label>Pergunta da promoção</label><input id="prPergunta" placeholder="Ex.: Em que ano a Rádio Eleva nasceu?">
         <label>Resposta — Opção 1</label><input id="prOp1">
@@ -751,6 +746,7 @@ async function entrarPainel(){
     document.getElementById('painel').classList.remove('oculto');
     document.getElementById('btnSairTopo').style.display = 'inline-block';
     desenharBanners(); desenharCampanha(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
+    ['bn','cp','nt','eq','pr'].forEach(pref=>{ const box=document.getElementById('midiaBox_'+pref); if(box){ box.innerHTML=camposMidiaHTML(pref); trocarTipoMidia(pref); } });
     carregarChat(); carregarVotos();
     avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
@@ -785,8 +781,85 @@ async function subirImagem(arquivo, pasta){
     fr.onerror = rej;
     fr.readAsDataURL(arquivo);
   });
-  await gh(nome, { method:'PUT', body: JSON.stringify({ message:'Painel: nova imagem', content: base64, branch:'main' }) });
+  await gh(nome, { method:'PUT', body: JSON.stringify({ message:'Painel: nova mídia', content: base64, branch:'main' }) });
   return RAW + nome;
+}
+
+// ============ MÍDIA REUTILIZÁVEL (imagem / vídeo MP4 / YouTube + som) ============
+// HTML dos campos de mídia para uma aba. 'pref' é um prefixo único (ex.: 'bn').
+function camposMidiaHTML(pref){
+  return `
+  <label>🎬 Tipo de mídia</label>
+  <select id="tipoMidia_${pref}" onchange="trocarTipoMidia('${pref}')">
+    <option value="imagem">🖼️ Imagem</option>
+    <option value="video">🎥 Vídeo (arquivo MP4 leve)</option>
+    <option value="youtube">▶️ Vídeo do YouTube (link)</option>
+  </select>
+  <div id="campoImg_${pref}">
+    <label>Imagem</label>
+    <input type="file" id="arqImg_${pref}" accept="image/png,image/jpeg">
+  </div>
+  <div id="campoVid_${pref}" style="display:none">
+    <label>Arquivo de vídeo (MP4 curto, até ~5 MB, para não travar)</label>
+    <input type="file" id="arqVid_${pref}" accept="video/mp4">
+  </div>
+  <div id="campoYt_${pref}" style="display:none">
+    <label>Link do vídeo no YouTube</label>
+    <input id="ytLink_${pref}" placeholder="https://youtu.be/... ou https://youtube.com/watch?v=...">
+  </div>
+  <div id="campoSom_${pref}" style="display:none">
+    <label>🔊 Som do vídeo</label>
+    <select id="som_${pref}">
+      <option value="sem">🔇 Sem som (recomendado — não atrapalha a rádio)</option>
+      <option value="com">🔊 Com som</option>
+    </select>
+  </div>`;
+}
+function trocarTipoMidia(pref){
+  const t = document.getElementById('tipoMidia_'+pref).value;
+  document.getElementById('campoImg_'+pref).style.display = (t==='imagem')?'block':'none';
+  document.getElementById('campoVid_'+pref).style.display = (t==='video')?'block':'none';
+  document.getElementById('campoYt_'+pref).style.display  = (t==='youtube')?'block':'none';
+  document.getElementById('campoSom_'+pref).style.display = (t==='imagem')?'none':'block';
+}
+// miniatura para as listas: ícone 🎬 se for vídeo, imagem se for imagem
+function miniaturaMidia(item, estilo){
+  const est = estilo || 'width:60px;height:34px;object-fit:cover;border-radius:6px';
+  if(item && (item.tipo==='video' || item.tipo==='youtube')){
+    return `<div style="${est};display:flex;align-items:center;justify-content:center;background:#20365577;font-size:18px">🎬</div>`;
+  }
+  if(item && item.imagem){ return `<img src="${item.imagem}" style="${est}">`; }
+  return '';
+}
+// preenche os campos ao editar um item existente
+function preencherMidia(pref, item){
+  const t = (item.tipo || 'imagem');
+  document.getElementById('tipoMidia_'+pref).value = t;
+  if(document.getElementById('ytLink_'+pref)) document.getElementById('ytLink_'+pref).value = item.youtube || '';
+  if(document.getElementById('som_'+pref)) document.getElementById('som_'+pref).value = item.som || 'sem';
+  trocarTipoMidia(pref);
+}
+// lê os campos e devolve {tipo, imagem?, video?, youtube?, som}; sobe o arquivo se houver.
+// 'imagemAtual' e 'videoAtual' preservam a mídia já existente ao editar sem trocar arquivo.
+async function lerMidia(pref, imagemAtual, videoAtual){
+  const t = document.getElementById('tipoMidia_'+pref).value;
+  const out = { tipo: t };
+  if(t==='imagem'){
+    const arq = document.getElementById('arqImg_'+pref).files[0];
+    out.imagem = arq ? await subirImagem(arq,'imagens') : (imagemAtual||'');
+    if(!out.imagem) throw new Error('Escolha a imagem.');
+  } else if(t==='video'){
+    const arq = document.getElementById('arqVid_'+pref).files[0];
+    out.video = arq ? await subirImagem(arq,'videos') : (videoAtual||'');
+    if(!out.video) throw new Error('Escolha o arquivo de vídeo.');
+    out.som = document.getElementById('som_'+pref).value;
+    out.imagem = imagemAtual||''; // mantém poster se houver
+  } else { // youtube
+    out.youtube = (document.getElementById('ytLink_'+pref).value||'').trim();
+    if(!out.youtube) throw new Error('Cole o link do YouTube.');
+    out.som = document.getElementById('som_'+pref).value;
+  }
+  return out;
 }
 
 // ================== ABAS ==================
@@ -817,7 +890,7 @@ async function desenharBanners(){
   el.innerHTML = config.banners.length ? '' : '<p class="rotulo-secao">Nenhum banner ainda.</p>';
   config.banners.forEach((b,i)=>{
     el.innerHTML += `<div class="item">
-      <img src="${b.imagem}">
+      ${miniaturaMidia(b,"width:60px;height:40px;object-fit:cover;border-radius:6px")}
       <div class="info"><b>Banner ${i+1} ${etiquetaAgenda(b)} • 👆 ${cliquesBanner[(b.id||b.imagem)]||0} cliques</b><span>${b.link||'sem link'}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemBanner(${i})" title="Trocar a imagem sem apagar">🔄</button>
       ${botaoFinalizar('banners', i)}
@@ -827,17 +900,16 @@ async function desenharBanners(){
   });
 }
 async function adicionarBanner(){
-  const arq = document.getElementById('arqBanner').files[0];
-  if(!arq){ avisar('Escolha a imagem primeiro.', true); return; }
   try{
-    avisar('Enviando imagem...');
-    const url = await subirImagem(arq, 'imagens');
-    const novoBanner = { id:'b'+Date.now(), imagem:url, link: document.getElementById('linkBanner').value.trim() };
+    avisar('Enviando mídia...');
+    const midia = await lerMidia('bn');
+    const novoBanner = Object.assign({ id:'b'+Date.now(), link: document.getElementById('linkBanner').value.trim() }, midia);
     if(bnInicio.value) novoBanner.publicar_em = bnInicio.value;
     if(bnFim.value) novoBanner.expirar_em = bnFim.value;
     config.banners.push(novoBanner);
     await salvarConfig('Painel: banner adicionado');
-    document.getElementById('arqBanner').value=''; document.getElementById('linkBanner').value=''; bnInicio.value=''; bnFim.value='';
+    document.getElementById('linkBanner').value=''; bnInicio.value=''; bnFim.value='';
+    ['arqImg_bn','arqVid_bn','ytLink_bn'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
     desenharBanners(); avisar('Banner publicado! ✅');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
@@ -912,7 +984,7 @@ function desenharListaCampanhas(){
     const d = DIMENSOES_CAMPANHA[c.tamanho] || DIMENSOES_CAMPANHA.retrato;
     const expirada = estaForaDoAr(c);
     return `<div class="item">
-      <img src="${c.imagem}" style="width:52px;height:66px;object-fit:cover;border-radius:6px">
+      ${miniaturaMidia(c,"width:52px;height:66px;object-fit:cover;border-radius:6px")}
       <div class="info"><b>${c.nome||'(sem nome)'} ${etiquetaAgenda(c)}</b>
         <span>${textoAlvo(c)} • ${d.rotulo} • ${nomeFreq(c.frequencia||'sempre')}</span></div>
       <button class="botao mini" onclick="editarCampanha('${c.id}')">✏️</button>
@@ -939,7 +1011,8 @@ function _limparFormCampanha(){
   document.getElementById('linkCampanha').value='';
   document.getElementById('segCampanha').value='5';
   document.getElementById('freqCampanha').value='sempre';
-  document.getElementById('arqCampanha').value='';
+  ['arqImg_cp','arqVid_cp','ytLink_cp'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+  const tm=document.getElementById('tipoMidia_cp'); if(tm){ tm.value='imagem'; trocarTipoMidia('cp'); }
   cpInicio.value=''; cpFim.value='';
   document.getElementById('tituloFormCampanha').textContent='➕ Nova campanha';
   document.getElementById('btnCancelarEdicao').style.display='none';
@@ -958,6 +1031,7 @@ function editarCampanha(id){
     carregarCidadesCampanha(c.cidade||'');
   }
   document.getElementById('tamCampanha').value=c.tamanho||'retrato';
+  preencherMidia('cp', c);
   document.getElementById('linkCampanha').value=c.link||'';
   document.getElementById('segCampanha').value=c.segundos_fechar||5;
   document.getElementById('freqCampanha').value=c.frequencia||'sempre';
@@ -969,7 +1043,6 @@ function editarCampanha(id){
 }
 async function salvarCampanha(){
   const id = document.getElementById('editandoCampanha').value;
-  const arq = document.getElementById('arqCampanha').files[0];
   const nivel = document.getElementById('nivelCampanha').value;
   const estado = document.getElementById('estadoCampanha').value;
   const cidade = document.getElementById('cidadeCampanha').value.trim();
@@ -978,22 +1051,20 @@ async function salvarCampanha(){
 
   if(!config.campanhas) config.campanhas = [];
   const existente = id ? _todasCampanhas().find(x=>x.id===id) : null;
-  if(!arq && !existente){ avisar('Escolha a imagem da campanha.', true); return; }
   try{
-    let url = existente ? existente.imagem : '';
-    if(arq){ avisar('Enviando imagem...'); url = await subirImagem(arq, 'imagens'); }
-    const nova = {
+    avisar('Enviando mídia...');
+    const midia = await lerMidia('cp', existente&&existente.imagem, existente&&existente.video);
+    const nova = Object.assign({
       id: id || ('c'+Date.now()),
       nome: document.getElementById('nomeCampanha').value.trim() || 'Campanha',
       nivel: nivel,
       estado: (nivel==='pais') ? '' : estado,
       cidade: (nivel==='cidade') ? cidade : '',
-      imagem: url,
       tamanho: document.getElementById('tamCampanha').value,
       link: document.getElementById('linkCampanha').value.trim(),
       segundos_fechar: parseInt(document.getElementById('segCampanha').value||'5',10),
       frequencia: document.getElementById('freqCampanha').value
-    };
+    }, midia);
     if(cpInicio.value) nova.publicar_em = cpInicio.value;
     if(cpFim.value) nova.expirar_em = cpFim.value;
     // grava na lista (substitui se editando; migra a antiga p/ lista)
@@ -1082,7 +1153,7 @@ function desenharNoticias(){
   el.innerHTML = config.noticias.length ? '' : '<p class="rotulo-secao">Nenhuma notícia publicada.</p>';
   config.noticias.forEach((n,i)=>{
     el.innerHTML += `<div class="item">
-      ${n.imagem? `<img src="${n.imagem}" style="width:60px;height:34px;object-fit:cover;border-radius:6px">`:''}
+      ${miniaturaMidia(n,"width:60px;height:34px;object-fit:cover;border-radius:6px")}
       <div class="info"><b>${n.titulo} ${etiquetaAgenda(n)}</b><span>${n.data||''}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('noticias',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini neutro" onclick="editarNoticia(${i})">✏️</button>
@@ -1097,6 +1168,7 @@ function editarNoticia(i){
   ntTitulo.value=n.titulo||''; ntResumo.value=n.resumo||''; ntTexto.value=n.texto||'';
   ntData.value=n.data||''; ntLink.value=n.link||'';
   ntInicio.value=(n.publicar_em||'').slice(0,16); ntFim.value=(n.expirar_em||'').slice(0,16);
+  preencherMidia('nt', n);
   document.getElementById('tituloFormNoticia').textContent='Editando notícia';
   document.getElementById('btnCancelarEdicao').style.display='inline-block';
   window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
@@ -1104,18 +1176,18 @@ function editarNoticia(i){
 function cancelarEdicao(){
   idxEdicao=-1; ntTitulo.value=ntResumo.value=ntTexto.value=ntData.value=ntLink.value='';
   ntInicio.value=''; ntFim.value='';
-  document.getElementById('ntImagem').value='';
+  ['arqImg_nt','arqVid_nt','ytLink_nt'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
   document.getElementById('tituloFormNoticia').textContent='Nova notícia';
   document.getElementById('btnCancelarEdicao').style.display='none';
 }
 async function salvarNoticia(){
   if(!ntTitulo.value.trim()){ avisar('Dê um título à notícia.', true); return; }
   try{
-    let imagem = idxEdicao>=0 ? (config.noticias[idxEdicao].imagem||'') : '';
-    const arq = document.getElementById('ntImagem').files[0];
-    if(arq){ avisar('Enviando imagem...'); imagem = await subirImagem(arq,'imagens'); }
-    const nova = { titulo:ntTitulo.value.trim(), resumo:ntResumo.value.trim(),
-      texto:ntTexto.value.trim(), imagem, link:ntLink.value.trim(), data:ntData.value.trim() };
+    const atual = idxEdicao>=0 ? config.noticias[idxEdicao] : {};
+    avisar('Enviando mídia...');
+    const midia = await lerMidia('nt', atual.imagem, atual.video);
+    const nova = Object.assign({ titulo:ntTitulo.value.trim(), resumo:ntResumo.value.trim(),
+      texto:ntTexto.value.trim(), link:ntLink.value.trim(), data:ntData.value.trim() }, midia);
     if(ntInicio.value) nova.publicar_em = ntInicio.value;
     if(ntFim.value) nova.expirar_em = ntFim.value;
     if(idxEdicao>=0) config.noticias[idxEdicao]=nova; else config.noticias.unshift(nova);
@@ -1150,7 +1222,7 @@ async function desenharEnquetes(){
       }).join(' • ') + ` — <b>${total} votos</b>`;
     }catch(_){ resultados = 'não foi possível carregar os votos'; }
     html += `<div class="item">
-      ${e.imagem? `<img src="${e.imagem}" style="width:60px;height:34px;object-fit:cover;border-radius:6px">`:''}
+      ${miniaturaMidia(e,"width:60px;height:34px;object-fit:cover;border-radius:6px")}
       <div class="info">
       <b>${e.pergunta} ${etiquetaAgenda(e)}</b>
       <span>${resultados}</span></div>
@@ -1165,17 +1237,17 @@ async function criarEnquete(){
   const opcoes = [eqOp1.value,eqOp2.value,eqOp3.value,eqOp4.value].map(v=>v.trim()).filter(Boolean);
   if(!eqPergunta.value.trim() || opcoes.length<2){ avisar('Preencha a pergunta e pelo menos 2 opções.', true); return; }
   config.enquetes = config.enquetes || [];
-  let imagemEq = '';
-  const arqEq = document.getElementById('eqFoto').files[0];
-  if(arqEq){ avisar('Enviando imagem...'); imagemEq = await subirImagem(arqEq,'imagens'); }
-  const nova = { id:'e'+Date.now(), pergunta:eqPergunta.value.trim(), opcoes, imagem:imagemEq };
-  if(eqInicio.value) nova.publicar_em = eqInicio.value;
-  if(eqFim.value) nova.expirar_em = eqFim.value;
-  if(document.getElementById('eqExibirResultado').checked && eqFim.value) nova.exibir_resultado = 'sim';
-  config.enquetes.unshift(nova);
   try{
+    avisar('Enviando mídia...');
+    const midia = await lerMidia('eq', '', '');
+    const nova = Object.assign({ id:'e'+Date.now(), pergunta:eqPergunta.value.trim(), opcoes }, midia);
+    if(eqInicio.value) nova.publicar_em = eqInicio.value;
+    if(eqFim.value) nova.expirar_em = eqFim.value;
+    if(document.getElementById('eqExibirResultado').checked && eqFim.value) nova.exibir_resultado = 'sim';
+    config.enquetes.unshift(nova);
     await salvarConfig('Painel: enquete');
-    eqPergunta.value=eqOp1.value=eqOp2.value=eqOp3.value=eqOp4.value=''; eqInicio.value=''; eqFim.value=''; document.getElementById('eqFoto').value=''; document.getElementById('eqExibirResultado').checked = true;
+    eqPergunta.value=eqOp1.value=eqOp2.value=eqOp3.value=eqOp4.value=''; eqInicio.value=''; eqFim.value=''; document.getElementById('eqExibirResultado').checked = true;
+    ['arqImg_eq','arqVid_eq','ytLink_eq'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
     desenharEnquetes(); avisar('Enquete publicada! ✅');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
@@ -1676,7 +1748,7 @@ async function desenharPromos(){
       total = d ? Object.keys(d).length : 0;
     }catch(e){}
     html += `<div class="item" style="flex-wrap:wrap">
-      ${p.imagem? `<img src="${p.imagem}" style="width:84px;height:36px;object-fit:cover;border-radius:8px">`:''}
+      ${miniaturaMidia(p,"width:84px;height:36px;object-fit:cover;border-radius:8px")}
       <div class="info"><b>${p.nome||p.pergunta} ${etiquetaAgenda(p)}</b>
       <span>${p.opcao1} / ${p.opcao2} — <b>${total} participações</b></span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('promocoes',${i})" title="Trocar imagem sem apagar">🔄</button>
@@ -1709,16 +1781,16 @@ async function criarPromocao(){
     avisar('Preencha o nome, a pergunta e as duas opções de resposta.', true); return;
   }
   try{
-    let imagem = '';
-    const arq = document.getElementById('prFoto').files[0];
-    if(arq){ avisar('Enviando banner...'); imagem = await subirImagem(arq,'imagens'); }
+    avisar('Enviando mídia...');
+    const midia = await lerMidia('pr', '', '');
     config.promocoes = config.promocoes || [];
-    const nova = { id:'p'+Date.now(), nome:prNome.value.trim(), pergunta:prPergunta.value.trim(), opcao1:prOp1.value.trim(), opcao2:prOp2.value.trim(), regulamento:prRegulamento.value.trim(), imagem };
+    const nova = Object.assign({ id:'p'+Date.now(), nome:prNome.value.trim(), pergunta:prPergunta.value.trim(), opcao1:prOp1.value.trim(), opcao2:prOp2.value.trim(), regulamento:prRegulamento.value.trim() }, midia);
     if(prInicio.value) nova.publicar_em = prInicio.value;
     if(prFim.value) nova.expirar_em = prFim.value;
     config.promocoes.unshift(nova);
     await salvarConfig('Painel: promocao');
-    prNome.value=prPergunta.value=prOp1.value=prOp2.value=''; prRegulamento.value=''; prInicio.value=''; prFim.value=''; document.getElementById('prFoto').value='';
+    prNome.value=prPergunta.value=prOp1.value=prOp2.value=''; prRegulamento.value=''; prInicio.value=''; prFim.value='';
+    ['arqImg_pr','arqVid_pr','ytLink_pr'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
     desenharPromos(); avisar('Promoção publicada! 🎁');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
@@ -2655,7 +2727,7 @@ function repetirItem(tipo, i){
   if(tipo==='banners'){
     _v('linkBanner', manter ? item.link : '');
     _v('bnInicio',''); _v('bnFim','');
-    document.getElementById('arqBanner').value='';
+    ['arqImg_bn','arqVid_bn','ytLink_bn'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
     avisar(manter ? '🔁 Dados do banner copiados! Escolha a nova imagem e publique.' : '🔁 Formulário de banner em branco, pronto para o novo.');
   }
   else if(tipo==='noticias'){
@@ -2676,7 +2748,7 @@ function repetirItem(tipo, i){
     _v('eqOp1', manter ? op[0] : ''); _v('eqOp2', manter ? op[1] : '');
     _v('eqOp3', manter ? op[2] : ''); _v('eqOp4', manter ? op[3] : '');
     _v('eqInicio',''); _v('eqFim','');
-    document.getElementById('eqFoto').value='';
+    ['arqImg_eq','arqVid_eq','ytLink_eq'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
     const cx = document.getElementById('eqExibirResultado');
     if(cx) cx.checked = manter ? (item.exibir_resultado === 'sim') : true;
     avisar(manter ? '🔁 Dados da enquete copiados! Defina o novo período e publique.' : '🔁 Formulário de enquete em branco.');
@@ -2688,7 +2760,7 @@ function repetirItem(tipo, i){
     _v('prOp2',         manter ? item.opcao2 : '');
     _v('prRegulamento', manter ? item.regulamento : '');
     _v('prInicio',''); _v('prFim','');
-    const f = document.getElementById('prFoto'); if(f) f.value='';
+    ['arqImg_pr','arqVid_pr','ytLink_pr'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
     avisar(manter ? '🔁 Dados da promoção copiados! Defina o novo período e publique.' : '🔁 Formulário de promoção em branco.');
   }
   window.scrollTo({ top: document.body.scrollHeight, behavior:'smooth' });
