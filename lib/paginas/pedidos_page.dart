@@ -78,7 +78,7 @@ class PedidosPage extends StatelessWidget {
                   icone: Icons.chat_rounded,
                   titulo: 'FALE COM A RÁDIO ELEVA',
                   descricao:
-                      'Recados, oração, anúncios e parcerias — direto no nosso WhatsApp.',
+                      'Recados e pedidos de oração — direto no nosso WhatsApp.',
                   aoTocar: () => _abrirZapDireto(context, cfg),
                 ),
                 SizedBox(height: 14),
