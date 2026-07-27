@@ -54,6 +54,15 @@
   body[data-tema="day"] .topo small{color:#c9922e}
   /* botões coloridos (verde/azul/gradiente) mantêm texto branco */
   body[data-tema="day"] .botao,body[data-tema="day"] .aba.ativa,body[data-tema="day"] #aviso,body[data-tema="day"] .botao *{color:#fff}
+  /* correções extras de contraste no tema claro */
+  body[data-tema="day"] .diasbox label{background:#eef3fa;border-color:#cfd9e8;color:#20364f}
+  body[data-tema="day"] .aviso-repetir{background:#efe9fb;border-color:#b9a7e0}
+  body[data-tema="day"] .aviso-repetir span{color:#3d2f66 !important}
+  body[data-tema="day"] .aviso-repetir i{color:#6b5ca0 !important}
+  body[data-tema="day"] .msgchat .motivo,body[data-tema="day"] .motivo-susp{color:#8a1c1c !important}
+  body[data-tema="day"] .susp-coment{background:#f5edd6 !important;color:#5a4a1a !important}
+  body[data-tema="day"] .susp-coment i{color:#5a4a1a !important}
+  body[data-tema="day"] ::selection{background:#bcd4ff;color:#0D2B52}
   /* ===== MENU LATERAL FIXO ===== */
   .abas{position:fixed;top:0;left:0;bottom:0;width:196px;display:flex;flex-direction:column;gap:5px;
         padding:14px 10px;background:var(--navy3);border-right:2px solid var(--ouro);overflow-y:auto;z-index:50}
@@ -97,13 +106,14 @@
   .grade2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:560px){.grade2{grid-template-columns:1fr}}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:8px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
+  th,td{padding:5px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
   th{color:var(--ouro)}
-  .msgchat{background:var(--navy);border-radius:10px;padding:10px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+  .msgchat{background:var(--navy);border-radius:10px;padding:6px 10px;margin-bottom:5px;display:flex;gap:10px;align-items:flex-start}
   .msgchat .corpo{flex:1}
   .msgchat b{color:var(--ouro);font-size:12px}
-  .msgchat p{color:var(--branco);font-size:14px;margin-top:2px}
+  .msgchat p{color:var(--branco);font-size:13.5px;margin-top:1px}
   .msgchat small{color:#9FB3CC;font-size:10px}
+  #listaChat{max-height:560px;overflow-y:auto;padding-right:5px}
   .rotulo-secao{font-size:12px;color:#9FB3CC;margin-bottom:12px;line-height:1.5}
   .diasbox{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
   .diasbox label{display:flex;align-items:center;gap:5px;background:var(--navy);border:1px solid rgba(255,255,255,.15);
@@ -242,7 +252,7 @@
           <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="bnInicio"></div>
           <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="bnFim"></div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
+        <label class="aviso-repetir" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
           <input type="checkbox" id="rep_banners" checked style="width:17px;height:17px;cursor:pointer">
           <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados do banner anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
         </label>
@@ -361,7 +371,7 @@
           <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="ntInicio"></div>
           <div><label>⏰ Tirar do ar em (opcional)</label><input type="datetime-local" id="ntFim"></div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
+        <label class="aviso-repetir" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
           <input type="checkbox" id="rep_noticias" checked style="width:17px;height:17px;cursor:pointer">
           <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados da notícia anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
         </label>
@@ -405,7 +415,7 @@
           <span>📊 Exibir o resultado no app quando a enquete sair do ar</span>
         </label>
         <p class="rotulo-secao">Marcado: assim que passar do horário de "Sair do ar", os ouvintes veem o resultado final no lugar da enquete. Precisa ter o horário de saída preenchido.</p>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
+        <label class="aviso-repetir" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
           <input type="checkbox" id="rep_enquetes" checked style="width:17px;height:17px;cursor:pointer">
           <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados da enquete anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
         </label>
@@ -500,7 +510,7 @@
           <div><label>⏰ Início (opcional)</label><input type="datetime-local" id="prInicio"></div>
           <div><label>⏰ Término (opcional)</label><input type="datetime-local" id="prFim"></div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
+        <label class="aviso-repetir" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
           <input type="checkbox" id="rep_promocoes" checked style="width:17px;height:17px;cursor:pointer">
           <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados da promoção anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
         </label>
@@ -694,6 +704,7 @@
             <button class="botao mini" style="background:#A97F10" onclick="salvarRanking('jpeg')">🖼️ JPEG</button>
           </span>
         </div>
+        <input id="buscaVotos" placeholder="🔎 Buscar música pelo nome..." oninput="votosPagina=1;renderRankingPagina()" style="margin-bottom:10px">
         <div id="listaVotos"><p class="rotulo-secao">Escolha o período e clique em Gerar ranking.</p></div>
       </div>
     </section>
@@ -1726,25 +1737,52 @@ function exportarPedidosM(formato){
   avisar(formato==='jpeg' ? 'Gerando imagem... 🖼️' : 'Abrindo impressão... 🖨️');
 }
 
+// ---- Paginação reutilizável (10 por página, com números de página) ----
+function controlesPagina(total, porPagina, paginaAtual, funcNome){
+  const paginas = Math.ceil(total/porPagina);
+  if(paginas<=1) return '';
+  let nums = '';
+  for(let p=1;p<=paginas;p++){
+    nums += `<button class="botao mini ${p===paginaAtual?'':'neutro'}" onclick="${funcNome}(${p})" style="min-width:32px">${p}</button>`;
+  }
+  return `<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:12px;justify-content:center">
+    <button class="botao mini neutro" onclick="${funcNome}(${paginaAtual-1})" ${paginaAtual<=1?'disabled':''}>◀ Anterior</button>
+    ${nums}
+    <button class="botao mini neutro" onclick="${funcNome}(${paginaAtual+1})" ${paginaAtual>=paginas?'disabled':''}>Próxima ▶</button>
+  </div>`;
+}
+
+let pedidosMLista = []; let pedidosMPagina = 1;
+const PEDIDOS_POR_PAGINA = 10;
 async function carregarPedidosM(){
   const el = document.getElementById('listaPedidosM');
   el.innerHTML = '<p class="rotulo-secao">Carregando pedidos...</p>';
   try{
     const r = await fetch(`${RTDB}/pedidos_musicais.json?t=${Date.now()}`);
     const d = await r.json();
-    if(!d){ el.innerHTML = '<p class="rotulo-secao">Nenhum pedido musical ainda.</p>'; return; }
-    const lista = Object.entries(d).sort((a,b)=>(b[1].quando||'').localeCompare(a[1].quando||''));
-    pedidosMAtual = lista.map(([k,p])=>p);
-    el.innerHTML = `<p class="rotulo-secao">📊 <b>${lista.length}</b> pedidos recebidos</p>` +
-      `<table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Cidade</th><th>Estado</th><th>Quando</th><th></th></tr>` +
-      lista.map(([k,p],i)=>`<tr>
-        <td>${i+1}</td><td>${p.nome||''}</td><td><b>${p.musica||''}</b></td><td>${p.interprete||''}</td>
-        <td>${p.cidade||'-'}</td>
-        <td>${p.estado||'-'}</td>
-        <td>${(p.quando||'').replace('T',' ').slice(0,16)}</td>
-        <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
-      </tr>`).join('') + `</table>`;
+    if(!d){ el.innerHTML = '<p class="rotulo-secao">Nenhum pedido musical ainda.</p>'; pedidosMLista=[]; return; }
+    pedidosMLista = Object.entries(d).sort((a,b)=>(b[1].quando||'').localeCompare(a[1].quando||''));
+    pedidosMAtual = pedidosMLista.map(([k,p])=>p);
+    pedidosMPagina = 1;
+    renderPedidosM();
   }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+function irPedidosM(p){ pedidosMPagina = p; renderPedidosM(); }
+function renderPedidosM(){
+  const el = document.getElementById('listaPedidosM');
+  const total = pedidosMLista.length;
+  const ini = (pedidosMPagina-1)*PEDIDOS_POR_PAGINA;
+  const pagina = pedidosMLista.slice(ini, ini+PEDIDOS_POR_PAGINA);
+  el.innerHTML = `<p class="rotulo-secao">📊 <b>${total}</b> pedidos recebidos — página ${pedidosMPagina} de ${Math.max(1,Math.ceil(total/PEDIDOS_POR_PAGINA))}</p>` +
+    `<table><tr><th>#</th><th>Ouvinte</th><th>Música</th><th>Intérprete</th><th>Cidade</th><th>Estado</th><th>Quando</th><th></th></tr>` +
+    pagina.map(([k,p],idx)=>`<tr>
+      <td>${ini+idx+1}</td><td>${p.nome||''}</td><td><b>${p.musica||''}</b></td><td>${p.interprete||''}</td>
+      <td>${p.cidade||'-'}</td>
+      <td>${p.estado||'-'}</td>
+      <td>${(p.quando||'').replace('T',' ').slice(0,16)}</td>
+      <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
+    </tr>`).join('') + `</table>` +
+    controlesPagina(total, PEDIDOS_POR_PAGINA, pedidosMPagina, 'irPedidosM');
 }
 async function apagarPedidoM(chave){
   if(!confirm('Apagar este pedido? (use depois de atendê-lo)')) return;
@@ -2846,7 +2884,7 @@ async function carregarSuspensos(){
       const volta = new Date(v.ate).toLocaleString('pt-BR').slice(0,16);
       const coment = (v.msg||'').toString().replace(/</g,'&lt;');
       return `<div class="item" style="flex-wrap:wrap"><div class="info"><b>${v.nome||'Ouvinte'}</b><span>suspenso até ${volta}</span>
-        ${coment? `<span style="display:block;margin-top:4px;padding:6px 10px;background:#00000033;border-left:3px solid #E6B93F;border-radius:6px">💬 comentário que causou o bloqueio: <i>"${coment}"</i></span>`:'<span style="opacity:.6">💬 (comentário não registrado — bloqueio anterior à v2.1.7)</span>'}
+        ${coment? `<span class="susp-coment" style="display:block;margin-top:4px;padding:6px 10px;background:#00000033;border-left:3px solid #E6B93F;border-radius:6px">💬 comentário que causou o bloqueio: <i>"${coment}"</i></span>`:'<span style="opacity:.6">💬 (comentário não registrado — bloqueio anterior à v2.1.7)</span>'}
       </div>
         <button class="botao mini" onclick="liberarSuspenso('${uid}')">✅ Liberar</button></div>`;
     }).join('');
@@ -2908,11 +2946,31 @@ function desenharRanking(){
     .sort((a,b)=> (b[1].like - a[1].like))
     .map(([m,c],i)=>({ pos:i+1, musica:m, like:c.like, dislike:c.dislike, saldo:c.like-c.dislike }));
   rankingResumo = `${total} votos ${periodo} • ${Object.keys(mapa).length} músicas`;
-  const linhas = rankingAtual
+  votosPagina = 1;
+  renderRankingPagina();
+}
+
+let votosPagina = 1;
+const VOTOS_POR_PAGINA = 10;
+function renderRankingPagina(){
+  const el = document.getElementById('listaVotos');
+  if(!rankingAtual || !rankingAtual.length){ el.innerHTML = '<p class="rotulo-secao">Nenhuma música no ranking.</p>'; return; }
+  // filtro da busca (mantém a posição original no ranking)
+  const termo = (document.getElementById('buscaVotos')?.value || '').trim().toLowerCase();
+  const filtrado = termo
+    ? rankingAtual.filter(r => (r.musica||'').toLowerCase().includes(termo))
+    : rankingAtual;
+  if(!filtrado.length){ el.innerHTML = '<p class="rotulo-secao">Nenhuma música encontrada para "'+termo+'".</p>'; return; }
+  const total = filtrado.length;
+  const ini = (votosPagina-1)*VOTOS_POR_PAGINA;
+  const pagina = filtrado.slice(ini, ini+VOTOS_POR_PAGINA);
+  const linhas = pagina
     .map(r=>`<tr><td>${r.pos}º</td><td>${r.musica}</td><td>👍 ${r.like}</td></tr>`)
     .join('');
-  el.innerHTML = `<table><tr><th>#</th><th>Música</th><th>👍 Gostei</th></tr>${linhas}</table>`;
+  el.innerHTML = `<table><tr><th>#</th><th>Música</th><th>👍 Gostei</th></tr>${linhas}</table>` +
+    controlesPagina(total, VOTOS_POR_PAGINA, votosPagina, 'irVotos');
 }
+function irVotos(p){ votosPagina = p; renderRankingPagina(); }
 
 // ===== salvar/imprimir o ranking =====
 async function carregarPedidosRelatorio(){
