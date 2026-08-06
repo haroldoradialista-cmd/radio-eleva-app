@@ -28,6 +28,25 @@ KOTLIN
 
 # 5b. Despertador: receptores de alarme (disparam mesmo com o app fechado)
 sed -i 's#</application>#    <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" android:exported="false"/>\n        <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="false">\n            <intent-filter>\n                <action android:name="android.intent.action.BOOT_COMPLETED"/>\n                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>\n                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n            </intent-filter>\n        </receiver>\n        <receiver android:name="br.com.radioeleva.radio_eleva.DespertadorReceiver" android:exported="false"/>\n        <service android:name="br.com.radioeleva.radio_eleva.DespertadorAudioService" android:exported="false" android:foregroundServiceType="mediaPlayback"/>\n    </application>#' "$M"
+# Fazer o DespertadorReceiver escutar BOOT_COMPLETED (reagenda o alarme apos reiniciar o celular)
+python3 - "$M" <<'PYBOOT'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+alvo = '<receiver android:name="br.com.radioeleva.radio_eleva.DespertadorReceiver" android:exported="false"/>'
+novo = ('<receiver android:name="br.com.radioeleva.radio_eleva.DespertadorReceiver" android:exported="true">'
+        '<intent-filter>'
+        '<action android:name="android.intent.action.BOOT_COMPLETED"/>'
+        '<action android:name="android.intent.action.QUICKBOOT_POWERON"/>'
+        '<action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>'
+        '</intent-filter></receiver>')
+if alvo in s:
+    s = s.replace(alvo, novo)
+    open(p,'w',encoding='utf-8').write(s)
+    print('DespertadorReceiver agora escuta BOOT_COMPLETED')
+else:
+    print('AVISO: receiver do despertador nao encontrado para boot')
+PYBOOT
 
 # 5b0. Travar o app na vertical (retrato) — impede o app de girar
 M="android/app/src/main/AndroidManifest.xml"
@@ -446,7 +465,13 @@ class DespertadorAlarmeActivity : Activity() {
             WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
         )
         volumeControlStream = AudioManager.STREAM_ALARM
-        setContentView(montarTela())
+        try {
+            setContentView(montarTela())
+        } catch (e: Exception) {
+            // se algo falhar ao montar a tela completa, mostra uma tela
+            // mínima funcional (nunca deixa o usuário preso na tela preta)
+            setContentView(telaMinima())
+        }
         tique()
     }
 
@@ -524,6 +549,42 @@ class DespertadorAlarmeActivity : Activity() {
         }
     }
 
+    /// Tela de emergencia: se a tela completa falhar, esta garante que o
+    /// usuario sempre veja a hora e consiga desligar/abrir a radio.
+    private fun telaMinima(): View {
+        val raiz = LinearLayout(this)
+        raiz.orientation = LinearLayout.VERTICAL
+        raiz.gravity = Gravity.CENTER
+        raiz.setBackgroundColor(Color.parseColor("#0E0857"))
+        raiz.setPadding(dp(24), dp(28), dp(24), dp(28))
+        val hora = TextView(this)
+        hora.text = SimpleDateFormat("HH:mm", Locale("pt", "BR")).format(Date())
+        hora.textSize = 62f
+        hora.setTextColor(Color.WHITE)
+        hora.gravity = Gravity.CENTER
+        relogio = hora
+        raiz.addView(hora)
+        val ola = TextView(this)
+        ola.text = emojiSaudacao() + " " + saudacao()
+        ola.textSize = 24f
+        ola.setTextColor(Color.parseColor("#FFD65A"))
+        ola.gravity = Gravity.CENTER
+        ola.setPadding(0, dp(6), 0, dp(20))
+        raiz.addView(ola)
+        raiz.addView(botao("\u23F9\uFE0F  PARAR O DESPERTADOR", "#7a1b1b") {
+            enviar("PARAR"); finish()
+        })
+        raiz.addView(botao("\uD83D\uDCFB  ABRIR A RADIO ELEVA", "#1D14A8") {
+            try {
+                val i = Intent(this, MainActivity::class.java)
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(i)
+            } catch (_: Exception) {}
+            finish()
+        })
+        return raiz
+    }
+
     private fun montarTela(): View {
         val raiz = LinearLayout(this)
         raiz.orientation = LinearLayout.VERTICAL
@@ -562,24 +623,28 @@ class DespertadorAlarmeActivity : Activity() {
         raiz.addView(ola)
 
         // ===== VERSÍCULO MOTIVACIONAL (sorteado a cada despertar) =====
-        val banco = carregarVersiculos()
-        val sorteado = banco[java.util.Random().nextInt(banco.size)]
-        val partes = sorteado.split("|")
-        val verso = TextView(this)
-        verso.text = "\u201C" + partes[0] + "\u201D"
-        verso.textSize = 15f
-        verso.setTextColor(Color.parseColor("#E9E7FF"))
-        verso.gravity = Gravity.CENTER
-        verso.setLineSpacing(dp(3).toFloat(), 1f)
-        raiz.addView(verso)
+        try {
+            val banco = carregarVersiculos()
+            if (banco.isNotEmpty()) {
+                val sorteado = banco[java.util.Random().nextInt(banco.size)]
+                val partes = sorteado.split("|")
+                val verso = TextView(this)
+                verso.text = "\u201C" + (partes.getOrNull(0) ?: "") + "\u201D"
+                verso.textSize = 15f
+                verso.setTextColor(Color.parseColor("#E9E7FF"))
+                verso.gravity = Gravity.CENTER
+                verso.setLineSpacing(dp(3).toFloat(), 1f)
+                raiz.addView(verso)
 
-        val ref = TextView(this)
-        ref.text = partes[1]
-        ref.textSize = 13f
-        ref.setTextColor(Color.parseColor("#35C733"))
-        ref.gravity = Gravity.CENTER
-        ref.setPadding(0, dp(4), 0, dp(14))
-        raiz.addView(ref)
+                val ref = TextView(this)
+                ref.text = partes.getOrNull(1) ?: ""
+                ref.textSize = 13f
+                ref.setTextColor(Color.parseColor("#35C733"))
+                ref.gravity = Gravity.CENTER
+                ref.setPadding(0, dp(4), 0, dp(14))
+                raiz.addView(ref)
+            }
+        } catch (_: Exception) {}
 
         // ===== ADIAR 5 MINUTOS (até 3 vezes) =====
         val usadas = prefs().getLong("flutter.desp_sonecas", 0L).toInt()
@@ -638,6 +703,16 @@ import java.util.Calendar
 
 class DespertadorReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // Se o celular acabou de reiniciar (ou o app foi atualizado),
+        // apenas reagenda o alarme salvo — não toca agora.
+        val acao = intent.action ?: ""
+        if (acao == Intent.ACTION_BOOT_COMPLETED ||
+            acao == "android.intent.action.QUICKBOOT_POWERON" ||
+            acao == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            reagendarAposBoot(context)
+            return
+        }
+
         val ehSoneca = intent.getBooleanExtra("soneca", false)
         val prefs = context.getSharedPreferences(
             "FlutterSharedPreferences", Context.MODE_PRIVATE)
@@ -696,6 +771,43 @@ class DespertadorReceiver : BroadcastReceiver() {
 
     companion object {
         private const val CODIGO = 4201
+
+        /// Após reiniciar o celular, remonta o alarme salvo pelo usuário.
+        fun reagendarAposBoot(context: Context) {
+            try {
+                val prefs = context.getSharedPreferences(
+                    "FlutterSharedPreferences", Context.MODE_PRIVATE)
+                val tipo = prefs.getString("flutter.desp_tipo", "") ?: ""
+                if (tipo.isEmpty()) return  // não há despertador ativo
+                val h = prefs.getLong("flutter.desp_hora", 7L).toInt()
+                val m = prefs.getLong("flutter.desp_min", 0L).toInt()
+                val cal = java.util.Calendar.getInstance().apply {
+                    set(java.util.Calendar.HOUR_OF_DAY, h)
+                    set(java.util.Calendar.MINUTE, m)
+                    set(java.util.Calendar.SECOND, 0)
+                    set(java.util.Calendar.MILLISECOND, 0)
+                }
+                // se o horário de hoje já passou, começa a procurar a partir de amanhã
+                if (cal.timeInMillis <= System.currentTimeMillis()) {
+                    cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                }
+                if (tipo == "dias") {
+                    val diasStr = prefs.getString("flutter.desp_dias", "") ?: ""
+                    val dias = diasStr.split(",")
+                        .mapNotNull { it.trim().toIntOrNull() }.toSet()
+                    if (dias.isNotEmpty()) {
+                        var tentativas = 0
+                        while (!dias.contains(
+                                cal.get(java.util.Calendar.DAY_OF_WEEK)) &&
+                            tentativas < 8) {
+                            cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                            tentativas++
+                        }
+                    }
+                }
+                agendar(context, cal.timeInMillis, true)
+            } catch (_: Exception) {}
+        }
 
         private fun pendente(context: Context, ehSoneca: Boolean): PendingIntent {
             val i = Intent(context, DespertadorReceiver::class.java)
