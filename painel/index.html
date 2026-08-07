@@ -132,6 +132,16 @@
   .kpi{background:var(--navy);border-radius:12px;padding:12px;text-align:center}
   .kpi b{display:block;font-size:22px;color:var(--branco)}
   .kpi span{font-size:11px;color:var(--ouro);font-weight:700}
+
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
 </style>
 </head>
 <body>
@@ -141,7 +151,7 @@
     <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
 
     <div id="boxLogin">
-      <input type="email" id="loginEmail" placeholder="E-mail" autocomplete="username" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
+      <input type="text" id="loginEmail" placeholder="E-mail ou login do setor" autocomplete="username" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
       <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px" onkeydown="if(event.key==='Enter')entrarComSenha()">
       <button onclick="entrarComSenha()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
       <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none"></p>
@@ -224,9 +234,44 @@
     <button class="aba" data-aba="promos" onclick="trocarAba(this)">🎁 Promoções</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
+    <button class="aba admin-only" data-aba="usuarios" onclick="trocarAba(this)" style="display:none">👥 Usuários</button>
   </div>
 
   <main>
+
+    <!-- USUÁRIOS (só admin) -->
+    <section id="sec-usuarios" class="oculto">
+      <h2>👥 Gerenciar usuários do painel</h2>
+      <p class="rotulo-secao">Crie logins para cada setor da emissora e defina quais abas cada um pode acessar. Você é o único que vê esta tela.</p>
+
+      <div class="cartao" style="margin-bottom:18px">
+        <h3 style="margin:0 0 12px;color:var(--ouro)">➕ Novo usuário</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div><label>Login (sem espaços)</label><input id="nuLogin" placeholder="jornalismo_eleva"></div>
+          <div><label>Senha</label><input id="nuSenha" type="password" placeholder="mínimo 6 caracteres"></div>
+          <div style="grid-column:1/-1"><label>Nome do setor</label><input id="nuNome" placeholder="Jornalismo"></div>
+        </div>
+        <label>Abas permitidas</label>
+        <div id="nuAbas" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px">
+          <label class="check-aba"><input type="checkbox" value="banners">🖼️ Banners</label>
+          <label class="check-aba"><input type="checkbox" value="campanha">📢 Campanha</label>
+          <label class="check-aba"><input type="checkbox" value="chat">💬 Chat</label>
+          <label class="check-aba"><input type="checkbox" value="enquetes">📊 Enquetes</label>
+          <label class="check-aba"><input type="checkbox" value="stats">📈 Estatísticas</label>
+          <label class="check-aba"><input type="checkbox" value="noticias">📰 Notícias</label>
+          <label class="check-aba"><input type="checkbox" value="notif">🔔 Notificações</label>
+          <label class="check-aba"><input type="checkbox" value="pedidosm">🎶 Pedido Musical</label>
+          <label class="check-aba"><input type="checkbox" value="programacao">📅 Programação</label>
+          <label class="check-aba"><input type="checkbox" value="promos">🎁 Promoções</label>
+          <label class="check-aba"><input type="checkbox" value="textos">⚙️ Rádio & Redes</label>
+          <label class="check-aba"><input type="checkbox" value="votos">👍 Votos</label>
+        </div>
+        <button class="botao" onclick="salvarUsuario()">💾 SALVAR USUÁRIO</button>
+      </div>
+
+      <div id="listaUsuarios"><p class="rotulo-secao">Carregando usuários...</p></div>
+    </section>
+
     <!-- BANNERS -->
     <section id="sec-banners">
       <div class="cartao">
@@ -759,6 +804,8 @@ async function entrarPainel(silencioso){
     desenharBanners(); desenharCampanha(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
     ['bn','cp','nt','eq','pr'].forEach(pref=>{ const box=document.getElementById('midiaBox_'+pref); if(box){ box.innerHTML=camposMidiaHTML(pref); trocarTipoMidia(pref); } });
     carregarChat(); carregarVotos();
+    aplicarPerfilUsuario();
+    carregarUsuarios();
     if(!silencioso) avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
     if(!silencioso) avisar('Token inválido ou sem permissão. Confira e tente de novo.', true);
@@ -1607,7 +1654,17 @@ async function mostrarRelatorioGanhadores(){
       table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #cfd8e6;padding:5px 7px;text-align:left}th{background:#0D2B52;color:#fff}
       .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}
       .bt{text-align:center;margin-top:18px}.bt button{padding:11px 16px;margin:4px;border:none;border-radius:9px;color:#fff;font-weight:700;cursor:pointer;font-size:13px}
-      @media print{.bt{display:none}}</style></head><body>
+      @media print{.bt{display:none}}
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style></head><body>
       <div id="rel"><div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
       <h2>RELATÓRIO DE GANHADORES</h2><div>${lista.length} ganhadores no total</div></div>
       <table>${cab}${linhas}</table>
@@ -1680,7 +1737,17 @@ function gerarParabensPDF(msg, nomeG){
     .nao-imprimir button{padding:13px 26px;font-size:16px;border-radius:12px;border:none;
       background:#35C733;color:#fff;cursor:pointer;font-weight:800}
     @media print{.nao-imprimir{display:none}body{padding:0}}
-  </style></head><body>
+  
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style></head><body>
 
   <div class="quadro">
     <img class="logo" src="${LOGO}" onerror="this.style.display='none'">
@@ -1716,7 +1783,17 @@ function exportarPedidosM(formato){
   const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos musicais - Rádio Eleva</title>
     <style>body{font-family:Arial;padding:24px;color:#14203a}h1{color:#0D2B52;margin:2px 0}h2{color:#1B7A4B;font-size:15px}
     table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}th{background:#0D2B52;color:#fff}
-    .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}</style></head><body>
+    .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style></head><body>
     <div id="rel"><div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
     <h2>PEDIDOS MUSICAIS DOS OUVINTES</h2><div>${pedidosMAtual.length} pedidos recebidos</div></div>
     <table><tr><th>#</th><th>Ouvinte</th><th>Intérprete</th><th>Música</th><th>Cidade</th><th>Estado</th><th>WhatsApp</th><th>Quando</th></tr>${linhas}</table>
@@ -2181,7 +2258,17 @@ async function gerarRelatorioGenerico(tipo){
       .nao-imprimir{text-align:center;margin-top:20px}
       .nao-imprimir button{padding:11px 18px;margin:0 6px;font-size:14px;border-radius:10px;border:none;cursor:pointer;color:#fff}
       @media print{.nao-imprimir{display:none}}
-    </style></head><body>
+    
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style></head><body>
     <div class="rel" id="rel">
       <div class="topo">
         <h1>📻 RÁDIO ELEVA</h1>
@@ -2273,7 +2360,17 @@ async function gerarRelatorioPedidos(){
       .nao-imprimir{text-align:center;margin-top:20px}
       .nao-imprimir button{padding:11px 14px;margin:4px;font-size:13.5px;border-radius:10px;border:none;cursor:pointer;color:#fff;font-weight:700}
       @media print{.nao-imprimir{display:none}}
-    </style></head><body>
+    
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style></head><body>
     <div class="rel" id="rel">
       <div class="topo">
         <h1>📻 RÁDIO ELEVA</h1>
@@ -2361,7 +2458,17 @@ function exibirResultadoEnquete(){
     .nao-imprimir{text-align:center;margin-top:18px}
     .nao-imprimir button{padding:10px 18px;border:none;border-radius:10px;background:#1B7A4B;color:#fff;font-weight:800;cursor:pointer}
     @media print{.nao-imprimir,.aovivo{display:none}body{background:#0E0857}}
-  </style></head><body>
+  
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style></head><body>
   <div class="placar">
     <h1>📻 RÁDIO ELEVA — RESULTADO DA ENQUETE</h1>
     <div class="slogan">Adore • Viva • Eleve</div>
@@ -2570,7 +2677,17 @@ async function gerarRelatorio(){
       .nao-imprimir{text-align:center;margin-top:20px}
       .nao-imprimir button{padding:11px 18px;margin:0 6px;font-size:14px;border-radius:10px;border:none;cursor:pointer;color:#fff}
       @media print{.nao-imprimir{display:none}}
-    </style></head><body>
+    
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style></head><body>
 
     <div class="rel" id="rel">
       <div class="topo">
@@ -2634,13 +2751,30 @@ function mostrarCaixa(qual){
   });
 }
 async function entrarComSenha(){
-  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const senha = document.getElementById('loginSenha').value;
-  const erro = document.getElementById('erroLogin');
+  const campo = document.getElementById('loginEmail').value.trim();
+  const senha  = document.getElementById('loginSenha').value;
+  const erro   = document.getElementById('erroLogin');
   erro.style.display='none';
-  if(!email || !senha){ erro.innerHTML='Preencha e-mail e senha.'; erro.style.display='block'; return; }
-  // trava de segurança: o app tem cadastro aberto de ouvintes, então só
-  // os e-mails da lista abaixo podem entrar no painel
+  if(!campo || !senha){ erro.innerHTML='Preencha o login e a senha.'; erro.style.display='block'; return; }
+
+  // Login setorial: qualquer texto sem @ é tratado como usuário de setor
+  if(!campo.includes('@')){
+    const ok = await tentarLoginSetorial(campo, senha);
+    if(ok){
+      sessionStorage.setItem('painel_logado','sim');
+      sessionStorage.setItem('painel_usuario_login', campo);
+      document.getElementById('telaLogin').style.display='none';
+      aplicarPerfilUsuario();
+      const info = document.getElementById('uidInfo');
+      if(info) info.innerHTML = '✅ Logado como <b>'+usuarioAtual.nome+'</b>';
+      return;
+    }
+    erro.innerHTML = 'Login ou senha incorretos.';
+    erro.style.display='block'; return;
+  }
+
+  // Login admin (e-mail Firebase)
+  const email = campo.toLowerCase();
   if(!EMAILS_PAINEL.includes(email)){
     erro.innerHTML = 'Este e-mail não tem permissão para o painel.';
     erro.style.display='block'; return;
@@ -2653,19 +2787,21 @@ async function entrarComSenha(){
     if(!r.ok){
       const cod = (d.error && d.error.message) || 'DESCONHECIDO';
       let msg;
-      if(cod.includes('INVALID_LOGIN_CREDENTIALS') || cod.includes('INVALID_PASSWORD')) msg = 'Senha incorreta. Use "🔑 Esqueci a senha" para receber o link por e-mail.';
-      else if(cod.includes('EMAIL_NOT_FOUND')) msg = 'Este e-mail ainda não tem senha de painel. Toque em "🆕 Primeiro acesso" abaixo para criar.';
-      else if(cod.includes('TOO_MANY_ATTEMPTS')) msg = 'Muitas tentativas. Aguarde alguns minutos e tente de novo.';
-      else msg = 'Não foi possível entrar.';
-      erro.innerHTML = msg + '<br><small style="color:#BDB8F0;opacity:.8">código: '+cod+'</small>';
+      if(cod.includes('INVALID_LOGIN_CREDENTIALS')||cod.includes('INVALID_PASSWORD')) msg='Senha incorreta. Use "🔑 Esqueci a senha" para receber o link por e-mail.';
+      else if(cod.includes('EMAIL_NOT_FOUND')) msg='Este e-mail ainda não tem senha de painel. Toque em "🆕 Primeiro acesso" abaixo para criar.';
+      else if(cod.includes('TOO_MANY_ATTEMPTS')) msg='Muitas tentativas. Aguarde alguns minutos e tente de novo.';
+      else msg='Não foi possível entrar.';
+      erro.innerHTML=msg+'<br><small style="color:#BDB8F0;opacity:.8">código: '+cod+'</small>';
       erro.style.display='block'; return;
     }
-    modToken = d.idToken; modUid = d.localId;
+    modToken=d.idToken; modUid=d.localId;
+    usuarioAtual=null; // admin
     sessionStorage.setItem('painel_logado','sim');
     sessionStorage.setItem('painel_email', email);
     document.getElementById('telaLogin').style.display='none';
+    aplicarPerfilUsuario();
     const info = document.getElementById('uidInfo');
-    if(info) info.innerHTML = '✅ Logado como <b>'+email+'</b> — código de moderador: <b style="color:var(--ouro)">'+modUid+'</b>';
+    if(info) info.innerHTML='✅ Logado como <b>'+email+'</b> — código de moderador: <b style="color:var(--ouro)">'+modUid+'</b>';
   }catch(e){ erro.innerHTML='Falha de conexão. Tente de novo.'; erro.style.display='block'; }
 }
 
@@ -3017,7 +3153,17 @@ function salvarPedidos(formato){
   const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos - Rádio Eleva</title>
     <style>body{font-family:Arial;padding:24px;color:#14203a}h1{color:#0D2B52}h2{color:#1B7A4B;font-size:15px}
     table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}th{background:#0D2B52;color:#fff}
-    .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}</style></head><body>
+    .topo{text-align:center;border-bottom:3px solid #E6B93F;padding-bottom:10px;margin-bottom:14px}
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style></head><body>
     <div id="rel"><div class="topo"><h1>📻 RÁDIO ELEVA</h1><div>Adore • Viva • Eleve</div>
     <h2>RELATÓRIO DE PEDIDOS MUSICAIS</h2><div>${pedidosAtual.length} pedidos • ${pedidosResumo}</div></div>
     <table><tr><th>Quando</th><th>Ouvinte</th><th>WhatsApp</th><th>Música</th><th>Intérprete</th></tr>${linhas}</table>
@@ -3071,7 +3217,17 @@ function salvarRanking(formato){
       .rodape{margin-top:16px;font-size:12px;color:#5a6a85;text-align:center}
       .nao-imprimir{text-align:center;margin-top:18px}
       @media print{.nao-imprimir{display:none}}
-    </style>`;
+    
+  .check-aba { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.07);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:13px; user-select:none; }
+  .check-aba input { accent-color:var(--ouro); width:15px; height:15px; cursor:pointer; }
+  .check-aba:has(input:checked) { background:rgba(212,175,55,.18); outline:1px solid var(--ouro); }
+  .usuario-card { background:rgba(255,255,255,.05); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; border-left:3px solid var(--ouro); }
+  .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
+  .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
+  .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+</style>`;
   if(formato === 'word'){
     const doc = '<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8">'+estilo+'</head><body>'+corpo+'</body></html>';
     const blob = new Blob(['\ufeff'+doc], {type:'application/msword'});
@@ -3131,6 +3287,173 @@ document.getElementById('arqTroca').addEventListener('change', async (ev)=>{
 
 // entra direto se já tem token salvo
 if(token){ document.getElementById('campoToken').value = token; entrarPainel(); }
+
+// =====================================================================
+// SISTEMA DE USUÁRIOS POR SETOR
+// Os usuários setoriais ficam no RTDB em painel_usuarios/{login}
+// Senhas são armazenadas com SHA-256 (nunca em texto puro)
+// =====================================================================
+
+// Referência do usuário logado atualmente
+let usuarioAtual = null; // null = admin; {login, nome, abas} = setor
+
+/// Hash simples SHA-256 (via SubtleCrypto nativo do browser)
+async function sha256(texto) {
+  const buf = await crypto.subtle.digest('SHA-256',
+    new TextEncoder().encode(texto));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/// Tenta fazer login como usuário setorial.
+/// Retorna true se achou e senha bate, false se não achou.
+async function tentarLoginSetorial(login, senha) {
+  try {
+    const r = await fetch(`${RTDB}/painel_usuarios/${login}.json?t=${Date.now()}`);
+    if (!r.ok) return false;
+    const u = await r.json();
+    if (!u || !u.ativo) return false;
+    const hash = await sha256(senha);
+    if (hash !== u.senha_hash) return false;
+    usuarioAtual = { login, nome: u.nome||login, abas: u.abas||[] };
+    return true;
+  } catch(_) { return false; }
+}
+
+/// Aplica as restrições de aba para o usuário setorial
+function aplicarPerfilUsuario() {
+  if (!usuarioAtual) {
+    // admin: mostra tudo, inclusive a aba Usuários
+    document.querySelectorAll('.admin-only').forEach(e => e.style.display = '');
+    document.querySelectorAll('.aba[data-aba]').forEach(e => e.style.display = '');
+    return;
+  }
+  // setor: esconde o que não tem permissão e a aba de usuários
+  document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'none');
+  document.querySelectorAll('.aba[data-aba]').forEach(btn => {
+    const aba = btn.dataset.aba;
+    btn.style.display = usuarioAtual.abas.includes(aba) ? '' : 'none';
+  });
+  // ir para a primeira aba permitida
+  const primeira = document.querySelector('.aba[data-aba]:not([style*="none"])');
+  if (primeira) primeira.click();
+}
+
+/// Carregar e exibir a lista de usuários cadastrados
+async function carregarUsuarios() {
+  const el = document.getElementById('listaUsuarios');
+  if (!el) return;
+  try {
+    const r = await fetch(`${RTDB}/painel_usuarios.json?t=${Date.now()}`);
+    const d = await r.json() || {};
+    const lista = Object.entries(d).sort((a,b)=>
+      (a[1].nome||'').localeCompare(b[1].nome||''));
+    if (!lista.length) {
+      el.innerHTML = '<p class="rotulo-secao">Nenhum usuário cadastrado ainda.</p>';
+      return;
+    }
+    const ABAS_NOMES = {
+      banners:'🖼️ Banners', campanha:'📢 Campanha', chat:'💬 Chat',
+      enquetes:'📊 Enquetes', stats:'📈 Estatísticas', noticias:'📰 Notícias',
+      notif:'🔔 Notificações', pedidosm:'🎶 Pedido Musical',
+      programacao:'📅 Programação', promos:'🎁 Promoções',
+      textos:'⚙️ Rádio & Redes', votos:'👍 Votos'
+    };
+    el.innerHTML = lista.map(([login, u]) => {
+      const abasNomes = (u.abas||[]).map(a => ABAS_NOMES[a]||a).join(', ') || '(nenhuma)';
+      const status = u.ativo ? '🟢 Ativo' : '🔴 Inativo';
+      return `<div class="usuario-card">
+        <h4>${(u.nome||login).replace(/</g,'&lt;')} <small style="color:#9a93d9;font-weight:400">@${login}</small>
+          <span style="float:right;font-size:12px">${status}</span>
+        </h4>
+        <div class="abas-perm">Abas: ${abasNomes}</div>
+        <div class="acoes">
+          <button class="botao mini" onclick="editarUsuario('${login}')">✏️ Editar</button>
+          <button class="botao mini" onclick="alternarAtivo('${login}', ${!u.ativo})"
+            style="background:${u.ativo?'#7a1b1b':'#1a7a1b'}">${u.ativo?'⏸️ Desativar':'▶️ Ativar'}</button>
+          <button class="botao mini perigo" onclick="excluirUsuario('${login}')">🗑️ Excluir</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<p class="rotulo-secao">Erro ao carregar usuários.</p>'; }
+}
+
+/// Salvar (criar ou atualizar) um usuário
+async function salvarUsuario(loginEditando) {
+  const login = (document.getElementById('nuLogin').value||'').trim()
+    .toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const senha = (document.getElementById('nuSenha').value||'').trim();
+  const nome  = (document.getElementById('nuNome').value||'').trim();
+  const abas  = Array.from(document.querySelectorAll('#nuAbas input:checked'))
+    .map(i => i.value);
+
+  if (!login) { avisar('Informe um login (ex: jornalismo_eleva)', true); return; }
+  if (!loginEditando && senha.length < 6) { avisar('A senha precisa ter pelo menos 6 caracteres.', true); return; }
+  if (!nome)  { avisar('Informe o nome do setor.', true); return; }
+
+  try {
+    const u = { nome, abas, ativo: true };
+    if (senha) u.senha_hash = await sha256(senha);
+    await fetch(`${RTDB}/painel_usuarios/${login}.json`,
+      { method: 'PUT', body: JSON.stringify(u) });
+    avisar(loginEditando ? `Usuário @${login} atualizado! ✅` : `Usuário @${login} criado! ✅`);
+    limparFormUsuario();
+    carregarUsuarios();
+  } catch(_) { avisar('Falhou ao salvar. Verifique sua internet.', true); }
+}
+
+/// Preenche o formulário para editar um usuário existente
+async function editarUsuario(login) {
+  try {
+    const r = await fetch(`${RTDB}/painel_usuarios/${login}.json?t=${Date.now()}`);
+    const u = await r.json();
+    if (!u) return;
+    document.getElementById('nuLogin').value = login;
+    document.getElementById('nuLogin').readOnly = true;
+    document.getElementById('nuSenha').placeholder = '(deixe vazio para não alterar a senha)';
+    document.getElementById('nuNome').value = u.nome||'';
+    document.querySelectorAll('#nuAbas input').forEach(cb => {
+      cb.checked = (u.abas||[]).includes(cb.value);
+    });
+    // troca o botão salvar para modo edição
+    const btn = document.querySelector('#sec-usuarios .botao');
+    btn.textContent = '💾 ATUALIZAR USUÁRIO';
+    btn.onclick = () => salvarUsuario(login);
+    document.getElementById('nuLogin').scrollIntoView({behavior:'smooth'});
+  } catch(_) { avisar('Erro ao carregar dados do usuário.', true); }
+}
+
+/// Ativar ou desativar um usuário
+async function alternarAtivo(login, novoEstado) {
+  try {
+    await fetch(`${RTDB}/painel_usuarios/${login}/ativo.json`,
+      { method: 'PUT', body: JSON.stringify(novoEstado) });
+    avisar(`Usuário @${login} ${novoEstado?'ativado':'desativado'}.`);
+    carregarUsuarios();
+  } catch(_) { avisar('Falhou.', true); }
+}
+
+/// Excluir um usuário
+async function excluirUsuario(login) {
+  if (!confirm(`Excluir o usuário @${login}? Esta ação não pode ser desfeita.`)) return;
+  try {
+    await fetch(`${RTDB}/painel_usuarios/${login}.json`, { method: 'DELETE' });
+    avisar(`Usuário @${login} excluído.`);
+    carregarUsuarios();
+  } catch(_) { avisar('Falhou ao excluir.', true); }
+}
+
+/// Limpar o formulário de novo usuário
+function limparFormUsuario() {
+  document.getElementById('nuLogin').value = '';
+  document.getElementById('nuLogin').readOnly = false;
+  document.getElementById('nuSenha').value = '';
+  document.getElementById('nuSenha').placeholder = 'mínimo 6 caracteres';
+  document.getElementById('nuNome').value = '';
+  document.querySelectorAll('#nuAbas input').forEach(cb => cb.checked = false);
+  const btn = document.querySelector('#sec-usuarios .botao');
+  if (btn) { btn.textContent = '💾 SALVAR USUÁRIO'; btn.onclick = () => salvarUsuario(null); }
+}
+
 </script>
 </body>
 </html>
