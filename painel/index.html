@@ -145,54 +145,7 @@
 </style>
 </head>
 <body>
-<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:none;align-items:center;justify-content:center;overflow:auto;padding:20px">
-  <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:32px 28px;max-width:380px;width:100%;text-align:center">
-    <h1 style="color:#FFD65A;font-size:22px;margin-bottom:2px">📻 PAINEL ELEVA</h1>
-    <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
 
-    <div id="boxLogin">
-      <input type="text" id="loginEmail" placeholder="E-mail ou login do setor" autocomplete="username" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
-      <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px" onkeydown="if(event.key==='Enter')entrarComSenha()">
-      <button onclick="entrarComSenha()" style="width:100%;margin-top:12px;padding:13px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:15px;cursor:pointer">ENTRAR</button>
-      <p id="erroLogin" style="color:#ff9a9a;font-size:12px;margin-top:10px;display:none"></p>
-      <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;font-size:12px;flex-wrap:wrap">
-        <a href="#" onclick="mostrarCaixa('boxEsqueci');return false" style="color:#FFD65A;text-decoration:none">🔑 Esqueci a senha</a>
-        <a href="#" onclick="mostrarCaixa('boxMudar');return false" style="color:#FFD65A;text-decoration:none">🔄 Mudar senha</a>
-        <a href="#" onclick="mostrarCaixa('boxNovo');return false" style="color:#35C733;text-decoration:none;font-weight:800">🆕 Primeiro acesso</a>
-      </div>
-    </div>
-
-    <div id="boxNovo" style="display:none;text-align:left">
-      <h2 style="color:#35C733;font-size:15px;margin-bottom:6px">🆕 Primeiro acesso</h2>
-      <p style="color:#BDB8F0;font-size:12px;line-height:1.5;margin-bottom:10px">Use isto só se o painel disser que o seu e-mail ainda não tem senha. Crie a senha do painel aqui.</p>
-      <input type="email" id="novoEmail" placeholder="radioelevagospel@gmail.com" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
-      <input type="password" id="novaSenhaP" placeholder="Crie uma senha (mínimo 6 caracteres)" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px">
-      <button onclick="criarSenhaPainel()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:14px;cursor:pointer">🆕 CRIAR SENHA DO PAINEL</button>
-      <p id="msgNovo" style="font-size:12px;margin-top:10px;line-height:1.5"></p>
-      <p style="margin-top:12px;text-align:center"><a href="#" onclick="mostrarCaixa('boxLogin');return false" style="color:#BDB8F0;font-size:12px;text-decoration:none">← voltar</a></p>
-    </div>
-
-    <div id="boxEsqueci" style="display:none;text-align:left">
-      <h2 style="color:#FFD65A;font-size:15px;margin-bottom:6px">🔑 Recuperar senha</h2>
-      <p style="color:#BDB8F0;font-size:12px;line-height:1.5;margin-bottom:10px">Enviaremos um link de recuperação para o seu e-mail. Abra o link, escolha a nova senha e volte para entrar.</p>
-      <input type="email" id="recEmail" placeholder="radioelevagospel@gmail.com" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px">
-      <button onclick="recuperarSenha()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:14px;cursor:pointer">📧 ENVIAR LINK POR E-MAIL</button>
-      <p id="msgRec" style="font-size:12px;margin-top:10px;line-height:1.5"></p>
-      <p style="margin-top:12px;text-align:center"><a href="#" onclick="mostrarCaixa('boxLogin');return false" style="color:#BDB8F0;font-size:12px;text-decoration:none">← voltar</a></p>
-    </div>
-
-    <div id="boxMudar" style="display:none;text-align:left">
-      <h2 style="color:#FFD65A;font-size:15px;margin-bottom:6px">🔄 Mudar senha</h2>
-      <p style="color:#BDB8F0;font-size:12px;line-height:1.5;margin-bottom:10px">Confirme a senha atual e escolha a nova. A troca vale para todos os lugares onde você usa o painel.</p>
-      <input type="email" id="mudEmail" placeholder="E-mail" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
-      <input type="password" id="mudSenhaAtual" placeholder="Senha atual" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px;margin-bottom:8px">
-      <input type="password" id="mudSenhaNova" placeholder="Nova senha (mínimo 6 caracteres)" style="width:100%;padding:11px;border-radius:10px;border:1px solid #ffffff33;background:#160f5c;color:#fff;font-size:14px">
-      <button onclick="mudarSenha()" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:linear-gradient(90deg,#35C733,#1E9BFF);color:#fff;font-weight:800;font-size:14px;cursor:pointer">🔄 TROCAR SENHA AGORA</button>
-      <p id="msgMud" style="font-size:12px;margin-top:10px;line-height:1.5"></p>
-      <p style="margin-top:12px;text-align:center"><a href="#" onclick="mostrarCaixa('boxLogin');return false" style="color:#BDB8F0;font-size:12px;text-decoration:none">← voltar</a></p>
-    </div>
-  </div>
-</div>
 
 
 <div class="topo">
@@ -212,6 +165,15 @@
     <label>Token do GitHub</label>
     <input id="campoToken" type="password" placeholder="github_pat_...">
     <button class="botao" onclick="entrarPainel()">Entrar no painel</button>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:18px 0">
+    <h2 style="font-size:15px">👥 Acesso por setor</h2>
+    <p class="rotulo-secao">Para equipes com acesso restrito (sem token do GitHub).</p>
+    <label>Login do setor</label>
+    <input id="setorLogin" placeholder="ex: jornalismo_eleva" autocomplete="username">
+    <label>Senha</label>
+    <input id="setorSenha" type="password" placeholder="Senha" onkeydown="if(event.key==='Enter')entrarComoSetor()">
+    <button class="botao" style="background:var(--verde)" onclick="entrarComoSetor()">Entrar como setor</button>
+    <p id="erroSetor" style="color:#ff6b6b;font-size:13px;margin-top:8px;display:none"></p>
   </div>
 </main>
 
@@ -804,21 +766,9 @@ async function entrarPainel(silencioso){
     desenharBanners(); desenharCampanha(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
     ['bn','cp','nt','eq','pr'].forEach(pref=>{ const box=document.getElementById('midiaBox_'+pref); if(box){ box.innerHTML=camposMidiaHTML(pref); trocarTipoMidia(pref); } });
     carregarChat(); carregarVotos();
-    // Se não há sessão de login (Firebase ou setorial), mostra o telaLogin
-    let temSessao = false;
-    try{ temSessao = sessionStorage.getItem('painel_logado')==='sim'; }catch(_){}
-    if(!temSessao && !silencioso){
-      const tl = document.getElementById('telaLogin');
-      if(tl){ tl.style.display='flex'; }
-    } else {
-      // já autenticado: restaurar usuario setorial se houver
-      const loginSalvo = sessionStorage.getItem('painel_usuario_login');
-      if(loginSalvo){ /* usuario setorial — perfil foi restaurado em restaurarSessao */ }
-      else { usuarioAtual = null; } // admin
-      aplicarPerfilUsuario();
-      carregarUsuarios();
-      if(!silencioso) avisar('Bem-vindo ao Painel Eleva! 🎉');
-    }
+    aplicarPerfilUsuario();
+    carregarUsuarios();
+    if(!silencioso) avisar('Bem-vindo ao Painel Eleva! 🎉');
   }catch(e){
     if(!silencioso) avisar('Token inválido ou sem permissão. Confira e tente de novo.', true);
     throw e;
@@ -2763,30 +2713,11 @@ function mostrarCaixa(qual){
   });
 }
 async function entrarComSenha(){
-  const campo = document.getElementById('loginEmail').value.trim();
-  const senha  = document.getElementById('loginSenha').value;
-  const erro   = document.getElementById('erroLogin');
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const senha = document.getElementById('loginSenha').value;
+  const erro = document.getElementById('erroLogin');
   erro.style.display='none';
-  if(!campo || !senha){ erro.innerHTML='Preencha o login e a senha.'; erro.style.display='block'; return; }
-
-  // Login setorial: qualquer texto sem @ é tratado como usuário de setor
-  if(!campo.includes('@')){
-    const ok = await tentarLoginSetorial(campo, senha);
-    if(ok){
-      sessionStorage.setItem('painel_logado','sim');
-      sessionStorage.setItem('painel_usuario_login', campo);
-      document.getElementById('telaLogin').style.display='none';
-      aplicarPerfilUsuario();
-      const info = document.getElementById('uidInfo');
-      if(info) info.innerHTML = '✅ Logado como <b>'+usuarioAtual.nome+'</b>';
-      return;
-    }
-    erro.innerHTML = 'Login ou senha incorretos.';
-    erro.style.display='block'; return;
-  }
-
-  // Login admin (e-mail Firebase)
-  const email = campo.toLowerCase();
+  if(!email || !senha){ erro.innerHTML='Preencha e-mail e senha.'; erro.style.display='block'; return; }
   if(!EMAILS_PAINEL.includes(email)){
     erro.innerHTML = 'Este e-mail não tem permissão para o painel.';
     erro.style.display='block'; return;
@@ -2799,23 +2730,23 @@ async function entrarComSenha(){
     if(!r.ok){
       const cod = (d.error && d.error.message) || 'DESCONHECIDO';
       let msg;
-      if(cod.includes('INVALID_LOGIN_CREDENTIALS')||cod.includes('INVALID_PASSWORD')) msg='Senha incorreta. Use "🔑 Esqueci a senha" para receber o link por e-mail.';
-      else if(cod.includes('EMAIL_NOT_FOUND')) msg='Este e-mail ainda não tem senha de painel. Toque em "🆕 Primeiro acesso" abaixo para criar.';
-      else if(cod.includes('TOO_MANY_ATTEMPTS')) msg='Muitas tentativas. Aguarde alguns minutos e tente de novo.';
+      if(cod.includes('INVALID_LOGIN_CREDENTIALS')||cod.includes('INVALID_PASSWORD')) msg='Senha incorreta.';
+      else if(cod.includes('EMAIL_NOT_FOUND')) msg='E-mail sem senha. Use Primeiro acesso.';
+      else if(cod.includes('TOO_MANY_ATTEMPTS')) msg='Muitas tentativas. Aguarde.';
       else msg='Não foi possível entrar.';
       erro.innerHTML=msg+'<br><small style="color:#BDB8F0;opacity:.8">código: '+cod+'</small>';
       erro.style.display='block'; return;
     }
     modToken=d.idToken; modUid=d.localId;
-    usuarioAtual=null; // admin
+    usuarioAtual=null;
     sessionStorage.setItem('painel_logado','sim');
     sessionStorage.setItem('painel_email', email);
-    document.getElementById('telaLogin').style.display='none';
+    
     aplicarPerfilUsuario();
     carregarUsuarios();
     const info = document.getElementById('uidInfo');
-    if(info) info.innerHTML='✅ Logado como <b>'+email+'</b> — código de moderador: <b style="color:var(--ouro)">'+modUid+'</b>';
-  }catch(e){ erro.innerHTML='Falha de conexão. Tente de novo.'; erro.style.display='block'; }
+    if(info) info.innerHTML='✅ Logado como <b>'+email+'</b>';
+  }catch(e){ erro.innerHTML='Falha de conexão.'; erro.style.display='block'; }
 }
 
 /// Primeiro acesso: cria a senha do painel para o e-mail autorizado
@@ -2898,6 +2829,8 @@ async function mudarSenha(){
 function sairDoPainel(){
   sessionStorage.removeItem('painel_logado');
   sessionStorage.removeItem('painel_email');
+  sessionStorage.removeItem('painel_usuario_login');
+  usuarioAtual = null;
   modToken=''; modUid='';
   location.reload();
 }
@@ -2928,16 +2861,42 @@ async function restaurarSessao(){
   let logado = false, temToken = false;
   try{ logado = sessionStorage.getItem('painel_logado')==='sim'; }catch(_){}
   try{ temToken = !!localStorage.getItem('tokenEleva'); }catch(_){}
-  if(logado){
-    const tl = document.getElementById('telaLogin');
-    if(tl) tl.style.display = 'none'; // pula a tela de login do Firebase
+  // restaurar sessão de usuário SETORIAL (sem token)
+  const loginSalvo = sessionStorage.getItem('painel_usuario_login');
+  if(logado && loginSalvo && !temToken){
+    try{
+      const r = await fetch(`${RTDB}/painel_usuarios/${loginSalvo}.json?t=${Date.now()}`);
+      const u = await r.json();
+      if(u && u.ativo){
+        usuarioAtual = { login: loginSalvo, nome: u.nome||loginSalvo, abas: u.abas||[] };
+        document.getElementById('telaAcesso').classList.add('oculto');
+        document.getElementById('painel').classList.remove('oculto');
+        document.getElementById('btnSairTopo').style.display='inline-block';
+        try{ await carregarConfig(); }catch(_){}
+        aplicarPerfilUsuario();
+        const abas = usuarioAtual.abas;
+        if(abas.includes('banners'))     desenharBanners();
+        if(abas.includes('campanha'))    desenharCampanha();
+        if(abas.includes('noticias'))    desenharNoticias();
+        if(abas.includes('programacao')) desenharProgramas();
+        if(abas.includes('enquetes'))    desenharEnquetes();
+        if(abas.includes('promos'))      desenharPromos();
+        if(abas.includes('pedidosm'))    carregarPedidosM();
+        if(abas.includes('textos'))      preencherTextos();
+        if(abas.includes('chat'))        carregarChat();
+        if(abas.includes('votos'))       carregarVotos();
+        if(abas.includes('stats'))       iniciarOuvintesAgora();
+        let aba = 'banners';
+        try{ aba = sessionStorage.getItem('painel_aba')||abas[0]||'banners'; }catch(_){}
+        const btn = document.querySelector('.aba[data-aba="'+aba+'"]');
+        if(btn) trocarAba(btn);
+        return;
+      }
+    }catch(_){}
   }
   if(logado && temToken){
     try{
       await entrarPainel(true); // silencioso: usa o token guardado no localStorage
-      // restaurar usuário setorial se houver
-      const loginSalvo = sessionStorage.getItem('painel_usuario_login');
-      if(!loginSalvo) { usuarioAtual = null; aplicarPerfilUsuario(); carregarUsuarios(); }
       let aba = 'banners';
       try{ aba = sessionStorage.getItem('painel_aba') || 'banners'; }catch(_){}
       const btn = document.querySelector('.aba[data-aba="'+aba+'"]');
@@ -3303,6 +3262,42 @@ document.getElementById('arqTroca').addEventListener('change', async (ev)=>{
 
 // entra direto se já tem token salvo
 if(token){ document.getElementById('campoToken').value = token; entrarPainel(); }
+
+/// Entrada de usuário setorial (sem token GitHub)
+async function entrarComoSetor(){
+  const login = (document.getElementById('setorLogin').value||'').trim().toLowerCase();
+  const senha = (document.getElementById('setorSenha').value||'').trim();
+  const erro  = document.getElementById('erroSetor');
+  erro.style.display='none';
+  if(!login||!senha){ erro.textContent='Preencha o login e a senha.'; erro.style.display='block'; return; }
+  const ok = await tentarLoginSetorial(login, senha);
+  if(!ok){ erro.textContent='Login ou senha incorretos.'; erro.style.display='block'; return; }
+  // acesso concedido — mostrar painel só com as abas permitidas
+  sessionStorage.setItem('painel_logado','sim');
+  sessionStorage.setItem('painel_usuario_login', login);
+  document.getElementById('telaAcesso').classList.add('oculto');
+  document.getElementById('painel').classList.remove('oculto');
+  document.getElementById('btnSairTopo').style.display='inline-block';
+  // carregar só o que o setor precisa
+  try{ await carregarConfig(); }catch(_){}
+  aplicarPerfilUsuario();
+  // carregar as seções permitidas
+  const abas = usuarioAtual ? usuarioAtual.abas : [];
+  if(abas.includes('banners'))     desenharBanners();
+  if(abas.includes('campanha'))    desenharCampanha();
+  if(abas.includes('noticias'))    desenharNoticias();
+  if(abas.includes('programacao')) desenharProgramas();
+  if(abas.includes('enquetes'))    desenharEnquetes();
+  if(abas.includes('promos'))      desenharPromos();
+  if(abas.includes('pedidosm'))    carregarPedidosM();
+  if(abas.includes('textos'))      preencherTextos();
+  if(abas.includes('chat'))        carregarChat();
+  if(abas.includes('votos'))       carregarVotos();
+  if(abas.includes('stats'))       iniciarOuvintesAgora();
+  // navegar para a primeira aba disponível
+  const primeira = document.querySelector('.aba[data-aba]:not([style*="none"])');
+  if(primeira) trocarAba(primeira);
+}
 
 // =====================================================================
 // SISTEMA DE USUÁRIOS POR SETOR
