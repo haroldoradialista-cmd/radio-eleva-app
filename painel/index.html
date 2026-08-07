@@ -2851,11 +2851,15 @@ async function mudarSenha(){
   }
 }
 function sairDoPainel(){
-  sessionStorage.removeItem('painel_logado');
-  sessionStorage.removeItem('painel_email');
-  sessionStorage.removeItem('painel_usuario_login');
+  // limpar sessão de usuário (setorial e admin)
+  try{ sessionStorage.removeItem('painel_logado'); }catch(_){}
+  try{ sessionStorage.removeItem('painel_email'); }catch(_){}
+  try{ sessionStorage.removeItem('painel_usuario_login'); }catch(_){}
+  try{ sessionStorage.removeItem('painel_aba'); }catch(_){}
+  // limpar o token do GitHub — SEM isto a sessão do admin volta ao recarregar
+  try{ localStorage.removeItem('tokenEleva'); }catch(_){}
   usuarioAtual = null;
-  modToken=''; modUid='';
+  modToken=''; modUid=''; token='';
   location.reload();
 }
 
