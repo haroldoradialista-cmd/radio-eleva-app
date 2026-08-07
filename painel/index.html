@@ -183,20 +183,28 @@
 <!-- ===== TELA DE ACESSO ===== -->
 <main id="telaAcesso">
   <div class="cartao">
-    <h2>🔑 Acesso ao painel</h2>
-    <p class="rotulo-secao">Cole aqui o seu <b>token do GitHub</b> (a chave que dá permissão ao painel para atualizar o app). Ele fica salvo somente neste navegador.</p>
-    <label>Token do GitHub</label>
-    <input id="campoToken" type="password" placeholder="github_pat_...">
-    <button class="botao" onclick="entrarPainel()">Entrar no painel</button>
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:18px 0">
-    <h2 style="font-size:15px">👥 Acesso por setor</h2>
-    <p class="rotulo-secao">Para equipes com acesso restrito (sem token do GitHub).</p>
+    <!-- ACESSO POR SETOR (o que todo colaborador vê) -->
+    <h2>👥 Acesso ao painel</h2>
+    <p class="rotulo-secao">Entre com o login e a senha do seu setor.</p>
     <label>Login do setor</label>
     <input id="setorLogin" placeholder="ex: jornalismo_eleva" autocomplete="username">
     <label>Senha</label>
     <input id="setorSenha" type="password" placeholder="Senha" onkeydown="if(event.key==='Enter')entrarComoSetor()">
-    <button class="botao" style="background:var(--verde)" onclick="entrarComoSetor()">Entrar como setor</button>
+    <button class="botao" style="background:var(--verde)" onclick="entrarComoSetor()">Entrar</button>
     <p id="erroSetor" style="color:#ff6b6b;font-size:13px;margin-top:8px;display:none"></p>
+
+    <!-- ACESSO DE ADMINISTRADOR (escondido; só aparece ao clicar no link) -->
+    <p style="text-align:center;margin-top:18px">
+      <a href="#" onclick="mostrarAcessoAdmin();return false" style="color:#8a92c0;font-size:12px;text-decoration:none">Sou o administrador</a>
+    </p>
+    <div id="blocoAdmin" style="display:none">
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:14px 0">
+      <h2 style="font-size:15px">🔑 Acesso do administrador</h2>
+      <p class="rotulo-secao">Cole aqui o seu <b>token do GitHub</b> (a chave que dá permissão ao painel para atualizar o app). Ele fica salvo somente neste navegador.</p>
+      <label>Token do GitHub</label>
+      <input id="campoToken" type="password" placeholder="github_pat_...">
+      <button class="botao" onclick="entrarPainel()">Entrar como administrador</button>
+    </div>
   </div>
 </main>
 
@@ -3288,8 +3296,19 @@ document.getElementById('arqTroca').addEventListener('change', async (ev)=>{
   }catch(e){ avisar('Falhou: '+e.message, true); }
 });
 
-// entra direto se já tem token salvo
-if(token){ document.getElementById('campoToken').value = token; entrarPainel(); }
+// entra direto se já tem token salvo; se falhar, revela o bloco admin
+if(token){
+  document.getElementById('campoToken').value = token;
+  entrarPainel().catch(()=>{ mostrarAcessoAdmin(); });
+}
+
+/// Revela o bloco de acesso do administrador (token do GitHub)
+function mostrarAcessoAdmin(){
+  const b = document.getElementById('blocoAdmin');
+  if(b){ b.style.display = 'block'; b.scrollIntoView({behavior:'smooth'}); }
+  const c = document.getElementById('campoToken');
+  if(c) c.focus();
+}
 
 /// Entrada de usuário setorial (sem token GitHub)
 async function entrarComoSetor(){
