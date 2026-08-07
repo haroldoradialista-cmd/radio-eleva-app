@@ -165,6 +165,18 @@
   .usuario-card h4 { margin:0 0 4px; font-size:15px; color:var(--ouro); }
   .usuario-card .abas-perm { font-size:12px; color:#9a93d9; margin-top:6px; }
   .usuario-card .acoes { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+  /* Icone do seletor de data/hora branco no MODO ESCURO (padrao);
+     no modo claro (data-tema=day) volta ao escuro para ficar legivel */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator{ filter: invert(1) brightness(1.8); cursor:pointer; }
+  input[type="date"], input[type="datetime-local"], input[type="time"]{ color-scheme: dark; }
+  body[data-tema="day"] input[type="date"]::-webkit-calendar-picker-indicator,
+  body[data-tema="day"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+  body[data-tema="day"] input[type="time"]::-webkit-calendar-picker-indicator{ filter: none; }
+  body[data-tema="day"] input[type="date"],
+  body[data-tema="day"] input[type="datetime-local"],
+  body[data-tema="day"] input[type="time"]{ color-scheme: light; }
 </style>
 </head>
 <body>
