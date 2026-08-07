@@ -145,7 +145,7 @@
 </style>
 </head>
 <body>
-<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:flex;align-items:center;justify-content:center;overflow:auto;padding:20px">
+<div id="telaLogin" style="position:fixed;inset:0;background:linear-gradient(160deg,#1D14A8,#0E0857 55%,#060330);z-index:9999;display:none;align-items:center;justify-content:center;overflow:auto;padding:20px">
   <div style="background:#201780;border:1.5px solid #FFD65A;border-radius:18px;padding:32px 28px;max-width:380px;width:100%;text-align:center">
     <h1 style="color:#FFD65A;font-size:22px;margin-bottom:2px">📻 PAINEL ELEVA</h1>
     <p style="color:#BDB8F0;font-size:12px;margin-bottom:18px">Adore • Viva • Eleve</p>
@@ -804,9 +804,21 @@ async function entrarPainel(silencioso){
     desenharBanners(); desenharCampanha(); desenharNoticias(); desenharProgramas(); desenharEnquetes(); desenharPromos(); carregarPedidosM(); preencherTextos(); preencherModeracao(); carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
     ['bn','cp','nt','eq','pr'].forEach(pref=>{ const box=document.getElementById('midiaBox_'+pref); if(box){ box.innerHTML=camposMidiaHTML(pref); trocarTipoMidia(pref); } });
     carregarChat(); carregarVotos();
-    aplicarPerfilUsuario();
-    carregarUsuarios();
-    if(!silencioso) avisar('Bem-vindo ao Painel Eleva! 🎉');
+    // Se não há sessão de login (Firebase ou setorial), mostra o telaLogin
+    let temSessao = false;
+    try{ temSessao = sessionStorage.getItem('painel_logado')==='sim'; }catch(_){}
+    if(!temSessao && !silencioso){
+      const tl = document.getElementById('telaLogin');
+      if(tl){ tl.style.display='flex'; }
+    } else {
+      // já autenticado: restaurar usuario setorial se houver
+      const loginSalvo = sessionStorage.getItem('painel_usuario_login');
+      if(loginSalvo){ /* usuario setorial — perfil foi restaurado em restaurarSessao */ }
+      else { usuarioAtual = null; } // admin
+      aplicarPerfilUsuario();
+      carregarUsuarios();
+      if(!silencioso) avisar('Bem-vindo ao Painel Eleva! 🎉');
+    }
   }catch(e){
     if(!silencioso) avisar('Token inválido ou sem permissão. Confira e tente de novo.', true);
     throw e;
@@ -2800,6 +2812,7 @@ async function entrarComSenha(){
     sessionStorage.setItem('painel_email', email);
     document.getElementById('telaLogin').style.display='none';
     aplicarPerfilUsuario();
+    carregarUsuarios();
     const info = document.getElementById('uidInfo');
     if(info) info.innerHTML='✅ Logado como <b>'+email+'</b> — código de moderador: <b style="color:var(--ouro)">'+modUid+'</b>';
   }catch(e){ erro.innerHTML='Falha de conexão. Tente de novo.'; erro.style.display='block'; }
@@ -2922,6 +2935,9 @@ async function restaurarSessao(){
   if(logado && temToken){
     try{
       await entrarPainel(true); // silencioso: usa o token guardado no localStorage
+      // restaurar usuário setorial se houver
+      const loginSalvo = sessionStorage.getItem('painel_usuario_login');
+      if(!loginSalvo) { usuarioAtual = null; aplicarPerfilUsuario(); carregarUsuarios(); }
       let aba = 'banners';
       try{ aba = sessionStorage.getItem('painel_aba') || 'banners'; }catch(_){}
       const btn = document.querySelector('.aba[data-aba="'+aba+'"]');
