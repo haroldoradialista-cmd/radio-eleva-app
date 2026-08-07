@@ -3380,6 +3380,13 @@ async function carregarUsuarios() {
   try {
     const r = await fetch(`${RTDB}/painel_usuarios.json?t=${Date.now()}`);
     const d = await r.json() || {};
+    // Firebase devolve {"error":"Permission denied"} quando as regras bloqueiam
+    if (d && d.error) {
+      el.innerHTML = '<div class="cartao" style="border-left:3px solid #ff6b6b">' +
+        '<b style="color:#ff6b6b">⚠️ O Firebase bloqueou o acesso aos usuários.</b>' +
+        '<p class="rotulo-secao" style="margin-top:8px">Para o cadastro de setores funcionar, ajuste as Regras do Realtime Database no console do Firebase para permitir leitura e escrita no nó <b>painel_usuarios</b>. Veja o passo a passo que enviamos junto com esta atualização.</p></div>';
+      return;
+    }
     const lista = Object.entries(d).sort((a,b)=>
       (a[1].nome||'').localeCompare(b[1].nome||''));
     if (!lista.length) {
@@ -3428,8 +3435,14 @@ async function salvarUsuario(loginEditando) {
   try {
     const u = { nome, abas, ativo: true };
     if (senha) u.senha_hash = await sha256(senha);
-    await fetch(`${RTDB}/painel_usuarios/${login}.json`,
+    const resp = await fetch(`${RTDB}/painel_usuarios/${login}.json`,
       { method: 'PUT', body: JSON.stringify(u) });
+    const dr = await resp.json().catch(()=>({}));
+    // Firebase devolve {"error":...} e status 401/403 quando as regras bloqueiam
+    if (!resp.ok || (dr && dr.error)) {
+      avisar('O Firebase BLOQUEOU a gravação. Ajuste as Regras do Realtime Database para permitir escrita em painel_usuarios (veja o passo a passo).', true);
+      return;
+    }
     avisar(loginEditando ? `Usuário @${login} atualizado! ✅` : `Usuário @${login} criado! ✅`);
     limparFormUsuario();
     carregarUsuarios();
