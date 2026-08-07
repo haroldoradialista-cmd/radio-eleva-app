@@ -11,7 +11,7 @@ import '../tema.dart';
 import '../servicos/analytics_service.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/login_widget.dart';
-import 'pedidos_page.dart' show MaiusculasFormatter;
+import 'pedidos_page.dart' show MaiusculasFormatter, TelefoneFormatter;
 import '../widgets/midia_eleva.dart';
 
 class PromocoesPage extends StatefulWidget {
