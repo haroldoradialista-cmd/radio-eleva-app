@@ -186,6 +186,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   final _interprete = TextEditingController();
   final _cidade = TextEditingController();
   final _estado = TextEditingController();
+  final _whatsapp = TextEditingController();
   bool _enviando = false;
 
   Future<void> _enviar() async {
@@ -193,12 +194,13 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
         _musica.text.trim().isEmpty ||
         _interprete.text.trim().isEmpty ||
         _cidade.text.trim().isEmpty ||
-        _estado.text.trim().isEmpty) {
+        _estado.text.trim().isEmpty ||
+        _whatsapp.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.red.shade700,
           duration: Duration(seconds: 3),
           content: Text(
-              'Preencha TODOS os campos (seu nome, a música, o intérprete, a cidade e o estado) para enviar o pedido.')));
+              'Preencha TODOS os campos (seu nome, WhatsApp, a música, o intérprete, a cidade e o estado) para enviar o pedido.')));
       return;
     }
     if (widget.cfg.chatUrl.isEmpty || _enviando) return;
@@ -211,6 +213,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
           'nome': _nome.text.trim(),
           'musica': _musica.text.trim(),
           'interprete': _interprete.text.trim(),
+          'whatsapp': _whatsapp.text.trim(),
           'cidade': _cidade.text.trim(),
           'estado': _estado.text.trim(),
           'quando': DateTime.now().toIso8601String(),
@@ -263,6 +266,8 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
               ),
               SizedBox(height: 20),
               _campo(_nome, 'NOME DO OUVINTE', Icons.person_rounded),
+              _campo(_whatsapp, 'WHATSAPP COM DDD', Icons.phone_rounded,
+                  teclado: TextInputType.phone),
               _campo(_musica, 'MÚSICA', Icons.music_note_rounded),
               _campo(_interprete, 'INTÉRPRETE', Icons.mic_rounded),
               Row(
@@ -310,11 +315,13 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
     );
   }
 
-  Widget _campo(TextEditingController c, String rotulo, IconData icone) {
+  Widget _campo(TextEditingController c, String rotulo, IconData icone,
+      {TextInputType? teclado}) {
     return Padding(
       padding: EdgeInsets.only(bottom: 9),
       child: TextField(
         controller: c,
+        keyboardType: teclado,
         textCapitalization: TextCapitalization.characters,
         inputFormatters: [MaiusculasFormatter()],
         style: TextStyle(fontSize: 14),
