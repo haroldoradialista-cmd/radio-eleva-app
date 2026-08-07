@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -496,7 +497,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
                   _campo(_ctrl(_nome, id), 'NOME', Icons.person_rounded),
                   _campo(_ctrl(_zap, id), 'WHATSAPP COM DDD',
                       Icons.phone_rounded,
-                      teclado: TextInputType.phone),
+                      teclado: TextInputType.phone, mascara: true),
                   _campo(_ctrl(_insta, id), 'SEU USUÁRIO',
                       Icons.camera_alt_rounded,
                       prefixo: '@'),
@@ -566,14 +567,14 @@ class _PromocoesPageState extends State<PromocoesPage> {
   }
 
   Widget _campo(TextEditingController c, String rotulo, IconData icone,
-      {TextInputType? teclado, String? prefixo}) {
+      {TextInputType? teclado, String? prefixo, bool mascara = false}) {
     return Padding(
       padding: EdgeInsets.only(bottom: 7),
       child: TextField(
         controller: c,
         keyboardType: teclado,
-        textCapitalization: TextCapitalization.characters,
-        inputFormatters: [MaiusculasFormatter()],
+        textCapitalization: mascara ? TextCapitalization.none : TextCapitalization.characters,
+        inputFormatters: mascara ? [TelefoneFormatter()] : [MaiusculasFormatter()],
         decoration: InputDecoration(
           isDense: true,
           contentPadding:

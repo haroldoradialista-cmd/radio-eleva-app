@@ -159,6 +159,52 @@ class PedidosPage extends StatelessWidget {
 }
 
 // Deixa tudo em CAIXA ALTA enquanto o ouvinte digita
+/// Máscara de telefone automática:
+/// (DD) XXXXX-XXXX → celular (9 dígitos)
+/// (DD) XXXX-XXXX  → fixo    (8 dígitos)
+/// Aceita só dígitos; aplica parênteses, espaço e hífen conforme digita.
+class TelefoneFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue old, TextEditingValue novo) {
+    // só dígitos
+    final digitos = novo.text.replaceAll(RegExp(r'\D'), '');
+    if (digitos.isEmpty) return novo.copyWith(text: '');
+
+    final buf = StringBuffer();
+    int cursor = 0;
+
+    // (DD)
+    buf.write('(');
+    for (int i = 0; i < digitos.length && i < 2; i++) {
+      buf.write(digitos[i]);
+    }
+    if (digitos.length >= 2) {
+      buf.write(') ');
+    }
+
+    // corpo do número
+    final resto = digitos.length > 2 ? digitos.substring(2) : '';
+    // celular: 9 dígitos no corpo → XXXXX-XXXX (5+4)
+    // fixo:    8 dígitos no corpo → XXXX-XXXX  (4+4)
+    final isCelular = resto.length > 8 || (resto.isNotEmpty && resto[0] == '9');
+    final parteA = isCelular ? 5 : 4;
+
+    for (int i = 0; i < resto.length; i++) {
+      if (i == parteA && resto.length > parteA) buf.write('-');
+      buf.write(resto[i]);
+    }
+
+    final texto = buf.toString();
+    // posição do cursor: sempre no fim enquanto digita
+    cursor = texto.length;
+    return TextEditingValue(
+      text: texto,
+      selection: TextSelection.collapsed(offset: cursor),
+    );
+  }
+}
+
 class MaiusculasFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -267,7 +313,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
               SizedBox(height: 20),
               _campo(_nome, 'NOME DO OUVINTE', Icons.person_rounded),
               _campo(_whatsapp, 'WHATSAPP COM DDD', Icons.phone_rounded,
-                  teclado: TextInputType.phone),
+                  teclado: TextInputType.phone, mascara: true),
               _campo(_musica, 'MÚSICA', Icons.music_note_rounded),
               _campo(_interprete, 'INTÉRPRETE', Icons.mic_rounded),
               Row(
@@ -316,14 +362,14 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   }
 
   Widget _campo(TextEditingController c, String rotulo, IconData icone,
-      {TextInputType? teclado}) {
+      {TextInputType? teclado, bool mascara = false}) {
     return Padding(
       padding: EdgeInsets.only(bottom: 9),
       child: TextField(
         controller: c,
         keyboardType: teclado,
-        textCapitalization: TextCapitalization.characters,
-        inputFormatters: [MaiusculasFormatter()],
+        textCapitalization: mascara ? TextCapitalization.none : TextCapitalization.characters,
+        inputFormatters: mascara ? [TelefoneFormatter()] : [MaiusculasFormatter()],
         style: TextStyle(fontSize: 14),
         decoration: InputDecoration(
           isDense: true,
@@ -540,16 +586,15 @@ class _AnuncioPageState extends State<AnuncioPage> {
 
   Widget _campoAnuncio(
       TextEditingController c, String rotulo, IconData icone,
-      {TextInputType? teclado, bool maiusculas = true}) {
+      {TextInputType? teclado, bool maiusculas = true, bool mascara = false}) {
     return Padding(
       padding: EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: c,
         keyboardType: teclado,
-        textCapitalization: maiusculas
-            ? TextCapitalization.characters
-            : TextCapitalization.none,
-        inputFormatters: maiusculas ? [MaiusculasFormatter()] : [],
+        textCapitalization: mascara ? TextCapitalization.none
+            : (maiusculas ? TextCapitalization.characters : TextCapitalization.none),
+        inputFormatters: mascara ? [TelefoneFormatter()] : (maiusculas ? [MaiusculasFormatter()] : []),
         style: TextStyle(color: CoresEleva.branco),
         decoration: InputDecoration(
           labelText: rotulo,
