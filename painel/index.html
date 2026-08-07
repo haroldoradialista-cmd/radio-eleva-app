@@ -3440,11 +3440,21 @@ async function carregarUsuarios() {
     el.innerHTML = lista.map(([login, u]) => {
       const abasNomes = (u.abas||[]).map(a => ABAS_NOMES[a]||a).join(', ') || '(nenhuma)';
       const status = u.ativo ? '🟢 Ativo' : '🔴 Inativo';
+      const temSenha = u.senha_visivel ? true : false;
+      const senhaSegura = (u.senha_visivel||'').replace(/</g,'&lt;').replace(/'/g,'&#39;');
       return `<div class="usuario-card">
         <h4>${(u.nome||login).replace(/</g,'&lt;')} <small style="color:#9a93d9;font-weight:400">@${login}</small>
           <span style="float:right;font-size:12px">${status}</span>
         </h4>
         <div class="abas-perm">Abas: ${abasNomes}</div>
+        <div class="senha-linha" style="font-size:13px;margin-top:6px;color:#c9c3f0">
+          🔑 Senha:
+          <span id="senha_${login}" data-senha="${senhaSegura}" style="letter-spacing:2px">••••••••</span>
+          ${temSenha
+            ? `<button class="botao mini" style="padding:3px 9px;margin-left:6px;background:#3a3468"
+                 onclick="alternarSenha('${login}')" id="btnolho_${login}">👁️ Ver</button>`
+            : '<span style="color:#9a93d9;font-size:12px;margin-left:6px">(cadastre a senha de novo para poder ver)</span>'}
+        </div>
         <div class="acoes">
           <button class="botao mini" onclick="editarUsuario('${login}')">✏️ Editar</button>
           <button class="botao mini" onclick="alternarAtivo('${login}', ${!u.ativo})"
@@ -3454,6 +3464,23 @@ async function carregarUsuarios() {
       </div>`;
     }).join('');
   } catch(e) { el.innerHTML = '<p class="rotulo-secao">Erro ao carregar usuários.</p>'; }
+}
+
+/// Mostra ou esconde a senha de um usuário no card
+function alternarSenha(login){
+  const span = document.getElementById('senha_'+login);
+  const btn  = document.getElementById('btnolho_'+login);
+  if(!span) return;
+  const revelada = span.dataset.revelada === 'sim';
+  if(revelada){
+    span.textContent = '••••••••';
+    span.dataset.revelada = 'nao';
+    if(btn) btn.innerHTML = '👁️ Ver';
+  } else {
+    span.textContent = span.dataset.senha || '(sem senha)';
+    span.dataset.revelada = 'sim';
+    if(btn) btn.innerHTML = '🙈 Ocultar';
+  }
 }
 
 /// Salvar (criar ou atualizar) um usuário
@@ -3471,7 +3498,20 @@ async function salvarUsuario(loginEditando) {
 
   try {
     const u = { nome, abas, ativo: true };
-    if (senha) u.senha_hash = await sha256(senha);
+    if (senha) {
+      u.senha_hash = await sha256(senha);
+      u.senha_visivel = senha; // guardada para o admin poder consultar
+    } else if (loginEditando) {
+      // editando sem trocar a senha: preserva a senha atual
+      try {
+        const rr = await fetch(`${RTDB}/painel_usuarios/${login}.json?t=${Date.now()}`);
+        const atual = await rr.json();
+        if (atual) {
+          if (atual.senha_hash) u.senha_hash = atual.senha_hash;
+          if (atual.senha_visivel) u.senha_visivel = atual.senha_visivel;
+        }
+      } catch(_) {}
+    }
     const resp = await fetch(`${RTDB}/painel_usuarios/${login}.json`,
       { method: 'PUT', body: JSON.stringify(u) });
     const dr = await resp.json().catch(()=>({}));
