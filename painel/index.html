@@ -169,14 +169,16 @@
      no modo claro (data-tema=day) volta ao escuro para ficar legivel */
   input[type="date"]::-webkit-calendar-picker-indicator,
   input[type="datetime-local"]::-webkit-calendar-picker-indicator,
-  input[type="time"]::-webkit-calendar-picker-indicator{ filter: invert(1) brightness(1.8); cursor:pointer; }
-  input[type="date"], input[type="datetime-local"], input[type="time"]{ color-scheme: dark; }
+  input[type="time"]::-webkit-calendar-picker-indicator{
+    filter: invert(1) brightness(2);
+    opacity: 1;
+    cursor: pointer;
+  }
   body[data-tema="day"] input[type="date"]::-webkit-calendar-picker-indicator,
   body[data-tema="day"] input[type="datetime-local"]::-webkit-calendar-picker-indicator,
-  body[data-tema="day"] input[type="time"]::-webkit-calendar-picker-indicator{ filter: none; }
-  body[data-tema="day"] input[type="date"],
-  body[data-tema="day"] input[type="datetime-local"],
-  body[data-tema="day"] input[type="time"]{ color-scheme: light; }
+  body[data-tema="day"] input[type="time"]::-webkit-calendar-picker-indicator{
+    filter: none;
+  }
 </style>
 </head>
 <body>
