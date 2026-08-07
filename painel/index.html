@@ -27,11 +27,18 @@
   body[data-tema="day"] .topo{background:#fff;border-bottom-color:var(--ouro)}
   body[data-tema="day"] .topo h1{color:#0D2B52}
   body[data-tema="day"] .btn-tema{color:#20364f;border-color:#c9a537}
-  body[data-tema="day"] .abas{background:#fff;border-right-color:var(--ouro)}
+  body[data-tema="day"] .abas{background:linear-gradient(180deg,#ffffff,#eef3fa);border-right-color:var(--ouro);
+    box-shadow:inset -6px 0 14px rgba(0,0,0,.05), 3px 0 10px rgba(0,0,0,.08)}
   body[data-tema="day"] .abas .marca b{color:#0D2B52}
-  body[data-tema="day"] .aba{color:#33475f}
-  body[data-tema="day"] .aba:hover{background:#eef3fa}
-  body[data-tema="day"] .aba.ativa{background:var(--verde2);color:#fff}
+  body[data-tema="day"] .aba{color:#20364f;
+    background:linear-gradient(180deg,#ffffff,#f0f4fa);
+    border-color:#dbe4f0;
+    box-shadow:0 2px 5px rgba(30,60,110,.12), inset 0 1px 0 rgba(255,255,255,.9)}
+  body[data-tema="day"] .aba:hover{background:linear-gradient(180deg,#eaf1fb,#dde8f7);
+    box-shadow:0 4px 10px rgba(30,60,110,.18)}
+  body[data-tema="day"] .aba.ativa{background:linear-gradient(180deg,#3ad13a,#1f9a2f);color:#fff;
+    box-shadow:0 4px 12px rgba(31,138,46,.4), inset 0 1px 0 rgba(255,255,255,.3);
+    text-shadow:0 1px 2px rgba(0,0,0,.3)}
   body[data-tema="day"] .cartao{background:#fff;border-color:#d5deeb;color:#20364f}
   body[data-tema="day"] h2{color:#0D2B52}
   body[data-tema="day"] .rotulo-secao{color:#5a6f88}
@@ -64,17 +71,29 @@
   body[data-tema="day"] .susp-coment i{color:#5a4a1a !important}
   body[data-tema="day"] ::selection{background:#bcd4ff;color:#0D2B52}
   /* ===== MENU LATERAL FIXO ===== */
-  .abas{position:fixed;top:0;left:0;bottom:0;width:196px;display:flex;flex-direction:column;gap:5px;
-        padding:14px 10px;background:var(--navy3);border-right:2px solid var(--ouro);overflow-y:auto;z-index:50}
+  .abas{position:fixed;top:0;left:0;bottom:0;width:196px;display:flex;flex-direction:column;gap:6px;
+        padding:14px 10px;background:linear-gradient(180deg,#061428,#04101F 60%,#020a14);
+        border-right:2px solid var(--ouro);overflow-y:auto;z-index:50;
+        box-shadow:inset -6px 0 14px rgba(0,0,0,.35), 3px 0 10px rgba(0,0,0,.25)}
   .abas .marca{display:flex;align-items:center;gap:9px;padding:2px 6px 12px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}
   .abas .marca img{width:34px;height:34px;border-radius:8px}
   .abas .marca b{font-size:13.5px;color:var(--branco);display:block;line-height:1.2}
   .abas .marca small{font-size:9px;color:var(--ouro);letter-spacing:.8px}
-  .aba{padding:10px 13px;border-radius:10px;background:transparent;color:var(--suave);border:1px solid transparent;
-       cursor:pointer;white-space:nowrap;font-weight:700;font-size:12.5px;text-align:left;width:100%;transition:background .15s}
-  .aba:hover{background:var(--navy2)}
-  .aba.ativa{background:var(--verde2);color:#fff;border-color:var(--ouro)}
-  .aba.sair{margin-top:auto;background:#7a1b1b;color:#fff;border-color:#ff9a9a}
+  .aba{padding:11px 13px;border-radius:11px;
+       background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+       color:#eaf1fb;border:1px solid rgba(255,255,255,.08);
+       cursor:pointer;white-space:nowrap;font-weight:700;font-size:12.5px;text-align:left;width:100%;
+       box-shadow:0 2px 5px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+       transition:transform .12s, background .18s, box-shadow .18s}
+  .aba:hover{background:linear-gradient(180deg,rgba(46,120,220,.28),rgba(30,90,170,.18));
+             transform:translateY(-1px);
+             box-shadow:0 4px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12)}
+  .aba:active{transform:translateY(1px);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .aba.ativa{background:linear-gradient(180deg,#3ad13a,#1f9a2f);color:#fff;
+             border-color:var(--ouro);
+             box-shadow:0 4px 12px rgba(53,199,51,.4), inset 0 1px 0 rgba(255,255,255,.3);
+             text-shadow:0 1px 2px rgba(0,0,0,.35)}
+  .aba.sair{margin-top:auto;background:linear-gradient(180deg,#9a2323,#6e1414);color:#fff;border-color:#ff9a9a}
   .topo{margin-left:196px}
   main{padding:16px;max-width:860px;margin:0 auto;margin-left:196px}
   @media(max-width:820px){
@@ -90,7 +109,11 @@
   label{display:block;font-size:12px;color:var(--ouro);font-weight:700;margin:10px 0 4px}
   input,textarea,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:var(--navy);color:var(--branco);font-size:14px}
   textarea{min-height:80px;resize:vertical}
-  .botao{display:inline-block;margin-top:12px;padding:11px 20px;border:none;border-radius:24px;background:linear-gradient(135deg,var(--verde),var(--azul));color:#fff;font-weight:800;font-size:14px;cursor:pointer}
+  .botao{display:inline-block;margin-top:12px;padding:11px 20px;border:none;border-radius:24px;background:linear-gradient(135deg,var(--verde),var(--azul));color:#fff;font-weight:800;font-size:14px;cursor:pointer;
+    box-shadow:0 4px 10px rgba(30,155,255,.35), inset 0 1px 0 rgba(255,255,255,.35);
+    transition:transform .12s, box-shadow .18s}
+  .botao:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(30,155,255,.45), inset 0 1px 0 rgba(255,255,255,.4)}
+  .botao:active{transform:translateY(1px);box-shadow:0 2px 5px rgba(30,155,255,.4)}
   .botao.perigo{background:#B3261E}
   .botao.neutro{background:var(--navy);border:1px solid var(--ouro);color:var(--ouro)}
   .botao:disabled{opacity:.5}
@@ -196,7 +219,7 @@
     <button class="aba" data-aba="promos" onclick="trocarAba(this)">🎁 Promoções</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
-    <button class="aba admin-only" data-aba="usuarios" onclick="trocarAba(this)" style="display:none">👥 Usuários</button>
+    <button class="aba admin-only" data-aba="usuarios" onclick="trocarAba(this)">👥 Usuários</button>
   </div>
 
   <main>
@@ -887,9 +910,10 @@ async function lerMidia(pref, imagemAtual, videoAtual){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif'].forEach(s=>
+  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
   try{ sessionStorage.setItem('painel_aba', botao.dataset.aba); }catch(_){}
+  if(botao.dataset.aba==='usuarios') carregarUsuarios();
 }
 
 // ================== BANNERS ==================
