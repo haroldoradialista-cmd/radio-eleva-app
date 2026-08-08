@@ -134,6 +134,16 @@ class NoticiasPage extends StatelessWidget {
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: CoresEleva.branco)),
+                if ((n['autor'] ?? '').toString().trim().isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Text('Por ${n['autor']}',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w600,
+                            color: CoresEleva.dourado)),
+                  ),
                 SizedBox(height: 14),
                 Text(texto,
                     style: TextStyle(
