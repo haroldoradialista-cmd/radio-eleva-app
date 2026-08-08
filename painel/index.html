@@ -410,14 +410,24 @@
         <div id="listaNoticias"></div>
       </div>
       <div class="cartao">
+        <h2>✍️ Repórteres (assinaturas)</h2>
+        <p class="rotulo-secao">Cadastre os nomes de jornalistas e estagiários. Depois é só escolher o nome como assinatura ao publicar a matéria.</p>
+        <div class="grade2">
+          <div><label>Nome de quem publica</label><input id="ntNovoReporter" placeholder="ex: Maria Silva"></div>
+          <div style="display:flex;align-items:flex-end"><button class="botao" onclick="adicionarReporter()">➕ Adicionar repórter</button></div>
+        </div>
+        <div id="listaReporteres" style="margin-top:10px"></div>
+      </div>
+      <div class="cartao">
         <h2 id="tituloFormNoticia">Nova notícia</h2>
         <label>Título</label><input id="ntTitulo">
         <label>Resumo (aparece no cartão)</label><input id="ntResumo">
         <label>Texto completo (abre dentro do app)</label><textarea id="ntTexto"></textarea>
         <div class="grade2">
           <div><label>Data (ex.: 10 de julho de 2026)</label><input id="ntData"></div>
-          <div><label>Link externo (opcional)</label><input id="ntLink" placeholder="https://..."></div>
+          <div><label>✍️ Assinatura (quem publicou)</label><select id="ntAutor"><option value="">— sem assinatura —</option></select></div>
         </div>
+        <label>Link externo (opcional)</label><input id="ntLink" placeholder="https://...">
         <div id="midiaBox_nt"></div>
         <div class="grade2">
           <div><label>⏰ Publicar em (opcional)</label><input type="datetime-local" id="ntInicio"></div>
@@ -1235,13 +1245,57 @@ async function gerarRelatorioCampanhas(){
 }
 
 // ================== NOTÍCIAS ==================
+// ===== REPÓRTERES (assinaturas das matérias) =====
+function desenharReporteres(){
+  const el = document.getElementById('listaReporteres');
+  if(!el) return;
+  const lista = config.reporteres || [];
+  el.innerHTML = lista.length
+    ? lista.map((nome,i)=>`<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.07);border-radius:20px;padding:5px 12px;margin:0 6px 6px 0;font-size:13px">
+        ✍️ ${nome.replace(/</g,'&lt;')}
+        <button onclick="removerReporter(${i})" title="Remover" style="background:none;border:none;color:#ff8a8a;cursor:pointer;font-size:15px;padding:0">✕</button>
+      </span>`).join('')
+    : '<p class="rotulo-secao">Nenhum repórter cadastrado ainda.</p>';
+  preencherSelectAutor();
+}
+function preencherSelectAutor(){
+  const sel = document.getElementById('ntAutor');
+  if(!sel) return;
+  const atual = sel.value;
+  const lista = config.reporteres || [];
+  sel.innerHTML = '<option value="">— sem assinatura —</option>' +
+    lista.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">${n.replace(/</g,'&lt;')}</option>`).join('');
+  sel.value = atual;
+}
+async function adicionarReporter(){
+  const campo = document.getElementById('ntNovoReporter');
+  const nome = (campo.value||'').trim();
+  if(!nome){ avisar('Digite o nome do repórter.', true); return; }
+  if(!config.reporteres) config.reporteres = [];
+  if(config.reporteres.some(n=>n.toLowerCase()===nome.toLowerCase())){
+    avisar('Esse nome já está cadastrado.', true); return;
+  }
+  config.reporteres.push(nome);
+  config.reporteres.sort((a,b)=>a.localeCompare(b));
+  try{ await salvarConfig('Painel: repórter adicionado'); campo.value=''; desenharReporteres(); avisar('Repórter adicionado! ✅'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+async function removerReporter(i){
+  const nome = config.reporteres[i];
+  if(!confirm('Remover o repórter "'+nome+'"? As matérias já assinadas por ele continuam com a assinatura.')) return;
+  config.reporteres.splice(i,1);
+  try{ await salvarConfig('Painel: repórter removido'); desenharReporteres(); avisar('Repórter removido.'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
 function desenharNoticias(){
+  desenharReporteres();
   const el = document.getElementById('listaNoticias');
   el.innerHTML = config.noticias.length ? '' : '<p class="rotulo-secao">Nenhuma notícia publicada.</p>';
   config.noticias.forEach((n,i)=>{
     el.innerHTML += `<div class="item">
       ${miniaturaMidia(n,"width:60px;height:34px;object-fit:cover;border-radius:6px")}
-      <div class="info"><b>${n.titulo} ${etiquetaAgenda(n)}</b><span>${n.data||''}</span></div>
+      <div class="info"><b>${n.titulo} ${etiquetaAgenda(n)}</b><span>${n.data||''}${n.autor? ' · ✍️ '+n.autor : ''}</span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('noticias',${i})" title="Trocar imagem sem apagar">🔄</button>
       <button class="botao mini neutro" onclick="editarNoticia(${i})">✏️</button>
       ${botaoFinalizar('noticias', i)}
@@ -1254,6 +1308,7 @@ function editarNoticia(i){
   const n = config.noticias[i]; idxEdicao = i;
   ntTitulo.value=n.titulo||''; ntResumo.value=n.resumo||''; ntTexto.value=n.texto||'';
   ntData.value=n.data||''; ntLink.value=n.link||'';
+  preencherSelectAutor(); document.getElementById('ntAutor').value = n.autor||'';
   ntInicio.value=(n.publicar_em||'').slice(0,16); ntFim.value=(n.expirar_em||'').slice(0,16);
   preencherMidia('nt', n);
   document.getElementById('tituloFormNoticia').textContent='Editando notícia';
@@ -1262,6 +1317,7 @@ function editarNoticia(i){
 }
 function cancelarEdicao(){
   idxEdicao=-1; ntTitulo.value=ntResumo.value=ntTexto.value=ntData.value=ntLink.value='';
+  const selA=document.getElementById('ntAutor'); if(selA) selA.value='';
   ntInicio.value=''; ntFim.value='';
   ['arqImg_nt','arqVid_nt','ytLink_nt'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
   document.getElementById('tituloFormNoticia').textContent='Nova notícia';
@@ -1274,7 +1330,8 @@ async function salvarNoticia(){
     avisar('Enviando mídia...');
     const midia = await lerMidia('nt', atual.imagem, atual.video);
     const nova = Object.assign({ titulo:ntTitulo.value.trim(), resumo:ntResumo.value.trim(),
-      texto:ntTexto.value.trim(), link:ntLink.value.trim(), data:ntData.value.trim() }, midia);
+      texto:ntTexto.value.trim(), link:ntLink.value.trim(), data:ntData.value.trim(),
+      autor:(document.getElementById('ntAutor').value||'').trim() }, midia);
     if(ntInicio.value) nova.publicar_em = ntInicio.value;
     if(ntFim.value) nova.expirar_em = ntFim.value;
     if(idxEdicao>=0) config.noticias[idxEdicao]=nova; else config.noticias.unshift(nova);
