@@ -79,7 +79,7 @@ class Despertador {
 /// sempre para o PRÓXIMO alarme a tocar entre todos os ativos.
 class DespertadoresLista {
   static const _chave = 'despertadores_v1';
-  static const int maximo = 6;
+  // sem limite de quantidade — o ouvinte pode criar quantos quiser
 
   static Future<List<Despertador>> carregar() async {
     try {

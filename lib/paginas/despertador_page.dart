@@ -42,11 +42,6 @@ class _DespertadorPageState extends State<DespertadorPage> {
   }
 
   Future<void> _novo() async {
-    if (_lista.length >= DespertadoresLista.maximo) {
-      _aviso('Voce ja tem ${DespertadoresLista.maximo} despertadores. '
-          'Apague um para criar outro.');
-      return;
-    }
     final novo = Despertador(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       tipo: 'dias',
@@ -157,6 +152,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _EditorDespertador(
         despertador: d,
@@ -235,8 +231,9 @@ class _DespertadorPageState extends State<DespertadorPage> {
       body: _carregando
           ? Center(
               child: CircularProgressIndicator(color: CoresEleva.dourado))
-          : SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(16, 4, 16, 28),
+          : SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 48),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -285,6 +282,7 @@ class _DespertadorPageState extends State<DespertadorPage> {
                 ],
               ),
             ),
+          ),
     );
   }
 
@@ -386,41 +384,31 @@ class _DespertadorPageState extends State<DespertadorPage> {
   }
 
   Widget _botaoNovo() {
-    final cheio = _lista.length >= DespertadoresLista.maximo;
     return GestureDetector(
-      onTap: cheio ? null : _novo,
+      onTap: _novo,
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 15),
         decoration: BoxDecoration(
-          gradient: cheio
-              ? null
-              : LinearGradient(
-                  colors: [CoresEleva.verde, CoresEleva.azulVivo]),
-          color: cheio ? CoresEleva.azulProfundo : null,
+          gradient: LinearGradient(
+              colors: [CoresEleva.verde, CoresEleva.azulVivo]),
           borderRadius: BorderRadius.circular(26),
-          boxShadow: cheio
-              ? null
-              : [
-                  BoxShadow(
-                      color: CoresEleva.verde.withOpacity(0.35),
-                      blurRadius: 12,
-                      offset: Offset(0, 4))
-                ],
+          boxShadow: [
+            BoxShadow(
+                color: CoresEleva.verde.withOpacity(0.35),
+                blurRadius: 12,
+                offset: Offset(0, 4))
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(cheio ? Icons.block : Icons.add_alarm,
-                color: cheio ? CoresEleva.textoFraco : Colors.white),
+            Icon(Icons.add_alarm, color: Colors.white),
             SizedBox(width: 8),
-            Text(
-                cheio
-                    ? 'Maximo de ${DespertadoresLista.maximo} atingido'
-                    : 'Novo despertador',
+            Text('Novo despertador',
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: cheio ? CoresEleva.textoFraco : Colors.white)),
+                    color: Colors.white)),
           ],
         ),
       ),
@@ -595,7 +583,9 @@ class _EditorDespertadorState extends State<_EditorDespertador> {
         left: 18,
         right: 18,
         top: 10,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).viewPadding.bottom +
+            32,
       ),
       child: SingleChildScrollView(
         child: Column(

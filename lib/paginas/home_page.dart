@@ -860,7 +860,7 @@ class _MolduraNeonState extends State<MolduraNeon>
           child: filho,
         );
       },
-      child: Padding(padding: const EdgeInsets.all(9), child: widget.child),
+      child: Padding(padding: const EdgeInsets.all(11), child: widget.child),
     );
   }
 }
@@ -872,17 +872,37 @@ class _LampadasPainter extends CustomPainter {
   final double raio;
   _LampadasPainter(this.t, this.raio);
 
-  static const List<Color> _cores = [
-    Color(0xFFFFD400), Color(0xFFFF3B30), Color(0xFF34D399),
-    Color(0xFF3B9DFF), Color(0xFFFF7AC8), Color(0xFFB06BFF),
-    Color(0xFFFF9F0A), Color(0xFF2EE6D6),
-  ];
-
   @override
   void paint(Canvas canvas, Size size) {
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size, Radius.circular(raio));
-    final path = Path()..addRRect(rrect.deflate(4));
+    // ===== MOLDURA (trilho onde as lâmpadas ficam dentro) =====
+    // faixa escura com borda dourada em volta de toda a imagem
+    final rExterno = RRect.fromRectAndRadius(
+        Offset.zero & size, Radius.circular(raio));
+    final rInterno = RRect.fromRectAndRadius(
+        (Offset.zero & size).deflate(9),
+        Radius.circular((raio - 6).clamp(0, raio)));
+
+    // corpo da moldura (o "trilho"): anel escuro entre a borda e o miolo
+    final trilho = Path.combine(
+        PathOperation.difference,
+        Path()..addRRect(rExterno),
+        Path()..addRRect(rInterno));
+    canvas.drawPath(trilho, Paint()..color = const Color(0xFF1A1636));
+
+    // borda dourada externa e interna da moldura
+    final ouro = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..color = const Color(0xFFE6C15A).withOpacity(0.9);
+    canvas.drawRRect(rExterno.deflate(0.7), ouro);
+    canvas.drawRRect(rInterno, ouro);
+
+    // ===== LÂMPADAS BRANCAS dentro da moldura =====
+    // caminho central do trilho (meio do anel) por onde passam as lâmpadas
+    final meio = RRect.fromRectAndRadius(
+        (Offset.zero & size).deflate(4.5),
+        Radius.circular((raio - 3).clamp(0, raio)));
+    final path = Path()..addRRect(meio);
     final metrics = path.computeMetrics().toList();
     if (metrics.isEmpty) return;
     final metric = metrics.first;
@@ -908,23 +928,18 @@ class _LampadasPainter extends CustomPainter {
         brilho = (onda >= 0.5) ? 1.0 : 0.25;
       }
 
-      final cor = _cores[i % _cores.length];
-      final corAcesa = Color.lerp(cor.withOpacity(0.22), cor, brilho)!;
+      // todas as lâmpadas são BRANCAS; muda só a intensidade ao piscar
+      final corAcesa = Colors.white.withOpacity(0.25 + 0.75 * brilho);
 
       if (brilho > 0.6) {
         final halo = Paint()
-          ..color = cor.withOpacity(0.55)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-        canvas.drawCircle(p, 5.5, halo);
+          ..color = Colors.white.withOpacity(0.6)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+        canvas.drawCircle(p, 4.5, halo);
       }
 
       final bulbo = Paint()..color = corAcesa;
-      canvas.drawCircle(p, 3.2, bulbo);
-
-      if (brilho > 0.6) {
-        final reflexo = Paint()..color = Colors.white.withOpacity(0.85);
-        canvas.drawCircle(p, 1.1, reflexo);
-      }
+      canvas.drawCircle(p, 2.8, bulbo);
     }
   }
 
