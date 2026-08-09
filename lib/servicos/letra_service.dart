@@ -132,6 +132,52 @@ class LetraService {
     return null;
   }
 
+  // ---------- lrcmux.dev (agrega vários provedores) ----------
+  static Future<String?> _lrcmux(String artista, String titulo) async {
+    if (titulo.isEmpty) return null;
+    try {
+      final url = Uri.parse(
+          'https://lrcmux.dev/api/get?artist_name=${Uri.encodeComponent(artista)}&track_name=${Uri.encodeComponent(titulo)}');
+      final r = await http
+          .get(url, headers: _headers)
+          .timeout(const Duration(seconds: 8));
+      if (r.statusCode == 200) {
+        final j = jsonDecode(utf8.decode(r.bodyBytes));
+        final letra = (j['plainLyrics'] ?? j['lyrics'] ?? '').toString();
+        if (letra.trim().length > 10) return _limparLetra(letra);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // ---------- ChartLyrics (busca por artista+título) ----------
+  static Future<String?> _chartLyrics(String artista, String titulo) async {
+    if (titulo.isEmpty || artista.isEmpty) return null;
+    try {
+      final url = Uri.parse(
+          'http://api.chartlyrics.com/apiv1.asmx/SearchLyricDirect?artist=${Uri.encodeComponent(artista)}&song=${Uri.encodeComponent(titulo)}');
+      final r = await http.get(url).timeout(const Duration(seconds: 9));
+      if (r.statusCode == 200) {
+        // resposta é XML: extrai o conteúdo de <Lyric>...</Lyric>
+        final corpo = utf8.decode(r.bodyBytes);
+        final m = RegExp(r'<Lyric>([\s\S]*?)</Lyric>').firstMatch(corpo);
+        if (m != null) {
+          var letra = m.group(1) ?? '';
+          // desfaz entidades básicas do XML
+          letra = letra
+              .replaceAll('&amp;', '&')
+              .replaceAll('&lt;', '<')
+              .replaceAll('&gt;', '>')
+              .replaceAll('&apos;', "'")
+              .replaceAll('&quot;', '"')
+              .replaceAll('&#39;', "'");
+          if (letra.trim().length > 10) return _limparLetra(letra);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Retorna a letra, ou null.
   static Future<String?> buscar(String musicaBruta) async {
     final chave = musicaBruta.trim().toLowerCase();
@@ -182,7 +228,25 @@ class LetraService {
       }
     }
 
-    // 4) último reforço: LRCLIB só pelo título (aceita se o título conferir);
+    // 4) lrcmux.dev — agrega vários provedores de letra
+    for (final (a, t) in combos) {
+      final letra = await _lrcmux(a, t);
+      if (letra != null) {
+        _cache[chave] = letra;
+        return letra;
+      }
+    }
+
+    // 5) ChartLyrics — mais uma base independente
+    for (final (a, t) in combos) {
+      final letra = await _chartLyrics(a, t);
+      if (letra != null) {
+        _cache[chave] = letra;
+        return letra;
+      }
+    }
+
+    // 6) último reforço: LRCLIB só pelo título (aceita se o título conferir);
     //    ajuda quando o artista vem bagunçado no metadado do streaming.
     if (tL.isNotEmpty) {
       final letra = await _lrclibBusca(tL, '', tL);

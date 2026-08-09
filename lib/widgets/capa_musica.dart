@@ -86,6 +86,15 @@ class _CapaMusicaState extends State<CapaMusica> {
             soTitulo: t['soTitulo'] as bool);
         if (url != null) break;
       }
+      // se o iTunes não achou, tenta o Deezer com as mesmas estratégias
+      if (url == null) {
+        for (final t in tentativas) {
+          url = await _tentarDeezer(
+              t['termo'] as String, artL, titL,
+              soTitulo: t['soTitulo'] as bool);
+          if (url != null) break;
+        }
+      }
       // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo
       if (mounted) setState(() => _capaUrl = url);
     } catch (_) {
@@ -169,6 +178,51 @@ class _CapaMusicaState extends State<CapaMusica> {
     final pa = a.split(' ').where((w) => w.length >= 3).toSet();
     final pb = b.split(' ').where((w) => w.length >= 3).toSet();
     return pa.intersection(pb).isNotEmpty;
+  }
+
+  /// Busca a capa no Deezer (API pública, sem chave). Boa cobertura,
+  /// inclusive de gospel brasileiro que às vezes falta no iTunes.
+  Future<String?> _tentarDeezer(String termo, String artL, String titL,
+      {required bool soTitulo}) async {
+    try {
+      final url = Uri.parse(
+          'https://api.deezer.com/search?q=${Uri.encodeComponent(termo)}&limit=8');
+      final r = await http.get(url).timeout(const Duration(seconds: 8));
+      if (r.statusCode != 200) return null;
+      final d = jsonDecode(r.body);
+      final results = (d['data'] ?? []) as List;
+      final aBusca = _semAcento(artL);
+      final tBusca = _semAcento(titL);
+      for (final item in results) {
+        final aResp =
+            _semAcento((item['artist']?['name'] ?? '').toString());
+        final tResp = _semAcento((item['title'] ?? '').toString());
+        final tituloOk = tResp == tBusca ||
+            tResp.contains(tBusca) ||
+            tBusca.contains(tResp);
+        if (!tituloOk) continue;
+        if (soTitulo) {
+          final forte = tResp == tBusca ||
+              (tBusca.length >= 5 &&
+                  (tResp.contains(tBusca) || tBusca.contains(tResp)));
+          if (!forte) continue;
+        } else {
+          final artistaOk = aBusca.isEmpty ||
+              aResp.contains(aBusca) ||
+              aBusca.contains(aResp) ||
+              _primeiraPalavraComum(aResp, aBusca);
+          if (!artistaOk) continue;
+        }
+        // capa do álbum em alta resolução
+        final capa = (item['album']?['cover_xl'] ??
+                item['album']?['cover_big'] ??
+                item['album']?['cover_medium'] ??
+                '')
+            .toString();
+        if (capa.isNotEmpty) return capa;
+      }
+    } catch (_) {}
+    return null;
   }
 
   @override
