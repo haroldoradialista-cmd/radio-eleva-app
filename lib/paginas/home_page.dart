@@ -820,8 +820,9 @@ class _RelogioAgoraState extends State<RelogioAgora> {
 }
 
 
-/// Moldura com um facho de luz "neon" percorrendo a borda no sentido
-/// anti-horário, com a cor mudando suavemente ao longo do tempo.
+/// Moldura com pequenas lâmpadas coloridas em volta de toda a borda,
+/// piscando alternadamente como os letreiros luminosos antigos
+/// (marquises de cinema/teatro dos anos 70, 80, 90).
 class MolduraNeon extends StatefulWidget {
   final Widget child;
   final double raio;
@@ -839,7 +840,7 @@ class _MolduraNeonState extends State<MolduraNeon>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(milliseconds: 700),
     )..repeat();
   }
 
@@ -855,76 +856,78 @@ class _MolduraNeonState extends State<MolduraNeon>
       animation: _ctrl,
       builder: (context, filho) {
         return CustomPaint(
-          foregroundPainter: _NeonPainter(_ctrl.value, widget.raio),
+          foregroundPainter: _LampadasPainter(_ctrl.value, widget.raio),
           child: filho,
         );
       },
-      child: Padding(padding: const EdgeInsets.all(2), child: widget.child),
+      child: Padding(padding: const EdgeInsets.all(9), child: widget.child),
     );
   }
 }
 
-class _NeonPainter extends CustomPainter {
-  final double t; // 0..1 (posição do facho)
+/// Desenha lâmpadas pequenas ao redor de toda a borda, acendendo e
+/// apagando alternadamente em cores vivas (estilo letreiro retrô).
+class _LampadasPainter extends CustomPainter {
+  final double t;
   final double raio;
-  _NeonPainter(this.t, this.raio);
+  _LampadasPainter(this.t, this.raio);
+
+  static const List<Color> _cores = [
+    Color(0xFFFFD400), Color(0xFFFF3B30), Color(0xFF34D399),
+    Color(0xFF3B9DFF), Color(0xFFFF7AC8), Color(0xFFB06BFF),
+    Color(0xFFFF9F0A), Color(0xFF2EE6D6),
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(raio),
-    );
-
-    // linha fininha de base
-    final base = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = const Color(0xFFFFD65A).withOpacity(0.28);
-    canvas.drawRRect(rrect.deflate(1), base);
-
-    // cor que muda suavemente com o tempo (HSV girando)
-    final matiz = (t * 360 * 1.0) % 360;
-    final corNeon = HSVColor.fromAHSV(1, matiz, 0.85, 1).toColor();
-
-    // caminho da borda para extrair o trecho iluminado
-    final path = Path()..addRRect(rrect.deflate(1));
+      Offset.zero & size, Radius.circular(raio));
+    final path = Path()..addRRect(rrect.deflate(4));
     final metrics = path.computeMetrics().toList();
     if (metrics.isEmpty) return;
     final metric = metrics.first;
     final total = metric.length;
 
-    // sentido ANTI-horário: andamos "para trás" no caminho
-    final comprimentoFacho = total * 0.22;
-    final inicio = (total * (1 - t)) % total;
+    const espacamento = 16.0;
+    int qtd = (total / espacamento).round();
+    if (qtd < 8) qtd = 8;
 
-    Path trecho;
-    if (inicio + comprimentoFacho <= total) {
-      trecho = metric.extractPath(inicio, inicio + comprimentoFacho);
-    } else {
-      trecho = metric.extractPath(inicio, total)
-        ..addPath(
-            metric.extractPath(0, (inicio + comprimentoFacho) - total),
-            Offset.zero);
+    final onda = t;
+
+    for (int i = 0; i < qtd; i++) {
+      final dist = (i / qtd) * total;
+      final tan = metric.getTangentForOffset(dist);
+      if (tan == null) continue;
+      final p = tan.position;
+
+      final grupo = i % 2;
+      double brilho;
+      if (grupo == 0) {
+        brilho = (onda < 0.5) ? 1.0 : 0.25;
+      } else {
+        brilho = (onda >= 0.5) ? 1.0 : 0.25;
+      }
+
+      final cor = _cores[i % _cores.length];
+      final corAcesa = Color.lerp(cor.withOpacity(0.22), cor, brilho)!;
+
+      if (brilho > 0.6) {
+        final halo = Paint()
+          ..color = cor.withOpacity(0.55)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+        canvas.drawCircle(p, 5.5, halo);
+      }
+
+      final bulbo = Paint()..color = corAcesa;
+      canvas.drawCircle(p, 3.2, bulbo);
+
+      if (brilho > 0.6) {
+        final reflexo = Paint()..color = Colors.white.withOpacity(0.85);
+        canvas.drawCircle(p, 1.1, reflexo);
+      }
     }
-
-    // brilho (glow) + núcleo do facho
-    final glow = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..color = corNeon.withOpacity(0.55)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawPath(trecho, glow);
-
-    final nucleo = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..color = corNeon;
-    canvas.drawPath(trecho, nucleo);
   }
 
   @override
-  bool shouldRepaint(_NeonPainter old) => old.t != t;
+  bool shouldRepaint(_LampadasPainter old) => old.t != t;
 }

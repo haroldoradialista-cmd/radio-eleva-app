@@ -15,6 +15,7 @@ import 'servicos/config_service.dart';
 import 'servicos/analytics_service.dart';
 import 'servicos/notificacoes_service.dart';
 import 'servicos/despertador_service.dart';
+import 'servicos/despertadores_lista.dart';
 import 'servicos/presenca_service.dart';
 import 'servicos/player_service.dart';
 import 'tema.dart';
@@ -51,7 +52,13 @@ Future<void> main() async {
   );
   // Tarefas secundárias em segundo plano: NUNCA seguram a abertura do app
   NotificacoesService.iniciar().catchError((_) {});
-  DespertadorService.iniciar().catchError((_) {});
+  DespertadorService.iniciar().then((_) async {
+    // depois do handoff, recalcula qual e o proximo despertador a tocar
+    try {
+      final lista = await DespertadoresLista.carregar();
+      await DespertadoresLista.reagendarProximo(lista);
+    } catch (_) {}
+  }).catchError((_) {});
   ConfigService.instancia.carregar().then((_) {
     ConfigService.instancia.iniciarAutoAtualizacao();
     AnalyticsService.registrarAcesso();

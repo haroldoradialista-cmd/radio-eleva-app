@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../servicos/despertador_service.dart';
+import '../servicos/despertadores_lista.dart';
 import '../tema.dart';
 
 class DespertadorPage extends StatefulWidget {
@@ -10,12 +10,8 @@ class DespertadorPage extends StatefulWidget {
 }
 
 class _DespertadorPageState extends State<DespertadorPage> {
-  String _tipo = 'dias'; // 'dias' ou 'unico'
-  TimeOfDay _hora = TimeOfDay(hour: 7, minute: 0);
-  DateTime? _data;
-  Set<int> _dias = {}; // dias da semana no padrão Calendar (dom=1..sáb=7)
-  bool _ativo = false;
-  String _resumo = '';
+  List<Despertador> _lista = [];
+  bool _carregando = true;
   Map<String, bool> _perms = {};
 
   @override
@@ -26,39 +22,148 @@ class _DespertadorPageState extends State<DespertadorPage> {
 
   Future<void> _carregar() async {
     _verificarPermissoes();
-    final prefs = await SharedPreferences.getInstance();
+    final lista = await DespertadoresLista.carregar();
     if (!mounted) return;
     setState(() {
-      _ativo = prefs.getBool('desp_ativo') ?? false;
-      _tipo = prefs.getString('desp_tipo') ?? 'dias';
-      // "TODO DIA" foi substituído por "DIAS DA SEMANA" com todos os dias:
-      // converte configurações antigas automaticamente.
-      if (_tipo == 'diario') _tipo = 'dias';
-      _hora = TimeOfDay(
-          hour: prefs.getInt('desp_hora') ?? 7,
-          minute: prefs.getInt('desp_min') ?? 0);
-      final d = prefs.getString('desp_data') ?? '';
-      _data = d.isEmpty ? null : DateTime.tryParse(d);
-      final diasStr = prefs.getString('desp_dias') ?? '';
-      _dias = diasStr.isEmpty
-          ? <int>{}
-          : diasStr
-              .split(',')
-              .map((e) => int.tryParse(e.trim()) ?? 0)
-              .where((e) => e >= 1 && e <= 7)
-              .toSet();
-      // Se veio do antigo "TODO DIA" e ficou sem dias, marca a semana toda
-      if (_tipo == 'dias' && _dias.isEmpty &&
-          (prefs.getString('desp_tipo') ?? '') == 'diario') {
-        _dias = {1, 2, 3, 4, 5, 6, 7};
-      }
-      _resumo = prefs.getString('desp_resumo') ?? '';
+      _lista = lista;
+      _carregando = false;
     });
+    await DespertadoresLista.reagendarProximo(_lista);
+  }
+
+  Future<void> _salvar() async {
+    await DespertadoresLista.salvar(_lista);
+    if (mounted) setState(() {});
   }
 
   Future<void> _verificarPermissoes() async {
     final m = await DespertadorService.statusPermissoes();
     if (mounted) setState(() => _perms = m);
+  }
+
+  Future<void> _novo() async {
+    if (_lista.length >= DespertadoresLista.maximo) {
+      _aviso('Voce ja tem ${DespertadoresLista.maximo} despertadores. '
+          'Apague um para criar outro.');
+      return;
+    }
+    final novo = Despertador(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      tipo: 'dias',
+      hora: 7,
+      minuto: 0,
+      dias: {2, 3, 4, 5, 6},
+      ativo: true,
+    );
+    final salvou = await _editarNoModal(novo, ehNovo: true);
+    if (salvou == true) {
+      setState(() => _lista.add(novo));
+      await _salvar();
+      _aviso('Despertador criado! \u2705');
+    }
+  }
+
+  Future<void> _editar(int i) async {
+    final orig = _lista[i];
+    final copia = Despertador.doMapa(orig.paraMapa());
+    final salvou = await _editarNoModal(copia, ehNovo: false);
+    if (salvou == true) {
+      setState(() => _lista[i] = copia);
+      await _salvar();
+      _aviso('Despertador atualizado! \u2705');
+    }
+  }
+
+  Future<void> _alternarAtivo(int i, bool valor) async {
+    setState(() => _lista[i].ativo = valor);
+    await _salvar();
+  }
+
+  Future<void> _apagar(int i) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: CoresEleva.azulProfundo,
+        title: Text('Apagar despertador?',
+            style: TextStyle(color: CoresEleva.branco)),
+        content: Text('Essa acao nao pode ser desfeita.',
+            style: TextStyle(color: CoresEleva.brancoSuave)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancelar',
+                  style: TextStyle(color: CoresEleva.textoFraco))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Apagar',
+                  style: TextStyle(
+                      color: Colors.red.shade300,
+                      fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+    if (ok == true) {
+      setState(() => _lista.removeAt(i));
+      await _salvar();
+      _aviso('Despertador apagado.');
+    }
+  }
+
+  void _aviso(String txt) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(txt),
+      backgroundColor: CoresEleva.verdeEscuro,
+      duration: Duration(seconds: 2),
+    ));
+  }
+
+  String _fmtHora(int h, int m) =>
+      '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+
+  static const _nomesDias = {
+    1: 'DOM', 2: 'SEG', 3: 'TER', 4: 'QUA', 5: 'QUI', 6: 'SEX', 7: 'SAB'
+  };
+
+  String _resumoDias(Set<int> dias) {
+    if (dias.isEmpty) return 'nenhum dia';
+    final semana = {2, 3, 4, 5, 6};
+    final fds = {1, 7};
+    if (dias.length == 7) return 'Todos os dias';
+    if (dias.length == semana.length && dias.containsAll(semana)) {
+      return 'Seg a Sex';
+    }
+    if (dias.length == fds.length && dias.containsAll(fds)) {
+      return 'Sab e Dom';
+    }
+    final ordem = [2, 3, 4, 5, 6, 7, 1];
+    final marcados =
+        ordem.where((d) => dias.contains(d)).map((d) => _nomesDias[d]).toList();
+    return marcados.join(', ');
+  }
+
+  String _resumoDespertador(Despertador d) {
+    if (d.tipo == 'unico') {
+      final data = d.data == null ? null : DateTime.tryParse(d.data!);
+      final quando = data == null
+          ? 'uma vez'
+          : '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}';
+      return '$quando as ${_fmtHora(d.hora, d.minuto)}';
+    }
+    return '${_resumoDias(d.dias)} as ${_fmtHora(d.hora, d.minuto)}';
+  }
+
+  Future<bool?> _editarNoModal(Despertador d, {required bool ehNovo}) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _EditorDespertador(
+        despertador: d,
+        ehNovo: ehNovo,
+        fmtHora: _fmtHora,
+      ),
+    );
   }
 
   Widget _linhaPerm(String chave, String titulo, String porque) {
@@ -79,9 +184,8 @@ class _DespertadorPageState extends State<DespertadorPage> {
                     style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
-                        color: ok
-                            ? CoresEleva.brancoSuave
-                            : Colors.red.shade100)),
+                        color:
+                            ok ? CoresEleva.brancoSuave : Colors.red.shade100)),
                 if (!ok)
                   Text(porque,
                       style: TextStyle(
@@ -116,491 +220,164 @@ class _DespertadorPageState extends State<DespertadorPage> {
     );
   }
 
-  String _fmtHora(TimeOfDay h) =>
-      '${h.hour.toString().padLeft(2, '0')}:${h.minute.toString().padLeft(2, '0')}';
-
-  Future<void> _escolherHora() async {
-    int h = _hora.hour;
-    int mnt = _hora.minute;
-    await showModalBottomSheet(
-      context: context,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
       backgroundColor: CoresEleva.azulMedio,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (context) {
-        Widget roda(int total, int inicial, void Function(int) aoMudar) {
-          return SizedBox(
-            width: 84,
-            child: ListWheelScrollView.useDelegate(
-              controller:
-                  FixedExtentScrollController(initialItem: inicial),
-              itemExtent: 46,
-              physics: FixedExtentScrollPhysics(),
-              perspective: 0.004,
-              overAndUnderCenterOpacity: 0.35,
-              onSelectedItemChanged: aoMudar,
-              childDelegate: ListWheelChildLoopingListDelegate(
-                children: List.generate(
-                  total,
-                  (i) => Center(
-                    child: Text(
-                      i.toString().padLeft(2, '0'),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text('Despertador',
+            style: TextStyle(
+                color: CoresEleva.branco, fontWeight: FontWeight.bold)),
+        iconTheme: IconThemeData(color: CoresEleva.dourado),
+      ),
+      body: _carregando
+          ? Center(
+              child: CircularProgressIndicator(color: CoresEleva.dourado))
+          : SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(height: 6),
+                  Icon(Icons.alarm, size: 64, color: CoresEleva.dourado),
+                  SizedBox(height: 8),
+                  Text('Acorde com a Radio Eleva',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          color: CoresEleva.branco),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Gire para escolher o horário',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w800)),
-                SizedBox(height: 6),
-                SizedBox(
-                  height: 170,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // faixa central destacada
-                      Container(
-                        height: 46,
-                        margin: EdgeInsets.symmetric(horizontal: 40),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: CoresEleva.dourado, width: 1.4),
-                        ),
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                          color: CoresEleva.branco)),
+                  SizedBox(height: 18),
+                  if (_lista.isEmpty)
+                    Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: CoresEleva.azulProfundo,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Column(
                         children: [
-                          roda(24, h, (i) => h = i),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6),
-                            child: Text(':',
-                                style: TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.w900,
-                                    color: CoresEleva.dourado)),
-                          ),
-                          roda(60, mnt, (i) => mnt = i),
+                          Icon(Icons.alarm_off,
+                              size: 40, color: CoresEleva.textoFraco),
+                          SizedBox(height: 10),
+                          Text('Nenhum despertador ainda.',
+                              style: TextStyle(
+                                  color: CoresEleva.brancoSuave,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600)),
+                          SizedBox(height: 4),
+                          Text(
+                              'Toque em "Novo despertador" para criar o primeiro.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: CoresEleva.textoFraco, fontSize: 12)),
                         ],
                       ),
+                    )
+                  else
+                    ...List.generate(_lista.length, (i) => _cardDespertador(i)),
+                  SizedBox(height: 14),
+                  _botaoNovo(),
+                  SizedBox(height: 22),
+                  _painelPermissoes(),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _cardDespertador(int i) {
+    final d = _lista[i];
+    final numero = i + 1;
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: CoresEleva.azulProfundo,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: d.ativo
+              ? CoresEleva.verde.withOpacity(0.8)
+              : Colors.white.withOpacity(0.08),
+          width: 1.4,
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 14, 12, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: CoresEleva.dourado.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('Despertador $numero',
+                            style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.4,
+                                color: CoresEleva.dourado)),
+                      ),
+                      SizedBox(height: 8),
+                      Text(_fmtHora(d.hora, d.minuto),
+                          style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              height: 1.0,
+                              color: d.ativo
+                                  ? CoresEleva.branco
+                                  : CoresEleva.textoFraco)),
+                      SizedBox(height: 3),
+                      Text(_resumoDespertador(d),
+                          style: TextStyle(
+                              fontSize: 12.5,
+                              color: CoresEleva.brancoSuave)),
                     ],
                   ),
                 ),
-                SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: CoresEleva.verde,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(26)),
-                      textStyle: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w800),
-                    ),
-                    child: Text('CONFIRMAR HORÁRIO'),
-                  ),
+                Switch(
+                  value: d.ativo,
+                  activeColor: CoresEleva.verde,
+                  onChanged: (v) => _alternarAtivo(i, v),
                 ),
               ],
             ),
           ),
-        );
-      },
-    );
-    if (mounted) setState(() => _hora = TimeOfDay(hour: h, minute: mnt));
-  }
-
-  Future<void> _escolherData() async {
-    final agora = DateTime.now();
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _data ?? agora,
-      firstDate: agora,
-      lastDate: agora.add(Duration(days: 365)),
-      helpText: 'Dia do despertador',
-    );
-    if (d != null) setState(() => _data = d);
-  }
-
-  Future<void> _ativar() async {
-    try {
-    await DespertadorService.pedirPermissoes();
-    String resumo;
-    if (_tipo == 'diario') {
-      await DespertadorService.agendarDiario(_hora.hour, _hora.minute);
-      resumo = 'TODO DIA às ${_fmtHora(_hora)}';
-    } else if (_tipo == 'dias') {
-      if (_dias.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.red.shade700,
-            content: Text('Escolha pelo menos um dia da semana.')));
-        return;
-      }
-      await DespertadorService.agendarDias(_hora.hour, _hora.minute, _dias);
-      resumo = '${_resumoDias()} às ${_fmtHora(_hora)}';
-    } else {
-      if (_data == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.red.shade700,
-            content: Text('Escolha o dia do despertador.')));
-        return;
-      }
-      final quando = DateTime(_data!.year, _data!.month, _data!.day,
-          _hora.hour, _hora.minute);
-      if (quando.isBefore(DateTime.now())) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.red.shade700,
-            content: Text('Esse horário já passou. Escolha outro.')));
-        return;
-      }
-      await DespertadorService.agendarUnico(quando);
-      resumo =
-          '${_data!.day.toString().padLeft(2, '0')}/${_data!.month.toString().padLeft(2, '0')} às ${_fmtHora(_hora)}';
-    }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('desp_ativo', true);
-    await prefs.setString('desp_tipo', _tipo);
-    await prefs.setInt('desp_hora', _hora.hour);
-    await prefs.setInt('desp_min', _hora.minute);
-    await prefs.setString('desp_data', _data?.toIso8601String() ?? '');
-    await prefs.setString(
-        'desp_dias', (_dias.toList()..sort()).join(','));
-    await prefs.setString('desp_resumo', resumo);
-    await prefs.setInt('desp_sonecas', 0); // as 3 sonecas voltam a valer
-    if (mounted) {
-      setState(() {
-        _ativo = true;
-        _resumo = resumo;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          backgroundColor: CoresEleva.verdeEscuro,
-          content: Text('⏰ Despertador ativado: $resumo')));
-    }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            backgroundColor: Colors.red.shade700,
-            duration: Duration(seconds: 8),
-            content: Text(
-                'Não consegui ativar. Detalhe técnico: ${e.toString().substring(0, e.toString().length > 130 ? 130 : e.toString().length)}')));
-      }
-    }
-  }
-
-  Future<void> _desativar() async {
-    try {
-      await DespertadorService.cancelar();
-    } catch (_) {}
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('desp_ativo', false);
-    await prefs.setString('desp_resumo', '');
-    if (mounted) {
-      setState(() => _ativo = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          backgroundColor: CoresEleva.azulMedio,
-          content: Text('Despertador desativado. ✅')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.all(18),
-      children: [
-        Center(
-          child: Icon(Icons.alarm_rounded,
-              size: 56, color: CoresEleva.dourado),
-        ),
-        SizedBox(height: 8),
-        Center(
-          child: Text(
-            'Acorde com a Rádio Eleva',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13.5, color: CoresEleva.brancoSuave),
-          ),
-        ),
-        SizedBox(height: 18),
-
-        if (_ativo)
-          Container(
-            margin: EdgeInsets.only(bottom: 14),
-            padding: EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: CoresEleva.verdeEscuro.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: CoresEleva.verde, width: 1.5),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.alarm_on_rounded,
-                    color: CoresEleva.verde, size: 30),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text('Despertador ativo: $_resumo',
+          Divider(height: 1, color: Colors.white.withOpacity(0.06)),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () => _editar(i),
+                  icon: Icon(Icons.edit, size: 16, color: CoresEleva.dourado),
+                  label: Text('Editar',
                       style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: CoresEleva.branco)),
+                          color: CoresEleva.dourado,
+                          fontWeight: FontWeight.w600)),
                 ),
-                TextButton(
-                  onPressed: _desativar,
-                  child: Text('DESATIVAR',
+              ),
+              Container(
+                  width: 1, height: 22, color: Colors.white.withOpacity(0.06)),
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () => _apagar(i),
+                  icon: Icon(Icons.delete_outline,
+                      size: 16, color: Colors.red.shade300),
+                  label: Text('Apagar',
                       style: TextStyle(
                           color: Colors.red.shade300,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12)),
+                          fontWeight: FontWeight.w600)),
                 ),
-              ],
-            ),
-          ),
-
-        // Tipo: DIAS DA SEMANA ou UMA VEZ
-        Row(
-          children: [
-            _chipTipo('dias', 'DIAS DA SEMANA', Icons.date_range_rounded),
-            SizedBox(width: 10),
-            _chipTipo('unico', 'UMA VEZ', Icons.event_rounded),
-          ],
-        ),
-        SizedBox(height: 14),
-
-        if (_tipo == 'dias') _seletorDias(),
-
-        if (_tipo == 'unico')
-          _botaoEscolha(
-            icone: Icons.calendar_month_rounded,
-            rotulo: 'Dia',
-            valor: _data == null
-                ? 'Escolher o dia'
-                : '${_data!.day.toString().padLeft(2, '0')}/${_data!.month.toString().padLeft(2, '0')}/${_data!.year}',
-            aoTocar: _escolherData,
-          ),
-        _botaoEscolha(
-          icone: Icons.schedule_rounded,
-          rotulo: 'Horário',
-          valor: _fmtHora(_hora),
-          aoTocar: _escolherHora,
-        ),
-
-        // Botão principal logo abaixo do horário
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _ativar,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CoresEleva.verde,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28)),
-              textStyle:
-                  TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-            icon: Icon(Icons.alarm_add_rounded),
-            label: Text(_ativo ? 'ATUALIZAR DESPERTADOR' : 'ATIVAR DESPERTADOR'),
-          ),
-        ),
-        SizedBox(height: 16),
-        // ===== PERMISSÕES DO DESPERTADOR =====
-        Container(
-          margin: EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.fromLTRB(14, 12, 14, 8),
-          decoration: BoxDecoration(
-            color: CoresEleva.azulMedio,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: _perms.values.every((v) => v)
-                    ? CoresEleva.borda
-                    : Colors.red.shade300,
-                width: _perms.values.every((v) => v) ? 1 : 1.5),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.shield_rounded,
-                      size: 18, color: CoresEleva.dourado),
-                  SizedBox(width: 6),
-                  Text('Permissões do despertador',
-                      style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
-                          color: CoresEleva.branco)),
-                  Spacer(),
-                  GestureDetector(
-                    onTap: _verificarPermissoes,
-                    child: Icon(Icons.refresh_rounded,
-                        size: 18, color: CoresEleva.dourado),
-                  ),
-                ],
               ),
-              SizedBox(height: 10),
-              _linhaPerm('notificacao', 'Notificações',
-                  'Sem ela o alarme não consegue tocar nem aparecer.'),
-              _linhaPerm('alarme', 'Alarmes e lembretes',
-                  'Sem ela o despertador não toca na hora exata.'),
-              _linhaPerm('telacheia', 'Notificações em tela cheia ⭐',
-                  'ESSENCIAL: é ela que acende a tela com o botão ADIAR no meio. Sem ela, o alarme só notifica.'),
-              _linhaPerm('sobreposicao', 'Aparecer sobre outros apps ⭐',
-                  'ESSENCIAL: garante a tela de adiar mesmo com o celular bloqueado.'),
-              _linhaPerm('bateria', 'Economia de bateria DESLIGADA ⭐',
-                  'IMPORTANTE: mantenha a economia de bateria DESLIGADA para este app. Com ela ligada, o celular segura o alarme e o despertador pode atrasar ou nem tocar.'),
-              if (_perms['bateria'] == false)
-                Container(
-                  margin: EdgeInsets.only(top: 4, bottom: 6),
-                  padding: EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade900.withOpacity(0.35),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.red.shade300),
-                  ),
-                  child: Text(
-                    '🔋 Ao tocar em LIBERAR, o Android pergunta se pode ignorar a economia de bateria para a Rádio Eleva: responda PERMITIR. Nunca ative "economia de bateria" ou "colocar o app em suspensão" para este app — é isso que faz o despertador falhar.',
-                    style: TextStyle(
-                        fontSize: 10.5,
-                        height: 1.45,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red.shade100),
-                  ),
-                ),
-              if (_perms.values.every((v) => v) && _perms.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(top: 2, bottom: 4),
-                  child: Text('Tudo liberado — pode dormir tranquilo! 🌙',
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: CoresEleva.verde)),
-                ),
-            ],
-          ),
-        ),
-
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: CoresEleva.avisoFundo,
-            borderRadius: BorderRadius.circular(12),
-            border:
-                Border.all(color: CoresEleva.dourado.withOpacity(0.6)),
-          ),
-          child: Text(
-            '😴 Na hora do alarme, a tela acende (mesmo bloqueada) com a logo da rádio, a hora, a saudação do momento e um versículo de motivação — mais os botões grandes ADIAR 5 MINUTOS (até 3 vezes) e PARAR, sem precisar desbloquear o celular. O som sobe suavemente até 80%.\n\nℹ️ Na hora marcada, a tela do celular acende com a Rádio Eleva e a música começa a tocar. Permita tudo o que o app pedir ao ativar. IMPORTANTE: se no horário chegar apenas a notificação (sem a rádio abrir sozinha), ative a permissão de tela cheia: Configurações → Aplicativos → Rádio Eleva → Notificações → "Tela cheia" (ou "Acesso especial → Notificações de tela cheia"). Com ela ligada, o despertador acorda você com a rádio tocando. É preciso internet no horário do alarme.',
-            style: TextStyle(
-                fontSize: 11.5,
-                height: 1.45,
-                fontWeight: FontWeight.w600,
-                color: CoresEleva.avisoTexto),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Rótulos dos dias no padrão Calendar (índice = dom=1 .. sáb=7)
-  static const List<String> _abrevDias = [
-    '', 'DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'
-  ];
-
-  // Ordem de exibição começando na segunda (mais natural no Brasil)
-  static const List<int> _ordemDias = [2, 3, 4, 5, 6, 7, 1];
-
-  String _resumoDias() {
-    if (_dias.length == 7) return 'TODO DIA';
-    final semana = {2, 3, 4, 5, 6};
-    if (_dias.length == 5 && _dias.containsAll(semana)) {
-      return 'SEG A SEX';
-    }
-    if (_dias.length == 2 && _dias.contains(1) && _dias.contains(7)) {
-      return 'FIM DE SEMANA';
-    }
-    final marcados =
-        _ordemDias.where((d) => _dias.contains(d)).map((d) => _abrevDias[d]);
-    return marcados.join(', ');
-  }
-
-  Widget _seletorDias() {
-    Widget bolinha(int dia) {
-      final marcado = _dias.contains(dia);
-      return GestureDetector(
-        onTap: () => setState(() {
-          if (marcado) {
-            _dias.remove(dia);
-          } else {
-            _dias.add(dia);
-          }
-        }),
-        child: Container(
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            gradient: marcado ? CoresEleva.botaoPlay : null,
-            color: marcado ? null : CoresEleva.azulMedio,
-            shape: BoxShape.circle,
-            border: Border.all(
-                color: marcado ? CoresEleva.verde : CoresEleva.borda,
-                width: marcado ? 1.8 : 1),
-          ),
-          child: Text(
-            _abrevDias[dia],
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w900,
-              color: marcado ? Colors.white : CoresEleva.brancoSuave,
-            ),
-          ),
-        ),
-      );
-    }
-
-    void _marcar(Set<int> novos) => setState(() => _dias = {...novos});
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 10),
-      padding: EdgeInsets.fromLTRB(12, 12, 12, 12),
-      decoration: BoxDecoration(
-        color: CoresEleva.azulMedio,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CoresEleva.borda),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Toque nos dias em que quer acordar',
-              style: TextStyle(
-                  fontSize: 12, color: CoresEleva.textoFraco)),
-          SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: _ordemDias.map(bolinha).toList(),
-          ),
-          SizedBox(height: 12),
-          Row(
-            children: [
-              _atalhoDias('Seg a Sex', () => _marcar({2, 3, 4, 5, 6})),
-              SizedBox(width: 6),
-              _atalhoDias('Sáb e Dom', () => _marcar({1, 7})),
-              SizedBox(width: 6),
-              _atalhoDias('Todos', () => _marcar({1, 2, 3, 4, 5, 6, 7})),
-              SizedBox(width: 6),
-              _atalhoDias('Limpar', () => _marcar({})),
             ],
           ),
         ],
@@ -608,93 +385,496 @@ class _DespertadorPageState extends State<DespertadorPage> {
     );
   }
 
-  Widget _atalhoDias(String rotulo, VoidCallback aoTocar) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: aoTocar,
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: CoresEleva.azulProfundo,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: CoresEleva.dourado.withOpacity(0.5)),
-          ),
-          child: Text(rotulo,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: CoresEleva.dourado)),
+  Widget _botaoNovo() {
+    final cheio = _lista.length >= DespertadoresLista.maximo;
+    return GestureDetector(
+      onTap: cheio ? null : _novo,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 15),
+        decoration: BoxDecoration(
+          gradient: cheio
+              ? null
+              : LinearGradient(
+                  colors: [CoresEleva.verde, CoresEleva.azulVivo]),
+          color: cheio ? CoresEleva.azulProfundo : null,
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: cheio
+              ? null
+              : [
+                  BoxShadow(
+                      color: CoresEleva.verde.withOpacity(0.35),
+                      blurRadius: 12,
+                      offset: Offset(0, 4))
+                ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(cheio ? Icons.block : Icons.add_alarm,
+                color: cheio ? CoresEleva.textoFraco : Colors.white),
+            SizedBox(width: 8),
+            Text(
+                cheio
+                    ? 'Maximo de ${DespertadoresLista.maximo} atingido'
+                    : 'Novo despertador',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: cheio ? CoresEleva.textoFraco : Colors.white)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _chipTipo(String valor, String rotulo, IconData icone) {
-    final marcado = _tipo == valor;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _tipo = valor),
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-          decoration: BoxDecoration(
-            gradient: marcado ? CoresEleva.botaoPlay : null,
-            color: marcado ? null : CoresEleva.azulMedio,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: marcado ? CoresEleva.verde : CoresEleva.borda,
-                width: marcado ? 1.8 : 1),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  Widget _painelPermissoes() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: CoresEleva.azulProfundo,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Icon(icone,
-                  size: 22,
-                  color: marcado ? Colors.white : CoresEleva.dourado),
-              SizedBox(height: 6),
-              Text(rotulo,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11.5,
-                      height: 1.15,
-                      color:
-                          marcado ? Colors.white : CoresEleva.brancoSuave)),
+              Icon(Icons.shield_outlined, size: 18, color: CoresEleva.dourado),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Permissoes do despertador',
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: CoresEleva.branco)),
+              ),
+              GestureDetector(
+                onTap: _verificarPermissoes,
+                child:
+                    Icon(Icons.refresh, size: 18, color: CoresEleva.textoFraco),
+              ),
             ],
           ),
+          SizedBox(height: 12),
+          _linhaPerm('notificacoes', 'Notificacoes',
+              'Precisa estar ligada para o alarme aparecer.'),
+          _linhaPerm('alarmes', 'Alarmes e lembretes',
+              'Deixa o alarme tocar na hora exata.'),
+          _linhaPerm('telaCheia', 'Notificacoes em tela cheia \u2b50',
+              'Faz a tela do alarme abrir sozinha ao tocar.'),
+          SizedBox(height: 6),
+          Text(
+              'Dica: nos ajustes do celular, desligue a "economia de bateria" '
+              'para o app da Radio Eleva, para o despertador nunca falhar.',
+              style: TextStyle(
+                  fontSize: 10.5, height: 1.4, color: CoresEleva.textoFraco)),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// EDITOR DE UM DESPERTADOR (modal deslizante)
+// ============================================================
+
+class _EditorDespertador extends StatefulWidget {
+  final Despertador despertador;
+  final bool ehNovo;
+  final String Function(int, int) fmtHora;
+  const _EditorDespertador({
+    required this.despertador,
+    required this.ehNovo,
+    required this.fmtHora,
+  });
+
+  @override
+  State<_EditorDespertador> createState() => _EditorDespertadorState();
+}
+
+class _EditorDespertadorState extends State<_EditorDespertador> {
+  late String _tipo;
+  late int _hora;
+  late int _minuto;
+  late Set<int> _dias;
+  DateTime? _data;
+
+  static const _diasOrdem = [2, 3, 4, 5, 6, 7, 1];
+  static const _nomes = {
+    1: 'DOM', 2: 'SEG', 3: 'TER', 4: 'QUA', 5: 'QUI', 6: 'SEX', 7: 'SAB'
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    final d = widget.despertador;
+    _tipo = d.tipo;
+    _hora = d.hora;
+    _minuto = d.minuto;
+    _dias = Set<int>.from(d.dias);
+    _data = d.data == null ? null : DateTime.tryParse(d.data!);
+  }
+
+  Future<void> _escolherHora() async {
+    final r = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _hora, minute: _minuto),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: ColorScheme.dark(
+            primary: CoresEleva.dourado,
+            surface: CoresEleva.azulProfundo,
+            onSurface: CoresEleva.branco,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (r != null) {
+      setState(() {
+        _hora = r.hour;
+        _minuto = r.minute;
+      });
+    }
+  }
+
+  Future<void> _escolherData() async {
+    final agora = DateTime.now();
+    final r = await showDatePicker(
+      context: context,
+      initialDate: _data ?? agora,
+      firstDate: agora,
+      lastDate: agora.add(Duration(days: 365)),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: ColorScheme.dark(
+            primary: CoresEleva.dourado,
+            surface: CoresEleva.azulProfundo,
+            onSurface: CoresEleva.branco,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (r != null) setState(() => _data = r);
+  }
+
+  bool get _podeSalvar {
+    if (_tipo == 'dias') return _dias.isNotEmpty;
+    if (_tipo == 'unico') return _data != null;
+    return false;
+  }
+
+  void _salvar() {
+    if (!_podeSalvar) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_tipo == 'dias'
+            ? 'Escolha pelo menos um dia da semana.'
+            : 'Escolha a data.'),
+        backgroundColor: Colors.red.shade400,
+      ));
+      return;
+    }
+    final d = widget.despertador;
+    d.tipo = _tipo;
+    d.hora = _hora;
+    d.minuto = _minuto;
+    d.dias = _dias;
+    d.data = _tipo == 'unico' ? _data?.toIso8601String() : null;
+    Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: CoresEleva.azulMedio,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      padding: EdgeInsets.only(
+        left: 18,
+        right: 18,
+        top: 10,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(widget.ehNovo ? 'Novo despertador' : 'Editar despertador',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: CoresEleva.branco)),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child:
+                      _botaoTipo('dias', Icons.calendar_month, 'DIAS DA SEMANA'),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: _botaoTipo('unico', Icons.event, 'UMA VEZ'),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            if (_tipo == 'dias') _blocoDias() else _blocoUmaVez(),
+            SizedBox(height: 14),
+            _blocoHorario(),
+            SizedBox(height: 18),
+            GestureDetector(
+              onTap: _salvar,
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 15),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      colors: [CoresEleva.verde, CoresEleva.azulVivo]),
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(widget.ehNovo ? 'CRIAR' : 'SALVAR',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _botaoEscolha(
-      {required IconData icone,
-      required String rotulo,
-      required String valor,
-      required VoidCallback aoTocar}) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: CoresEleva.azulMedio,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CoresEleva.borda),
+  Widget _botaoTipo(String tipo, IconData icone, String texto) {
+    final sel = _tipo == tipo;
+    return GestureDetector(
+      onTap: () => setState(() => _tipo = tipo),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          gradient: sel
+              ? LinearGradient(colors: [CoresEleva.verde, CoresEleva.azulVivo])
+              : null,
+          color: sel ? null : CoresEleva.azulProfundo,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color:
+                  sel ? Colors.transparent : Colors.white.withOpacity(0.08)),
+        ),
+        child: Column(
+          children: [
+            Icon(icone,
+                color: sel ? Colors.white : CoresEleva.dourado, size: 22),
+            SizedBox(height: 6),
+            Text(texto,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: sel ? Colors.white : CoresEleva.brancoSuave)),
+          ],
+        ),
       ),
-      child: ListTile(
-        leading: Icon(icone, color: CoresEleva.dourado),
-        title: Text(rotulo,
+    );
+  }
+
+  Widget _blocoDias() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: CoresEleva.azulProfundo,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Toque nos dias em que quer acordar',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: CoresEleva.brancoSuave)),
+          SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _diasOrdem.map((d) {
+              final on = _dias.contains(d);
+              return GestureDetector(
+                onTap: () => setState(() {
+                  if (on) {
+                    _dias.remove(d);
+                  } else {
+                    _dias.add(d);
+                  }
+                }),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: on
+                        ? LinearGradient(
+                            colors: [CoresEleva.verde, CoresEleva.azulVivo])
+                        : null,
+                    color: on ? null : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: on
+                            ? Colors.transparent
+                            : CoresEleva.dourado.withOpacity(0.4)),
+                  ),
+                  child: Text(_nomes[d]!,
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: on ? Colors.white : CoresEleva.brancoSuave)),
+                ),
+              );
+            }).toList(),
+          ),
+          SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _atalho('Seg a Sex', {2, 3, 4, 5, 6}),
+              _atalho('Sab e Dom', {1, 7}),
+              _atalho('Todos', {1, 2, 3, 4, 5, 6, 7}),
+              _atalhoLimpar(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _atalho(String texto, Set<int> conjunto) {
+    return GestureDetector(
+      onTap: () => setState(() => _dias = Set<int>.from(conjunto)),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: CoresEleva.dourado.withOpacity(0.5)),
+        ),
+        child: Text(texto,
             style: TextStyle(
-                fontSize: 12.5, color: CoresEleva.textoFraco)),
-        subtitle: Text(valor,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: CoresEleva.dourado)),
+      ),
+    );
+  }
+
+  Widget _atalhoLimpar() {
+    return GestureDetector(
+      onTap: () => setState(() => _dias = <int>{}),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: CoresEleva.dourado.withOpacity(0.5)),
+        ),
+        child: Text('Limpar',
             style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: CoresEleva.branco)),
-        trailing: Icon(Icons.edit_rounded,
-            size: 20, color: CoresEleva.dourado),
-        onTap: aoTocar,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: CoresEleva.dourado)),
+      ),
+    );
+  }
+
+  Widget _blocoUmaVez() {
+    final txt = _data == null
+        ? 'Escolher a data'
+        : '${_data!.day.toString().padLeft(2, '0')}/${_data!.month.toString().padLeft(2, '0')}/${_data!.year}';
+    return GestureDetector(
+      onTap: _escolherData,
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: CoresEleva.azulProfundo,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.event, color: CoresEleva.dourado),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Data',
+                      style: TextStyle(
+                          fontSize: 11, color: CoresEleva.textoFraco)),
+                  SizedBox(height: 2),
+                  Text(txt,
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: CoresEleva.branco)),
+                ],
+              ),
+            ),
+            Icon(Icons.edit, size: 18, color: CoresEleva.dourado),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _blocoHorario() {
+    return GestureDetector(
+      onTap: _escolherHora,
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: CoresEleva.azulProfundo,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.access_time, color: CoresEleva.dourado),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Horario',
+                      style: TextStyle(
+                          fontSize: 11, color: CoresEleva.textoFraco)),
+                  SizedBox(height: 2),
+                  Text(widget.fmtHora(_hora, _minuto),
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: CoresEleva.branco)),
+                ],
+              ),
+            ),
+            Icon(Icons.edit, size: 18, color: CoresEleva.dourado),
+          ],
+        ),
       ),
     );
   }

@@ -186,7 +186,7 @@ class _CapaMusicaState extends State<CapaMusica> {
     return Container(
       width: widget.tamanho,
       height: widget.tamanho,
-      padding: const EdgeInsets.all(3), // espessura da moldura
+      padding: const EdgeInsets.all(6), // espessura da moldura
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         // moldura sutil com degradê dourado, como um porta-retrato fino
@@ -214,7 +214,7 @@ class _CapaMusicaState extends State<CapaMusica> {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(13),
         child: Stack(
           fit: StackFit.expand,
           children: [
