@@ -144,9 +144,9 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.75,
+          initialChildSize: 0.62,
           minChildSize: 0.4,
-          maxChildSize: 0.95,
+          maxChildSize: 0.62,
           expand: false,
           builder: (ctx, scrollCtrl) {
             return Container(

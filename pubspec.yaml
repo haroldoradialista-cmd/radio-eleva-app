@@ -1,7 +1,7 @@
 name: radio_eleva
 description: Aplicativo oficial da Radio Eleva
 publish_to: 'none'
-version: 3.6.2+102
+version: 3.6.3+103
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
