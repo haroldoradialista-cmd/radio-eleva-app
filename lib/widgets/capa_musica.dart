@@ -186,10 +186,26 @@ class _CapaMusicaState extends State<CapaMusica> {
     return Container(
       width: widget.tamanho,
       height: widget.tamanho,
+      padding: const EdgeInsets.all(3), // espessura da moldura
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: CoresEleva.dourado.withOpacity(0.6), width: 1.5),
+        // moldura sutil com degradê dourado, como um porta-retrato fino
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFF4D879).withOpacity(0.95), // dourado claro
+            const Color(0xFFB8860B).withOpacity(0.85), // dourado escuro
+            const Color(0xFFF4D879).withOpacity(0.95), // dourado claro
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
         boxShadow: [
+          BoxShadow(
+            color: CoresEleva.dourado.withOpacity(0.25),
+            blurRadius: 12,
+            spreadRadius: 0.5,
+          ),
           BoxShadow(
             color: Colors.black.withOpacity(CoresEleva.escuro ? 0.4 : 0.15),
             blurRadius: 16,
@@ -198,7 +214,7 @@ class _CapaMusicaState extends State<CapaMusica> {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(15),
         child: Stack(
           fit: StackFit.expand,
           children: [
