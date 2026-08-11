@@ -857,6 +857,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -905,6 +906,17 @@ class DespertadorAudioService : Service() {
     /// Abre a tela do alarme por cima do bloqueio (como o relógio do celular)
     private fun abrirTelaAlarme() {
         try {
+            // acende a tela do celular (ajuda quando o aparelho está "dormindo")
+            try {
+                val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                @Suppress("DEPRECATION")
+                val wl = pm.newWakeLock(
+                    PowerManager.FULL_WAKE_LOCK or
+                        PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                        PowerManager.ON_AFTER_RELEASE,
+                    "eleva:despertador")
+                wl.acquire(10_000L)
+            } catch (_: Exception) {}
             val i = Intent(this, DespertadorAlarmeActivity::class.java)
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -913,13 +925,19 @@ class DespertadorAudioService : Service() {
         } catch (_: Exception) {}
     }
 
-    /// Coloca o canal de alarme no volume escolhido pelo ouvinte no app
+    /// Garante que o alarme não toque MUDO, mas sem travar o volume:
+    /// só eleva se o ouvinte estiver com o som do alarme muito baixo.
+    /// Assim os botões de volume continuam funcionando durante o alarme.
     private fun ajustarVolumeSistema() {
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            val alvo = (maximo * 0.80f).toInt().coerceAtLeast(1)  // padrão: 80%
-            am.setStreamVolume(AudioManager.STREAM_ALARM, alvo, 0)
+            val atual = am.getStreamVolume(AudioManager.STREAM_ALARM)
+            val minimo = (maximo * 0.30f).toInt().coerceAtLeast(1)
+            // só sobe se estiver ABAIXO do mínimo audível; nunca força para cima
+            if (atual < minimo) {
+                am.setStreamVolume(AudioManager.STREAM_ALARM, minimo, 0)
+            }
         } catch (_: Exception) {}
     }
 
