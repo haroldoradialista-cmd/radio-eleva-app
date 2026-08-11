@@ -163,7 +163,9 @@ class _DespertadorPageState extends State<DespertadorPage> {
   }
 
   Widget _linhaPerm(String chave, String titulo, String porque) {
-    final ok = _perms[chave] ?? true;
+    // ATENCAO: antes isso usava "?? true" e mostrava tudo verde mesmo sem
+    // permissao. Agora, se nao der para confirmar, mostra como PENDENTE.
+    final ok = _perms[chave] ?? false;
     return Padding(
       padding: EdgeInsets.only(bottom: 8),
       child: Row(
@@ -444,12 +446,17 @@ class _DespertadorPageState extends State<DespertadorPage> {
             ],
           ),
           SizedBox(height: 12),
-          _linhaPerm('notificacoes', 'Notificacoes',
+          _linhaPerm('notificacao', 'Notificacoes',
               'Precisa estar ligada para o alarme aparecer.'),
-          _linhaPerm('alarmes', 'Alarmes e lembretes',
+          _linhaPerm('alarme', 'Alarmes e lembretes',
               'Deixa o alarme tocar na hora exata.'),
-          _linhaPerm('telaCheia', 'Notificacoes em tela cheia \u2b50',
+          _linhaPerm('telacheia', 'Notificacoes em tela cheia \u2b50',
               'Faz a tela do alarme abrir sozinha ao tocar.'),
+          _linhaPerm('sobreposicao', 'Aparecer sobre outros apps \u2b50',
+              'SEM ESTA, a tela do despertador (versiculo, soneca, parar) '
+              'NAO abre com o celular bloqueado.'),
+          _linhaPerm('bateria', 'Economia de bateria liberada \u2b50',
+              'Impede o celular de segurar o alarme.'),
           SizedBox(height: 6),
           Text(
               'Dica: nos ajustes do celular, desligue a "economia de bateria" '

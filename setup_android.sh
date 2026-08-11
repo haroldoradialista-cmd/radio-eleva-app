@@ -866,6 +866,8 @@ class DespertadorAudioService : Service() {
     private var player: MediaPlayer? = null
     private val alca = Handler(Looper.getMainLooper())
     private var passo = 0
+    private var volAtual = 0.80f      // volume interno atual do player
+    private var fadeParado = false    // true quando o ouvinte abaixa o som
 
     companion object {
         const val MAX_SONECAS = 3         // adiar no máximo 3 vezes
@@ -895,6 +897,7 @@ class DespertadorAudioService : Service() {
                 stopSelf(); return START_NOT_STICKY
             }
             acao == "SONECA" -> { soneca(); return START_NOT_STICKY }
+            acao == "BAIXAR_SOM" -> { baixarSom(); return START_STICKY }
         }
         ajustarVolumeSistema()
         abrirTelaAlarme()   // tela cheia sobre o bloqueio
@@ -902,6 +905,23 @@ class DespertadorAudioService : Service() {
         tocar()
         alca.postDelayed({ stopSelf() }, 20L * 60L * 1000L)
         return START_NOT_STICKY
+    }
+
+    /// Abaixa o som do despertador pela metade a cada toque no botão
+    /// "ABAIXAR" da notificação. Também para a subida automática (fade),
+    /// para o som não voltar a aumentar sozinho depois.
+    private fun baixarSom() {
+        try {
+            fadeParado = true
+            volAtual = (volAtual * 0.5f).coerceAtLeast(0.05f)
+            player?.setVolume(volAtual, volAtual)
+            // acompanha no volume do sistema também
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val atual = am.getStreamVolume(AudioManager.STREAM_ALARM)
+            if (atual > 1) {
+                am.setStreamVolume(AudioManager.STREAM_ALARM, atual / 2, 0)
+            }
+        } catch (_: Exception) {}
     }
 
     /// Posta uma notificação SEPARADA só para acionar o fullScreenIntent.
@@ -1040,15 +1060,19 @@ class DespertadorAudioService : Service() {
     /// entao a subida linear parece rapida demais no comeco.
     private fun fade() {
         passo = 0
+        fadeParado = false
         val totalPassos = 240         // 240 passos de 250ms = 60 segundos
         val volumeFinal = 0.80f       // teto de 80%
         val volumeInicial = 0.02f
         val rampa = object : Runnable {
             override fun run() {
+                // se o ouvinte abaixou o som, para de subir e respeita a escolha
+                if (fadeParado) return
                 passo++
                 val fracao = (passo.toFloat() / totalPassos).coerceIn(0f, 1f)
                 val curva = fracao * fracao   // sobe devagar no inicio
                 val v = volumeInicial + (volumeFinal - volumeInicial) * curva
+                volAtual = v
                 try { player?.setVolume(v, v) } catch (_: Exception) {}
                 if (passo < totalPassos) alca.postDelayed(this, 250)
             }
@@ -1104,6 +1128,9 @@ class DespertadorAudioService : Service() {
                 Icon.createWithResource(this, android.R.drawable.ic_menu_recent_history),
                 "😴 +$MIN_SONECA MIN", acao("SONECA", 2)).build())
         }
+        b.addAction(Notification.Action.Builder(
+            Icon.createWithResource(this, android.R.drawable.ic_lock_silent_mode),
+            "🔉 ABAIXAR", acao("BAIXAR_SOM", 6)).build())
         b.addAction(Notification.Action.Builder(
             Icon.createWithResource(this, android.R.drawable.ic_media_pause),
             "⏹️ PARAR", acao("PARAR", 4)).build())
