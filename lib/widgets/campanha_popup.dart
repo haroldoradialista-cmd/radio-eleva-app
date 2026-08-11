@@ -75,8 +75,12 @@ class CampanhaPopup {
   }
 
   /// Decide se deve mostrar e, em caso positivo, exibe o pop-up.
+  /// true enquanto o banner esta na tela (evita abrir dois ao mesmo tempo)
+  static bool _naTela = false;
+
   static Future<void> talvezMostrar(
       BuildContext context, AppConfig cfg) async {
+    if (_naTela) return; // ja tem um banner aberto
     // monta a lista: novas campanhas + a campanha única antiga (compatibilidade)
     final lista = <Map<String, dynamic>>[];
     lista.addAll(cfg.campanhas);
@@ -105,7 +109,10 @@ class CampanhaPopup {
     final agora = DateTime.now();
 
     // FREQUÊNCIA por campanha: sempre | hora | dia
-    final freq = (c['frequencia'] ?? 'sempre').toString();
+    // Padrao = 'sempre': o banner de abertura e um COMERCIAL do cliente,
+    // entao aparece toda vez que o ouvinte abre o app. So limita se o
+    // painel pedir explicitamente 'dia' ou 'hora'.
+    final freq = (c['frequencia'] ?? 'sempre').toString().trim().toLowerCase();
     final assinatura = '${(c['id'] ?? imagem)}';
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -119,6 +126,7 @@ class CampanhaPopup {
       } else if (freq == 'hora') {
         if (agora.difference(ultima).inMinutes < 60) return;
       }
+      // qualquer outro valor (inclusive 'sempre' ou vazio) => mostra sempre
       await prefs.setInt(
           'campanha_vista_ms_$assinatura', agora.millisecondsSinceEpoch);
     } catch (_) {}
@@ -129,6 +137,7 @@ class CampanhaPopup {
     if (!context.mounted) return;
     final segundos = int.tryParse((c['segundos_fechar'] ?? '5').toString()) ?? 5;
 
+    _naTela = true;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -142,7 +151,7 @@ class CampanhaPopup {
         tamanho: (c['tamanho'] ?? 'retrato').toString(),
         item: c,
       ),
-    );
+    ).whenComplete(() => _naTela = false);
   }
 
   /// Grava um evento (view/clique) com a localização, para os relatórios.

@@ -146,6 +146,11 @@ class _HomePageState extends State<HomePage> {
       return; // este usuário já curtiu
     }
     await prefs.setBool(chave, true);
+    // grava tambem na chave do aparelho: garante que a curtida seja
+    // reconhecida mesmo nos instantes em que o usuario ainda nao carregou
+    final limpa =
+        _musicaAtual.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    await prefs.setBool('curtiu_anon_$limpa', true);
     PlayerService.instancia.votar(cfg.chatUrl, 'like', _musicaAtual);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -160,10 +165,23 @@ class _HomePageState extends State<HomePage> {
   Future<void> _conferirCurtida(String musica) async {
     if (musica.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    // confere o formato novo, o antigo, e tambem a memoria desta sessao
-    final ja = prefs.getBool(_chaveCurtida(musica)) == true ||
-        prefs.getBool(_chaveCurtidaAntiga(musica)) == true ||
-        (musica == _musicaCurtidaMemoria && musica.isNotEmpty);
+    final limpa = musica.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    // ATENCAO: o usuario logado carrega DEPOIS que a tela e criada. Ao trocar
+    // o tema, a tela e recriada e por um instante o id vira 'anon' — se so
+    // conferissemos a chave do id atual, a curtida "sumia". Por isso
+    // conferimos a chave do usuario E a do aparelho (anon), alem do formato
+    // antigo e da memoria desta sessao.
+    final ids = <String>{_idUsuario, 'anon'};
+    var ja = musica == _musicaCurtidaMemoria;
+    if (!ja) {
+      for (final id in ids) {
+        if (prefs.getBool('curtiu_${id}_$limpa') == true ||
+            prefs.getBool('curtiu_${id}_${musica.hashCode}') == true) {
+          ja = true;
+          break;
+        }
+      }
+    }
     if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
   }
 

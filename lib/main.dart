@@ -108,12 +108,13 @@ class TelaPrincipal extends StatefulWidget {
 }
 
 class _TelaPrincipalState extends State<TelaPrincipal>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   static const int _abaTv = 4;
   int _abaAtual = 0;
   final PageController _pageCtrl = PageController();
   Timer? _telaAcesa;
   late final AnimationController _pulso;
+  DateTime? _saiuEm; // quando o app foi para segundo plano
 
   @override
   void initState() {
@@ -125,8 +126,30 @@ class _TelaPrincipalState extends State<TelaPrincipal>
     )..repeat(reverse: true);
     // Mantém a tela acesa por 1 minuto sempre que o app está em uso
     _manterTelaAcesa();
-    // Campanha de abertura: mostra o pop-up assim que o app abre (uma vez/dia)
+    // ATENCAO: o Android costuma MANTER o app vivo em segundo plano. Quando o
+    // ouvinte "fecha" e abre de novo, o initState NAO roda outra vez — por
+    // isso o comercial de abertura nao reaparecia. Observamos o ciclo de vida
+    // para mostrar o banner tambem quando o app volta do segundo plano.
+    WidgetsBinding.instance.addObserver(this);
+    // Campanha de abertura: mostra o pop-up assim que o app abre
     WidgetsBinding.instance.addPostFrameCallback((_) => _mostrarCampanha());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    if (estado == AppLifecycleState.paused ||
+        estado == AppLifecycleState.hidden) {
+      _saiuEm = DateTime.now();
+    } else if (estado == AppLifecycleState.resumed) {
+      final saiu = _saiuEm;
+      _saiuEm = null;
+      // so reexibe se o ouvinte ficou fora por um tempinho (evita repetir o
+      // comercial quando ele apenas troca de app por 2 segundos)
+      if (saiu != null && DateTime.now().difference(saiu).inSeconds >= 12) {
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _mostrarCampanha());
+      }
+    }
   }
 
   /// Exibe o pop-up de campanha na abertura. Se o config.json ainda não
@@ -155,6 +178,7 @@ class _TelaPrincipalState extends State<TelaPrincipal>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pulso.dispose();
     _telaAcesa?.cancel();
     _pageCtrl.dispose();
