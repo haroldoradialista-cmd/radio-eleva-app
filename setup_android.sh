@@ -898,9 +898,39 @@ class DespertadorAudioService : Service() {
         }
         ajustarVolumeSistema()
         abrirTelaAlarme()   // tela cheia sobre o bloqueio
+        dispararTelaCheia() // notificação dedicada com fullScreenIntent
         tocar()
         alca.postDelayed({ stopSelf() }, 20L * 60L * 1000L)
         return START_NOT_STICKY
+    }
+
+    /// Posta uma notificação SEPARADA só para acionar o fullScreenIntent.
+    /// No Android moderno, é o caminho oficial para abrir a tela do alarme
+    /// mesmo com o celular bloqueado (mais confiável que startActivity).
+    private fun dispararTelaCheia() {
+        try {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE)
+                as NotificationManager
+            val telaCheia = PendingIntent.getActivity(
+                this, 77,
+                Intent(this, DespertadorAlarmeActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                              Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val b = if (Build.VERSION.SDK_INT >= 26)
+                Notification.Builder(this, "despertador_som")
+            else
+                @Suppress("DEPRECATION") Notification.Builder(this)
+            b.setContentTitle("⏰ Despertador da Rádio Eleva")
+                .setContentText("Toque para abrir")
+                .setSmallIcon(applicationInfo.icon)
+                .setContentIntent(telaCheia)
+                .setFullScreenIntent(telaCheia, true)
+                .setCategory(Notification.CATEGORY_ALARM)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setAutoCancel(true)
+            nm.notify(4210, b.build())
+        } catch (_: Exception) {}
     }
 
     /// Abre a tela do alarme por cima do bloqueio (como o relógio do celular)
@@ -933,7 +963,7 @@ class DespertadorAudioService : Service() {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
             val atual = am.getStreamVolume(AudioManager.STREAM_ALARM)
-            val minimo = (maximo * 0.30f).toInt().coerceAtLeast(1)
+            val minimo = (maximo * 0.20f).toInt().coerceAtLeast(1)
             // só sobe se estiver ABAIXO do mínimo audível; nunca força para cima
             if (atual < minimo) {
                 am.setStreamVolume(AudioManager.STREAM_ALARM, minimo, 0)
