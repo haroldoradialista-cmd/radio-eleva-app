@@ -26,8 +26,18 @@ class _HomePageState extends State<HomePage> {
   final _pageController = PageController();
   Timer? _timerBanner;
   int _bannerAtual = 0;
-  bool _curtiu = false;
-  String _musicaAtual = '';
+
+  // ATENCAO: trocar o tema (claro/escuro) RECRIA a tela inteira, o que
+  // zerava a curtida e a musica atual. Por isso elas ficam guardadas fora
+  // do State (static), sobrevivendo a reconstrucao. O disco
+  // (SharedPreferences) continua sendo a fonte definitiva da curtida.
+  static bool _curtiuMemoria = false;
+  static String _musicaMemoria = '';
+
+  bool get _curtiu => _curtiuMemoria;
+  set _curtiu(bool v) => _curtiuMemoria = v;
+  String get _musicaAtual => _musicaMemoria;
+  set _musicaAtual(String v) => _musicaMemoria = v;
 
   /// Corrige o nome da música vindo do metadado do stream:
   /// - conserta acentuação corrompida (encoding Latin-1 lido como UTF-8)
@@ -52,6 +62,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    // Ao abrir a tela (inclusive depois de trocar o tema, que a recria),
+    // reconfere no disco se este usuario ja curtiu a musica que esta tocando.
+    _conferirCurtida(_musicaAtual);
     // Quando o usuário troca de conta, reavalia a curtida da música atual
     AuthService.instancia.usuario.addListener(_aoTrocarUsuario);
     _timerBanner = Timer.periodic(Duration(seconds: 5), (_) {
@@ -106,8 +119,17 @@ class _HomePageState extends State<HomePage> {
   String get _idUsuario =>
       AuthService.instancia.usuario.value?.uid ?? 'anon';
 
-  /// Chave da curtida: música + usuário → cada conta tem a sua curtida
-  String _chaveCurtida(String musica) =>
+  /// Chave da curtida: música + usuário → cada conta tem a sua curtida.
+  /// Usa o NOME da musica (estavel entre aberturas do app). Antes usava um
+  /// codigo numerico que podia mudar, fazendo a curtida "sumir".
+  String _chaveCurtida(String musica) {
+    final limpa = musica.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    return 'curtiu_${_idUsuario}_$limpa';
+  }
+
+  /// Formato antigo (codigo numerico) — ainda conferido para nao perder
+  /// as curtidas que ja estavam salvas no aparelho.
+  String _chaveCurtidaAntiga(String musica) =>
       'curtiu_${_idUsuario}_${musica.hashCode}';
 
   Future<void> _curtir(AppConfig cfg) async {
@@ -115,7 +137,10 @@ class _HomePageState extends State<HomePage> {
     setState(() => _curtiu = true);
     final prefs = await SharedPreferences.getInstance();
     final chave = _chaveCurtida(_musicaAtual);
-    if (prefs.getBool(chave) == true) return; // este usuário já curtiu
+    if (prefs.getBool(chave) == true ||
+        prefs.getBool(_chaveCurtidaAntiga(_musicaAtual)) == true) {
+      return; // este usuário já curtiu
+    }
     await prefs.setBool(chave, true);
     PlayerService.instancia.votar(cfg.chatUrl, 'like', _musicaAtual);
     if (mounted) {
@@ -131,7 +156,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> _conferirCurtida(String musica) async {
     if (musica.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    final ja = prefs.getBool(_chaveCurtida(musica)) == true;
+    // confere o formato novo e tambem o antigo (para nao perder curtidas)
+    final ja = prefs.getBool(_chaveCurtida(musica)) == true ||
+        prefs.getBool(_chaveCurtidaAntiga(musica)) == true;
     if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
   }
 
