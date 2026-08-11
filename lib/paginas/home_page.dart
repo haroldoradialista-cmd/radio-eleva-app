@@ -33,6 +33,9 @@ class _HomePageState extends State<HomePage> {
   // (SharedPreferences) continua sendo a fonte definitiva da curtida.
   static bool _curtiuMemoria = false;
   static String _musicaMemoria = '';
+  // guarda QUAL musica foi curtida nesta sessao: garante que o coracao
+  // continue curtido mesmo que a leitura do disco falhe por algum motivo
+  static String _musicaCurtidaMemoria = '';
 
   bool get _curtiu => _curtiuMemoria;
   set _curtiu(bool v) => _curtiuMemoria = v;
@@ -135,6 +138,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _curtir(AppConfig cfg) async {
     if (_curtiu || _musicaAtual.isEmpty) return; // uma curtida por música
     setState(() => _curtiu = true);
+    _musicaCurtidaMemoria = _musicaAtual;
     final prefs = await SharedPreferences.getInstance();
     final chave = _chaveCurtida(_musicaAtual);
     if (prefs.getBool(chave) == true ||
@@ -156,9 +160,10 @@ class _HomePageState extends State<HomePage> {
   Future<void> _conferirCurtida(String musica) async {
     if (musica.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    // confere o formato novo e tambem o antigo (para nao perder curtidas)
+    // confere o formato novo, o antigo, e tambem a memoria desta sessao
     final ja = prefs.getBool(_chaveCurtida(musica)) == true ||
-        prefs.getBool(_chaveCurtidaAntiga(musica)) == true;
+        prefs.getBool(_chaveCurtidaAntiga(musica)) == true ||
+        (musica == _musicaCurtidaMemoria && musica.isNotEmpty);
     if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
   }
 
@@ -555,18 +560,25 @@ class _HomePageState extends State<HomePage> {
                                 builder: (context, snap) {
                                   final titulo = _limparNomeMusica(
                                       snap.data?.info?.title?.trim() ?? '');
-                                  if (titulo != _musicaAtual) {
+                                  // IMPORTANTE: ao trocar o tema a tela e
+                                  // recriada e o stream reenvia VAZIO antes
+                                  // de mandar o nome de novo. Se aceitassemos
+                                  // esse vazio, a musica e a curtida eram
+                                  // zeradas (o coracao "descurtia").
+                                  // Por isso: titulo vazio e IGNORADO.
+                                  if (titulo.isNotEmpty &&
+                                      titulo != _musicaAtual) {
                                     _musicaAtual = titulo;
-                                    // NÃO zera _curtiu aqui: quem decide é o
-                                    // _conferirCurtida, que lê do disco se
-                                    // este usuário já curtiu esta música.
-                                    // (evita "descurtir" ao trocar de tema)
                                     _conferirCurtida(titulo);
                                   }
+                                  // mostra sempre o ultimo nome conhecido
+                                  final mostrar = titulo.isNotEmpty
+                                      ? titulo
+                                      : _musicaAtual;
                                   return Text(
-                                    titulo.isEmpty
+                                    mostrar.isEmpty
                                         ? 'Tocando agora na ${cfg.nome}'
-                                        : titulo,
+                                        : mostrar,
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
