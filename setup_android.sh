@@ -983,7 +983,7 @@ class DespertadorAudioService : Service() {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val maximo = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
             val atual = am.getStreamVolume(AudioManager.STREAM_ALARM)
-            val minimo = (maximo * 0.20f).toInt().coerceAtLeast(1)
+            val minimo = (maximo * 0.50f).toInt().coerceAtLeast(1)
             // só sobe se estiver ABAIXO do mínimo audível; nunca força para cima
             if (atual < minimo) {
                 am.setStreamVolume(AudioManager.STREAM_ALARM, minimo, 0)
@@ -1029,6 +1029,9 @@ class DespertadorAudioService : Service() {
 
     // ===== ÁUDIO =====
     private fun tocar() {
+        // blindagem: se ja existe um player tocando, NAO cria outro
+        // (dois players ao mesmo tempo estouram o volume e matam o fade)
+        if (player != null) return
         try {
             val url = prefs().getString("flutter.desp_stream", null)
                 ?: "https://sv16.hdradios.net:8516/stream"
@@ -1061,16 +1064,20 @@ class DespertadorAudioService : Service() {
     private fun fade() {
         passo = 0
         fadeParado = false
-        val totalPassos = 240         // 240 passos de 250ms = 60 segundos
+        // 360 passos de 250ms = 90 segundos subindo bem devagar ate 80%
+        val totalPassos = 360
         val volumeFinal = 0.80f       // teto de 80%
-        val volumeInicial = 0.02f
+        val volumeInicial = 0.02f     // comeca quase inaudivel
+        volAtual = volumeInicial
+        try { player?.setVolume(volumeInicial, volumeInicial) } catch (_: Exception) {}
         val rampa = object : Runnable {
             override fun run() {
                 // se o ouvinte abaixou o som, para de subir e respeita a escolha
                 if (fadeParado) return
                 passo++
                 val fracao = (passo.toFloat() / totalPassos).coerceIn(0f, 1f)
-                val curva = fracao * fracao   // sobe devagar no inicio
+                // curva suave: bem baixinho no comeco, cresce aos poucos
+                val curva = fracao * fracao
                 val v = volumeInicial + (volumeFinal - volumeInicial) * curva
                 volAtual = v
                 try { player?.setVolume(v, v) } catch (_: Exception) {}

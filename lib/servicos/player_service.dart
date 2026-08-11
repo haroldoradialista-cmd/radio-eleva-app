@@ -69,15 +69,20 @@ class PlayerService {
     }
     sleepRestante.value = minutos;
     sleepSegundos.value = minutos * 60;
+    player.setVolume(1.0); // comeca no volume cheio
     final fimEm = DateTime.now().add(Duration(minutes: minutos));
-    const fadeSegundos = 60; // fade-out suave no último minuto
+    // Fade-out suave nos ultimos 2 minutos (ou na metade do tempo, se o
+    // ouvinte escolher um tempo curto). O som vai baixando devagarinho ate
+    // o silencio, para ele adormecer sem susto.
+    final totalSegundos = minutos * 60;
+    final fadeSegundos = totalSegundos >= 240 ? 120 : (totalSegundos ~/ 2);
     _sleepTimer = Timer.periodic(const Duration(milliseconds: 150), (t) {
       final restanteMs = fimEm.difference(DateTime.now()).inMilliseconds;
       final segs = (restanteMs / 1000).ceil();
       sleepSegundos.value = segs > 0 ? segs : 0;
       sleepRestante.value = (sleepSegundos.value / 60).ceil();
-      // Fade out com curva suave: o som vai sumindo e os últimos
-      // segundos são um sussurro até o silêncio completo.
+      // Curva suave: o som vai sumindo e os ultimos segundos sao um
+      // sussurro ate o silencio completo.
       if (restanteMs <= fadeSegundos * 1000) {
         final f = (restanteMs / (fadeSegundos * 1000)).clamp(0.0, 1.0);
         player.setVolume((f * f).toDouble());

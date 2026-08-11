@@ -145,35 +145,24 @@ class _TelaPrincipalState extends State<TelaPrincipal>
       _saiuEm = null;
       // so reexibe se o ouvinte ficou fora por um tempinho (evita repetir o
       // comercial quando ele apenas troca de app por 2 segundos)
-      if (saiu != null && DateTime.now().difference(saiu).inSeconds >= 12) {
+      if (saiu != null && DateTime.now().difference(saiu).inSeconds >= 5) {
         WidgetsBinding.instance
             .addPostFrameCallback((_) => _mostrarCampanha());
       }
     }
   }
 
-  /// Exibe o pop-up de campanha na abertura. Se o config.json ainda não
-  /// tiver chegado, espera a primeira atualização (com prazo) e tenta.
-  void _mostrarCampanha() {
+  /// Exibe o comercial de abertura. O banner e OBRIGATORIO: se na primeira
+  /// tentativa o config.json (ou a localizacao do ouvinte) ainda nao tiver
+  /// chegado, continua tentando por ate 40 segundos, ate conseguir mostrar.
+  void _mostrarCampanha() async {
     final cfg = ConfigService.instancia.config;
-    bool temCampanha(AppConfig c) =>
-        c.campanha.isNotEmpty || c.campanhas.isNotEmpty;
-    if (temCampanha(cfg.value)) {
-      CampanhaPopup.talvezMostrar(context, cfg.value);
-      return;
+    for (var tentativa = 0; tentativa < 20; tentativa++) {
+      if (!mounted) return;
+      final mostrou = await CampanhaPopup.talvezMostrar(context, cfg.value);
+      if (mostrou) return; // apareceu: missao cumprida
+      await Future.delayed(const Duration(seconds: 2));
     }
-    // ainda não carregou: espera a próxima atualização, no máximo 6s
-    Timer? prazo;
-    void ouvinte() {
-      if (temCampanha(cfg.value) && mounted) {
-        cfg.removeListener(ouvinte);
-        prazo?.cancel();
-        CampanhaPopup.talvezMostrar(context, cfg.value);
-      }
-    }
-
-    cfg.addListener(ouvinte);
-    prazo = Timer(const Duration(seconds: 6), () => cfg.removeListener(ouvinte));
   }
 
   @override

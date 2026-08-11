@@ -78,14 +78,14 @@ class CampanhaPopup {
   /// true enquanto o banner esta na tela (evita abrir dois ao mesmo tempo)
   static bool _naTela = false;
 
-  static Future<void> talvezMostrar(
+  static Future<bool> talvezMostrar(
       BuildContext context, AppConfig cfg) async {
-    if (_naTela) return; // ja tem um banner aberto
+    if (_naTela) return true; // ja tem um banner aberto
     // monta a lista: novas campanhas + a campanha única antiga (compatibilidade)
     final lista = <Map<String, dynamic>>[];
     lista.addAll(cfg.campanhas);
     if (cfg.campanha.isNotEmpty) lista.add(cfg.campanha);
-    if (lista.isEmpty) return;
+    if (lista.isEmpty) return false;
 
     // Se existe alguma campanha REGIONAL, espera a localização carregar antes
     // de decidir (senão o anúncio de outra região pode vazar).
@@ -94,12 +94,12 @@ class CampanhaPopup {
     if (temRegional) {
       await AnalyticsService.garantirLocalizacao();
     }
-    if (!context.mounted) return;
+    if (!context.mounted) return false;
 
     // filtra: no ar E que alcança a região deste ouvinte
     final elegiveis =
         lista.where((c) => _noAr(c) && _alcanca(c)).toList();
-    if (elegiveis.isEmpty) return;
+    if (elegiveis.isEmpty) return false;
 
     // se houver mais de uma, sorteia (divide a exposição entre clientes)
     elegiveis.shuffle();
@@ -122,9 +122,9 @@ class CampanhaPopup {
         final mesmoDia = ultima.year == agora.year &&
             ultima.month == agora.month &&
             ultima.day == agora.day;
-        if (mesmoDia) return;
+        if (mesmoDia) return false;
       } else if (freq == 'hora') {
-        if (agora.difference(ultima).inMinutes < 60) return;
+        if (agora.difference(ultima).inMinutes < 60) return false;
       }
       // qualquer outro valor (inclusive 'sempre' ou vazio) => mostra sempre
       await prefs.setInt(
@@ -134,7 +134,7 @@ class CampanhaPopup {
     // registra a VISUALIZAÇÃO (impressão) para o relatório
     _registrarEvento(cfg, assinatura, 'view');
 
-    if (!context.mounted) return;
+    if (!context.mounted) return false;
     final segundos = int.tryParse((c['segundos_fechar'] ?? '5').toString()) ?? 5;
 
     _naTela = true;
@@ -152,6 +152,7 @@ class CampanhaPopup {
         item: c,
       ),
     ).whenComplete(() => _naTela = false);
+    return true;
   }
 
   /// Grava um evento (view/clique) com a localização, para os relatórios.
