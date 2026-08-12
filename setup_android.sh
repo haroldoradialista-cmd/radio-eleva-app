@@ -572,9 +572,14 @@ class DespertadorAlarmeActivity : Activity() {
         ola.setPadding(0, dp(6), 0, dp(20))
         raiz.addView(ola)
         raiz.addView(botao("\u23F9\uFE0F  PARAR O DESPERTADOR", "#7a1b1b") {
-            enviar("PARAR"); finish()
+            enviar("PARAR"); limparNotificacoes(); finish()
         })
         raiz.addView(botao("\uD83D\uDCFB  ABRIR A RADIO ELEVA", "#1D14A8") {
+            prepararVolumeDoApp()
+            // para o som do alarme ANTES de abrir o app: senao o alarme e a
+            // radio tocariam ao mesmo tempo (audio duplicado)
+            enviar("PARAR")
+            limparNotificacoes()
             try {
                 val i = Intent(this, MainActivity::class.java)
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -653,7 +658,7 @@ class DespertadorAlarmeActivity : Activity() {
             val adiar = botao(
                 "😴  ADIAR 5 MINUTOS\n(" + restam + " restante" + (if (restam == 1) "" else "s") + ")",
                 "#1B7A4B") {
-                enviar("SONECA"); finish()
+                enviar("SONECA"); limparNotificacoes(); finish()
             }
             adiar.textSize = 22f
             adiar.setPadding(dp(16), dp(28), dp(16), dp(28))
@@ -669,10 +674,15 @@ class DespertadorAlarmeActivity : Activity() {
         }
 
         raiz.addView(botao("⏹️  PARAR O DESPERTADOR", "#7a1b1b") {
-            enviar("PARAR"); finish()
+            enviar("PARAR"); limparNotificacoes(); finish()
         })
 
         raiz.addView(botao("📻  ABRIR A RÁDIO ELEVA", "#1D14A8") {
+            prepararVolumeDoApp()
+            // para o som do alarme ANTES de abrir o app: senao o alarme e a
+            // radio tocariam ao mesmo tempo (audio duplicado)
+            enviar("PARAR")
+            limparNotificacoes()
             try {
                 val i = Intent(this, MainActivity::class.java)
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -681,6 +691,37 @@ class DespertadorAlarmeActivity : Activity() {
             finish()
         })
         return raiz
+    }
+
+    /// Apaga as notificacoes do despertador da barra do celular.
+    /// Sem isso a notificacao ficava la depois de PARAR / ABRIR APP, e um
+    /// toque acidental nela reabria o alarme, causando audio duplicado.
+    private fun limparNotificacoes() {
+        try {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE)
+                as android.app.NotificationManager
+            nm.cancel(4202)   // notificacao do servico tocando
+            nm.cancel(4203)   // aviso de soneca
+            nm.cancel(4210)   // notificacao de tela cheia
+        } catch (_: Exception) {}
+    }
+
+    /// Prepara o som ANTES de abrir o app.
+    /// O despertador toca no canal de ALARME, mas a radio dentro do app toca
+    /// no canal de MIDIA. Se o ouvinte deixou a midia no zero na noite
+    /// anterior, o app abriria MUDO. Por isso deixamos a midia no mesmo
+    /// nivel em que o despertador o acordou (80%). Depois ele abaixa se
+    /// quiser — so subimos quando esta abaixo, nunca diminuimos.
+    private fun prepararVolumeDoApp() {
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val maximo = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            val alvo = (maximo * 0.80f).toInt().coerceAtLeast(1)
+            val atual = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+            if (atual < alvo) {
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, alvo, 0)
+            }
+        } catch (_: Exception) {}
     }
 
     override fun onDestroy() {
@@ -1150,6 +1191,13 @@ class DespertadorAudioService : Service() {
             player?.release()
         } catch (_: Exception) {}
         player = null
+        // garante que nenhuma notificacao do despertador fique na barra
+        try {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE)
+                as NotificationManager
+            nm.cancel(ID_AVISO)
+            nm.cancel(4210)
+        } catch (_: Exception) {}
         alca.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
