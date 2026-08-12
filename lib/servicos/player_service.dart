@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -89,12 +91,36 @@ class PlayerService {
       }
       if (restanteMs <= 0) {
         t.cancel();
-        player.setVolume(0.0); // silêncio total antes de parar
-        player.stop();
-        player.setVolume(1.0); // volume restaurado para a próxima vez
-        _carregado = false;
+        sleepRestante.value = 0;
+        sleepSegundos.value = 0;
+        _encerrarParaDormir();
       }
     });
+  }
+
+  /// Fim do sleep timer: silencia, para a radio e FECHA o aplicativo.
+  /// Isso e proposital — se o app ficasse aberto a noite toda, no dia
+  /// seguinte (depois do despertador) o ouvinte poderia apertar o play da
+  /// sessao antiga e ouvir dois audios ao mesmo tempo.
+  Future<void> _encerrarParaDormir() async {
+    try {
+      await player.setVolume(0.0); // silencio total antes de parar
+      await player.stop();
+      _carregado = false;
+      await player.setVolume(1.0); // deixa pronto para a proxima vez
+    } catch (_) {}
+    // da um instante para o som e a notificacao encerrarem de verdade
+    await Future.delayed(const Duration(milliseconds: 600));
+    try {
+      await SystemNavigator.pop(); // fecha o app pelo caminho normal
+    } catch (_) {}
+    // reforco: em alguns celulares o pop apenas manda para segundo plano.
+    // Como o ouvinte esta dormindo, encerramos de vez para nao sobrar
+    // nenhuma sessao antiga tocando no dia seguinte.
+    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      exit(0);
+    } catch (_) {}
   }
 
   Future<void> carregar(String streamUrl, String nome, String logoUrl) async {

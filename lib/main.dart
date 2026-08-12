@@ -143,6 +143,10 @@ class _TelaPrincipalState extends State<TelaPrincipal>
     } else if (estado == AppLifecycleState.resumed) {
       final saiu = _saiuEm;
       _saiuEm = null;
+      // reagenda o proximo despertador sempre que o app volta: garante que
+      // os alarmes que se repetem continuem valendo nos dias seguintes
+      DespertadoresLista.carregar()
+          .then((lista) => DespertadoresLista.reagendarProximo(lista));
       // so reexibe se o ouvinte ficou fora por um tempinho (evita repetir o
       // comercial quando ele apenas troca de app por 2 segundos)
       if (saiu != null && DateTime.now().difference(saiu).inSeconds >= 5) {
