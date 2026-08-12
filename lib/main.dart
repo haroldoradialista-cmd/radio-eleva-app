@@ -147,12 +147,12 @@ class _TelaPrincipalState extends State<TelaPrincipal>
       // os alarmes que se repetem continuem valendo nos dias seguintes
       DespertadoresLista.carregar()
           .then((lista) => DespertadoresLista.reagendarProximo(lista));
-      // so reexibe se o ouvinte ficou fora por um tempinho (evita repetir o
-      // comercial quando ele apenas troca de app por 2 segundos)
-      if (saiu != null && DateTime.now().difference(saiu).inSeconds >= 5) {
-        WidgetsBinding.instance
-            .addPostFrameCallback((_) => _mostrarCampanha());
-      }
+      // O comercial de abertura NAO reaparece quando o app estava apenas
+      // minimizado/escondido (o ouvinte continua ouvindo a radio). Ele so
+      // volta quando o app e FECHADO e aberto de novo — nesse caso o app
+      // inicia do zero e o comercial aparece pelo initState.
+      // (a variavel 'saiu' fica so para registro do momento da saida)
+      if (saiu == null) {}
     }
   }
 

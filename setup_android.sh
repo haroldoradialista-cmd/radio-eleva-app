@@ -713,20 +713,14 @@ class DespertadorAlarmeActivity : Activity() {
 
     /// Prepara o som ANTES de abrir o app.
     /// O despertador toca no canal de ALARME e a radio dentro do app toca no
-    /// canal de MIDIA (controles separados). Aqui copiamos a PROPORCAO do
-    /// volume do alarme daquele ouvinte para a midia: quem acordou com 40%
-    /// abre o app com 40%; quem acordou com 10%, abre com 10%. Assim o
-    /// volume respeita o que cada pessoa escolheu, e depois ela ajusta.
+    /// canal de MIDIA (controles separados). Deixamos a midia em 50% para o
+    /// app abrir num volume confortavel — nem mudo (se o ouvinte tinha
+    /// zerado o som na noite anterior) nem alto demais. Depois ele ajusta.
     private fun prepararVolumeDoApp() {
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val maxAlarme = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            val atualAlarme = am.getStreamVolume(AudioManager.STREAM_ALARM)
-            if (maxAlarme <= 0) return
-            val proporcao = atualAlarme.toFloat() / maxAlarme.toFloat()
             val maxMidia = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            // mantem audivel: nunca deixa no zero, senao o app abriria mudo
-            val alvo = (maxMidia * proporcao).toInt().coerceAtLeast(1)
+            val alvo = (maxMidia * 0.50f).toInt().coerceAtLeast(1)
             am.setStreamVolume(AudioManager.STREAM_MUSIC, alvo, 0)
         } catch (_: Exception) {}
     }

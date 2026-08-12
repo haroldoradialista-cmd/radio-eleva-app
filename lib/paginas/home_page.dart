@@ -30,7 +30,6 @@ class _HomePageState extends State<HomePage> {
   // ATENCAO: trocar o tema (claro/escuro) RECRIA a tela inteira, o que
   // zerava a curtida e a musica atual. Por isso elas ficam guardadas fora
   // do State (static), sobrevivendo a reconstrucao. O disco
-  // (SharedPreferences) continua sendo a fonte definitiva da curtida.
   static bool _curtiuMemoria = false;
   static String _musicaMemoria = '';
   // guarda QUAL musica foi curtida nesta sessao: garante que o coracao
@@ -122,35 +121,13 @@ class _HomePageState extends State<HomePage> {
   String get _idUsuario =>
       AuthService.instancia.usuario.value?.uid ?? 'anon';
 
-  /// Chave da curtida: música + usuário → cada conta tem a sua curtida.
-  /// Usa o NOME da musica (estavel entre aberturas do app). Antes usava um
-  /// codigo numerico que podia mudar, fazendo a curtida "sumir".
-  String _chaveCurtida(String musica) {
-    final limpa = musica.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-    return 'curtiu_${_idUsuario}_$limpa';
-  }
-
-  /// Formato antigo (codigo numerico) — ainda conferido para nao perder
-  /// as curtidas que ja estavam salvas no aparelho.
-  String _chaveCurtidaAntiga(String musica) =>
-      'curtiu_${_idUsuario}_${musica.hashCode}';
 
   Future<void> _curtir(AppConfig cfg) async {
-    if (_curtiu || _musicaAtual.isEmpty) return; // uma curtida por música
+    // uma curtida por EXECUCAO: enquanto esta musica estiver tocando fica
+    // travado; quando ela voltar mais tarde, o ouvinte pode curtir de novo
+    if (_curtiu || _musicaAtual.isEmpty) return;
     setState(() => _curtiu = true);
     _musicaCurtidaMemoria = _musicaAtual;
-    final prefs = await SharedPreferences.getInstance();
-    final chave = _chaveCurtida(_musicaAtual);
-    if (prefs.getBool(chave) == true ||
-        prefs.getBool(_chaveCurtidaAntiga(_musicaAtual)) == true) {
-      return; // este usuário já curtiu
-    }
-    await prefs.setBool(chave, true);
-    // grava tambem na chave do aparelho: garante que a curtida seja
-    // reconhecida mesmo nos instantes em que o usuario ainda nao carregou
-    final limpa =
-        _musicaAtual.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-    await prefs.setBool('curtiu_anon_$limpa', true);
     PlayerService.instancia.votar(cfg.chatUrl, 'like', _musicaAtual);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -162,26 +139,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Ao trocar de música (ou de usuário), verifica se ESTE usuário já curtiu
+  /// A curtida vale por EXECUCAO da musica, nao para sempre.
+  /// - Enquanto a MESMA musica estiver tocando, o coracao continua curtido
+  ///   (inclusive ao trocar entre o modo claro e o escuro, que recria a tela).
+  /// - Quando a musica MUDA, a curtida e liberada. Se a mesma musica voltar
+  ///   mais tarde na programacao, o ouvinte pode curtir de novo.
   Future<void> _conferirCurtida(String musica) async {
     if (musica.isEmpty) return;
-    final prefs = await SharedPreferences.getInstance();
-    final limpa = musica.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-    // ATENCAO: o usuario logado carrega DEPOIS que a tela e criada. Ao trocar
-    // o tema, a tela e recriada e por um instante o id vira 'anon' — se so
-    // conferissemos a chave do id atual, a curtida "sumia". Por isso
-    // conferimos a chave do usuario E a do aparelho (anon), alem do formato
-    // antigo e da memoria desta sessao.
-    final ids = <String>{_idUsuario, 'anon'};
-    var ja = musica == _musicaCurtidaMemoria;
-    if (!ja) {
-      for (final id in ids) {
-        if (prefs.getBool('curtiu_${id}_$limpa') == true ||
-            prefs.getBool('curtiu_${id}_${musica.hashCode}') == true) {
-          ja = true;
-          break;
-        }
-      }
-    }
+    final ja = musica == _musicaCurtidaMemoria;
     if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
   }
 
@@ -241,6 +206,27 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.pop(ctx2);
                 _enviarAviso(cfg, musica, 'letra e capa');
+              },
+            ),
+            Divider(color: CoresEleva.dourado.withOpacity(0.25), height: 1),
+            ListTile(
+              leading: Icon(Icons.hide_image_rounded,
+                  color: Colors.lightBlueAccent),
+              title: Text('NÃO APARECE A CAPA',
+                  style: TextStyle(color: CoresEleva.branco)),
+              onTap: () {
+                Navigator.pop(ctx2);
+                _enviarAviso(cfg, musica, 'capa nao aparece');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.search_off_rounded,
+                  color: Colors.lightBlueAccent),
+              title: Text('NÃO APARECE A LETRA',
+                  style: TextStyle(color: CoresEleva.branco)),
+              onTap: () {
+                Navigator.pop(ctx2);
+                _enviarAviso(cfg, musica, 'letra nao aparece');
               },
             ),
             SizedBox(height: 8),
@@ -680,6 +666,10 @@ class _HomePageState extends State<HomePage> {
                                   if (titulo.isNotEmpty &&
                                       titulo != _musicaAtual) {
                                     _musicaAtual = titulo;
+                                    // musica NOVA: libera o coracao. Se a
+                                    // mesma musica voltar mais tarde, o
+                                    // ouvinte podera curtir outra vez.
+                                    _musicaCurtidaMemoria = '';
                                     _conferirCurtida(titulo);
                                   }
                                   // mostra sempre o ultimo nome conhecido
