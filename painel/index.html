@@ -241,6 +241,7 @@
     <button class="aba" data-aba="promos" onclick="trocarAba(this)">🎁 Promoções</button>
     <button class="aba" data-aba="textos" onclick="trocarAba(this)">⚙️ Rádio & Redes</button>
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
+    <button class="aba" data-aba="letras" onclick="trocarAba(this)">🎤 Letras/Capas</button>
     <button class="aba admin-only" data-aba="usuarios" onclick="trocarAba(this)">👥 Usuários</button>
   </div>
 
@@ -726,6 +727,16 @@
     </section>
 
     <!-- VOTOS -->
+    <section id="sec-letras" class="oculto">
+      <div class="cartao">
+        <h2>🎤 Letras e capas reportadas</h2>
+        <p class="rotulo-secao">Quando um ouvinte toca na bandeirinha 🚩 no topo da letra, o aviso chega aqui. Use para saber quais músicas estão com letra ou capa trocada.</p>
+        <button class="botao" onclick="carregarReportes()">🔄 Atualizar lista</button>
+        <button class="botao" style="background:#7a1b1b" onclick="limparReportes()">🗑️ Limpar tudo</button>
+        <div id="listaReportes" style="margin-top:14px"></div>
+      </div>
+    </section>
+
     <section id="sec-votos" class="oculto">
       <div class="cartao">
         <h2>📊 Relatório de pedidos musicais</h2>
@@ -942,10 +953,11 @@ async function lerMidia(pref, imagemAtual, videoAtual){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios'].forEach(s=>
+  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
   try{ sessionStorage.setItem('painel_aba', botao.dataset.aba); }catch(_){}
   if(botao.dataset.aba==='usuarios') carregarUsuarios();
+  if(botao.dataset.aba==='letras') carregarReportes();
 }
 
 // ================== BANNERS ==================
@@ -3465,6 +3477,49 @@ function aplicarPerfilUsuario() {
   // ir para a primeira aba permitida
   const primeira = document.querySelector('.aba[data-aba]:not([style*="none"])');
   if (primeira) primeira.click();
+}
+
+/// Lista os avisos de letra/capa errada enviados pelos ouvintes
+async function carregarReportes(){
+  const el = document.getElementById('listaReportes');
+  if(!el) return;
+  el.innerHTML = '<p class="rotulo-secao">Carregando...</p>';
+  try{
+    const r = await fetch(`${RTDB}/letras_reportadas.json?t=${Date.now()}`);
+    const d = await r.json() || {};
+    if(d && d.error){
+      el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">O Firebase bloqueou a leitura. Libere o nó <b>letras_reportadas</b> nas Regras.</p>';
+      return;
+    }
+    const itens = Object.values(d);
+    if(!itens.length){ el.innerHTML = '<p class="rotulo-secao">Nenhum aviso até agora. 👍</p>'; return; }
+    // agrupa por música + tipo, contando quantos avisaram
+    const mapa = {};
+    itens.forEach(i=>{
+      const k = (i.musica||'?') + ' || ' + (i.tipo||'?');
+      if(!mapa[k]) mapa[k] = { musica:i.musica||'?', tipo:i.tipo||'?', n:0, ultimo:i.quando||'' };
+      mapa[k].n++;
+      if((i.quando||'') > mapa[k].ultimo) mapa[k].ultimo = i.quando||'';
+    });
+    const lista = Object.values(mapa).sort((a,b)=> b.n - a.n);
+    el.innerHTML = lista.map(x=>{
+      const q = x.ultimo ? new Date(x.ultimo).toLocaleString('pt-BR') : '';
+      return `<div class="usuario-card">
+        <h4>${(x.musica||'').replace(/</g,'&lt;')}</h4>
+        <div class="abas-perm">Problema: <b>${x.tipo}</b> • ${x.n} aviso(s) • último: ${q}</div>
+      </div>`;
+    }).join('');
+  }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+
+/// Apaga todos os avisos já conferidos
+async function limparReportes(){
+  if(!confirm('Apagar TODOS os avisos de letra/capa? Isso não pode ser desfeito.')) return;
+  try{
+    await fetch(`${RTDB}/letras_reportadas.json`, { method:'DELETE' });
+    avisar('Avisos apagados. ✅');
+    carregarReportes();
+  }catch(_){ avisar('Não foi possível apagar.', true); }
 }
 
 /// Carregar e exibir a lista de usuários cadastrados

@@ -185,6 +185,93 @@ class _HomePageState extends State<HomePage> {
     if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
   }
 
+  /// Deixa o ouvinte avisar que a LETRA ou a CAPA nao batem com a musica.
+  /// O aviso vai para o painel da radio (no  letras_reportadas), para o
+  /// Haroldo conferir e corrigir.
+  void _reportarProblema(BuildContext ctx, AppConfig cfg, String musica) {
+    if (musica.isEmpty) return;
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: CoresEleva.azulProfundo,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx2) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 14),
+            Text('O que está errado?',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: CoresEleva.dourado)),
+            SizedBox(height: 4),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(musica,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 12.5, color: CoresEleva.textoFraco)),
+            ),
+            SizedBox(height: 10),
+            ListTile(
+              leading: Icon(Icons.lyrics_rounded, color: Colors.orangeAccent),
+              title: Text('A LETRA não é desta música',
+                  style: TextStyle(color: CoresEleva.branco)),
+              onTap: () {
+                Navigator.pop(ctx2);
+                _enviarAviso(cfg, musica, 'letra');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.album_rounded, color: Colors.orangeAccent),
+              title: Text('A CAPA não é desta música',
+                  style: TextStyle(color: CoresEleva.branco)),
+              onTap: () {
+                Navigator.pop(ctx2);
+                _enviarAviso(cfg, musica, 'capa');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.report_rounded, color: Colors.orangeAccent),
+              title: Text('As DUAS estão erradas',
+                  style: TextStyle(color: CoresEleva.branco)),
+              onTap: () {
+                Navigator.pop(ctx2);
+                _enviarAviso(cfg, musica, 'letra e capa');
+              },
+            ),
+            SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Grava o aviso no Firebase (no  letras_reportadas) para o painel.
+  Future<void> _enviarAviso(
+      AppConfig cfg, String musica, String tipo) async {
+    if (cfg.chatUrl.isEmpty) return;
+    final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
+    try {
+      await http.post(Uri.parse('$base/letras_reportadas.json'),
+          body: jsonEncode({
+            'musica': musica,
+            'tipo': tipo,
+            'quando': DateTime.now().toIso8601String(),
+          }));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: Duration(seconds: 3),
+          backgroundColor: CoresEleva.verdeEscuro,
+          content: Text('Obrigado! Vamos conferir e corrigir. 🙏'),
+        ));
+      }
+    } catch (_) {}
+  }
+
   /// Abre um painel deslizante com a letra da música tocando agora
   void _abrirLetra(BuildContext context, AppConfig cfg) {
     final musica = _musicaAtual.trim();
@@ -244,6 +331,12 @@ class _HomePageState extends State<HomePage> {
                                 fontWeight: FontWeight.w900,
                                 color: CoresEleva.dourado),
                           ),
+                        ),
+                        IconButton(
+                          tooltip: 'Avisar que a letra ou a capa está errada',
+                          icon: Icon(Icons.flag_rounded,
+                              color: Colors.orangeAccent, size: 21),
+                          onPressed: () => _reportarProblema(ctx, cfg, musica),
                         ),
                         IconButton(
                           icon: Icon(Icons.close_rounded,

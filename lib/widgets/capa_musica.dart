@@ -75,8 +75,12 @@ class _CapaMusicaState extends State<CapaMusica> {
         if (artL.isNotEmpty) {'termo': '$artL $titL', 'pais': 'br', 'soTitulo': false},
         if (artL.isNotEmpty) {'termo': '$artL $titL', 'pais': 'us', 'soTitulo': false},
         if (artL.isNotEmpty) {'termo': '$titL $artL', 'pais': 'br', 'soTitulo': false},
-        {'termo': titL, 'pais': 'br', 'soTitulo': true},
-        {'termo': titL, 'pais': 'us', 'soTitulo': true},
+        // ATENCAO: buscar SO pelo titulo trazia capas de outro genero
+        // (ex.: uma musica sertaneja com o mesmo nome de um louvor).
+        // Por isso, so aceitamos busca por titulo quando NAO sabemos o
+        // artista — se sabemos, o artista TEM que conferir.
+        if (artL.isEmpty) {'termo': titL, 'pais': 'br', 'soTitulo': true},
+        if (artL.isEmpty) {'termo': titL, 'pais': 'us', 'soTitulo': true},
       ];
 
       String? url;

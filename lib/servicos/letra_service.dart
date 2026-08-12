@@ -246,9 +246,10 @@ class LetraService {
       }
     }
 
-    // 6) último reforço: LRCLIB só pelo título (aceita se o título conferir);
-    //    ajuda quando o artista vem bagunçado no metadado do streaming.
-    if (tL.isNotEmpty) {
+    // 6) último reforço: LRCLIB só pelo título — SOMENTE quando o artista
+    //    nao veio no metadado. Aceitar so pelo titulo com artista conhecido
+    //    trazia LETRA DE OUTRA MUSICA de mesmo nome (de outro genero).
+    if (tL.isNotEmpty && aL.isEmpty) {
       final letra = await _lrclibBusca(tL, '', tL);
       if (letra != null) {
         _cache[chave] = letra;

@@ -453,6 +453,11 @@ class DespertadorAlarmeActivity : Activity() {
 
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
+        // a tela do despertador fica SEMPRE em pe (nao gira com o celular)
+        try {
+            requestedOrientation =
+                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } catch (_: Exception) {}
         // aparecer com o celular bloqueado e acender a tela
         if (Build.VERSION.SDK_INT >= 27) {
             setShowWhenLocked(true)
@@ -707,20 +712,22 @@ class DespertadorAlarmeActivity : Activity() {
     }
 
     /// Prepara o som ANTES de abrir o app.
-    /// O despertador toca no canal de ALARME, mas a radio dentro do app toca
-    /// no canal de MIDIA. Se o ouvinte deixou a midia no zero na noite
-    /// anterior, o app abriria MUDO. Por isso deixamos a midia no mesmo
-    /// nivel em que o despertador o acordou (80%). Depois ele abaixa se
-    /// quiser — so subimos quando esta abaixo, nunca diminuimos.
+    /// O despertador toca no canal de ALARME e a radio dentro do app toca no
+    /// canal de MIDIA (controles separados). Aqui copiamos a PROPORCAO do
+    /// volume do alarme daquele ouvinte para a midia: quem acordou com 40%
+    /// abre o app com 40%; quem acordou com 10%, abre com 10%. Assim o
+    /// volume respeita o que cada pessoa escolheu, e depois ela ajusta.
     private fun prepararVolumeDoApp() {
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val maximo = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            val alvo = (maximo * 0.80f).toInt().coerceAtLeast(1)
-            val atual = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-            if (atual < alvo) {
-                am.setStreamVolume(AudioManager.STREAM_MUSIC, alvo, 0)
-            }
+            val maxAlarme = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            val atualAlarme = am.getStreamVolume(AudioManager.STREAM_ALARM)
+            if (maxAlarme <= 0) return
+            val proporcao = atualAlarme.toFloat() / maxAlarme.toFloat()
+            val maxMidia = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            // mantem audivel: nunca deixa no zero, senao o app abriria mudo
+            val alvo = (maxMidia * proporcao).toInt().coerceAtLeast(1)
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, alvo, 0)
         } catch (_: Exception) {}
     }
 
