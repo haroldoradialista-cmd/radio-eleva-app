@@ -748,7 +748,24 @@
         <button class="botao" style="background:#1a7a4b" onclick="corrigirTodas()">🤖 Corrigir todas automaticamente</button>
         <button class="botao" style="background:#7a1b1b" onclick="limparReportes()">🗑️ Limpar tudo</button>
         <div id="logRobo" style="margin-top:12px;display:none"></div>
-        <div id="listaReportes" style="margin-top:14px"></div>
+
+        <div style="display:flex;gap:8px;margin:16px 0 4px;flex-wrap:wrap">
+          <button class="botao mini" id="subPendentes" onclick="verPendentes()"
+            style="background:var(--verde2);border:1px solid var(--ouro)">⏳ A resolver</button>
+          <button class="botao mini" id="subResolvidas" onclick="verResolvidas()"
+            style="background:#2a2560">✅ Resolvidas</button>
+        </div>
+
+        <div id="areaPendentes">
+          <div id="listaReportes" style="margin-top:10px"></div>
+        </div>
+
+        <div id="areaResolvidas" style="display:none">
+          <p class="rotulo-secao">Músicas que já têm letra e/ou capa corrigidas. O app usa esta versão para todos os ouvintes.</p>
+          <input id="buscaResolvidas" placeholder="🔎 Buscar por artista ou título..."
+                 oninput="filtrarResolvidas()" style="margin-bottom:10px">
+          <div id="listaResolvidas"></div>
+        </div>
       </div>
     </section>
 
@@ -3495,6 +3512,119 @@ function aplicarPerfilUsuario() {
 }
 
 /// Lista os avisos de letra/capa errada enviados pelos ouvintes
+/// ====== ARQUIVO DE RESOLVIDAS (base de correcoes da radio) ======
+let _resolvidasLista = [];
+let _resolvidasPagina = 1;
+let _resolvidasFiltro = '';
+
+function verPendentes(){
+  document.getElementById('areaPendentes').style.display = '';
+  document.getElementById('areaResolvidas').style.display = 'none';
+  document.getElementById('subPendentes').style.background = 'var(--verde2)';
+  document.getElementById('subPendentes').style.border = '1px solid var(--ouro)';
+  document.getElementById('subResolvidas').style.background = '#2a2560';
+  document.getElementById('subResolvidas').style.border = 'none';
+}
+
+function verResolvidas(){
+  document.getElementById('areaPendentes').style.display = 'none';
+  document.getElementById('areaResolvidas').style.display = '';
+  document.getElementById('subResolvidas').style.background = 'var(--verde2)';
+  document.getElementById('subResolvidas').style.border = '1px solid var(--ouro)';
+  document.getElementById('subPendentes').style.background = '#2a2560';
+  document.getElementById('subPendentes').style.border = 'none';
+  carregarResolvidas();
+}
+
+async function carregarResolvidas(){
+  const el = document.getElementById('listaResolvidas');
+  if(!el) return;
+  el.innerHTML = '<p class="rotulo-secao">Carregando...</p>';
+  try{
+    const r = await fetch(`${RTDB}/correcoes.json?t=${Date.now()}`);
+    const d = await r.json() || {};
+    if(d && d.error){
+      el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">O Firebase bloqueou a leitura do nó <b>correcoes</b>.</p>';
+      return;
+    }
+    _resolvidasLista = Object.entries(d).map(([id, x]) => ({
+      id,
+      musica: (x && x.musica) || id,
+      temLetra: !!(x && x.letra),
+      temCapa : !!(x && x.capa),
+      quando  : (x && x.quando) || ''
+    })).sort((a,b)=> (b.quando||'').localeCompare(a.quando||''));
+    _resolvidasPagina = 1;
+    desenharResolvidas();
+  }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+
+function filtrarResolvidas(){
+  _resolvidasFiltro = (document.getElementById('buscaResolvidas').value||'')
+    .trim().toLowerCase();
+  _resolvidasPagina = 1;
+  desenharResolvidas();
+}
+
+function desenharResolvidas(){
+  const el = document.getElementById('listaResolvidas');
+  if(!el) return;
+  const f = _resolvidasFiltro;
+  const filtrada = f
+    ? _resolvidasLista.filter(x => (x.musica||'').toLowerCase().includes(f))
+    : _resolvidasLista;
+  const total = filtrada.length;
+  if(!total){
+    el.innerHTML = f
+      ? `<p class="rotulo-secao">Nada encontrado para "<b>${f}</b>". Essa música ainda NÃO foi resolvida.</p>`
+      : '<p class="rotulo-secao">Nenhuma música corrigida ainda.</p>';
+    return;
+  }
+  const POR = 5;
+  const paginas = Math.ceil(total / POR);
+  if(_resolvidasPagina > paginas) _resolvidasPagina = paginas;
+  const ini = (_resolvidasPagina - 1) * POR;
+  const fatia = filtrada.slice(ini, ini + POR);
+
+  const cards = fatia.map(x=>{
+    const q = x.quando ? new Date(x.quando).toLocaleString('pt-BR') : '';
+    const mus = (x.musica||'').replace(/'/g,"\\'");
+    const selos = (x.temLetra?'📝 letra ':'') + (x.temCapa?'🖼️ capa':'');
+    return `<div class="usuario-card" style="border-left-color:#3ad13a">
+      <h4>${(x.musica||'').replace(/</g,'&lt;')}</h4>
+      <div class="abas-perm">Corrigido: <b>${selos||'—'}</b>${q?' • '+q:''}</div>
+      <div class="acoes">
+        <button class="botao mini" onclick="abrirCorrecao('${mus}')">✏️ Editar</button>
+        <button class="botao mini perigo" onclick="excluirResolvida('${x.id}')">🗑️ Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  let nav = '';
+  if(paginas > 1){
+    let botoes = '';
+    for(let i=1;i<=paginas;i++){
+      const ativa = (i === _resolvidasPagina);
+      botoes += `<button class="botao mini" onclick="irPaginaResolvidas(${i})"
+        style="min-width:34px;${ativa?'background:var(--verde2);border:1px solid var(--ouro)':'background:#2a2560'}">${i}</button>`;
+    }
+    nav = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center">
+      <span class="rotulo-secao" style="margin:0">Página:</span>${botoes}</div>`;
+  }
+  el.innerHTML = `<p class="rotulo-secao">${total} música(s) resolvida(s) • mostrando ${ini+1}–${Math.min(ini+POR,total)}</p>` + cards + nav;
+}
+
+function irPaginaResolvidas(n){ _resolvidasPagina = n; desenharResolvidas(); }
+
+async function excluirResolvida(id){
+  if(!confirm('Apagar esta correção? O app voltará a buscar na internet.')) return;
+  try{
+    await fetch(`${RTDB}/correcoes/${id}.json`, { method:'DELETE' });
+    avisar('Correção removida.');
+    carregarResolvidas();
+  }catch(_){ avisar('Não foi possível apagar.', true); }
+}
+
 let _reportesLista = [];   // fila completa (todas as paginas)
 let _reportesPagina = 1;   // pagina em exibicao
 const _REPORTES_POR_PAGINA = 5;
@@ -3770,6 +3900,7 @@ async function corrigirTodas(){
          Sem resultado (precisam de correção manual): <b>${nada}</b></p>
        </div>` + linhas.join('');
     desenharReportes(); // a fila agora mostra só o que ele NÃO conseguiu
+    _resolvidasLista = []; // forca recarregar o arquivo na proxima visita
   }catch(e){
     painelLog.innerHTML = '<p style="color:#ff6b6b">Erro ao rodar o robô.</p>';
   }
@@ -3808,6 +3939,8 @@ async function salvarCorrecao(){
     }
     avisar('Correção salva! O app já vai usar. ✅');
     document.getElementById('formCorrecao').style.display='none';
+    // resolvida: sai da fila de pendentes e entra no arquivo
+    try{ await _apagarAvisosDe(musica); desenharReportes(); }catch(_){}
   }catch(_){ avisar('Não foi possível salvar.', true); }
 }
 
