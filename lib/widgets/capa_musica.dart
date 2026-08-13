@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:just_audio/just_audio.dart';
 import '../servicos/letra_service.dart';
 import '../servicos/player_service.dart';
@@ -9,6 +10,26 @@ import '../tema.dart';
 
 /// Capa quadrada da música que está tocando (busca automática pela
 /// identificação enviada pelo streaming). Some quando não encontra.
+/// Memoria de capas reprovadas pelos ouvintes: a cada aviso de "capa
+/// errada", o app pula a fonte que errou e tenta a proxima na vez seguinte.
+class CapaRejeicao {
+  static Future<int> quantas(String musica) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getInt('capa_rej_${musica.trim().toLowerCase()}') ?? 0;
+    } catch (_) {}
+    return 0;
+  }
+
+  static Future<void> marcarErrada(String musica) async {
+    final k = 'capa_rej_${musica.trim().toLowerCase()}';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(k, (prefs.getInt(k) ?? 0) + 1);
+    } catch (_) {}
+  }
+}
+
 class CapaMusica extends StatefulWidget {
   final String? reserva; // foto do programa no ar
   final double tamanho;
@@ -90,11 +111,15 @@ class _CapaMusicaState extends State<CapaMusica> {
         if (mounted) setState(() => _capaUrl = url);
         return;
       }
+      // fontes ja reprovadas pelos ouvintes nesta musica: pula e tenta outra
+      var pular = await CapaRejeicao.quantas('$artL $titL');
       for (final t in tentativas) {
         url = await _tentarItunes(
             t['termo'] as String, t['pais'] as String, artL, titL,
             soTitulo: t['soTitulo'] as bool);
-        if (url != null) break;
+        if (url != null) {
+          if (pular > 0) { pular--; url = null; } else { break; }
+        }
       }
       // se o iTunes não achou, tenta o Deezer com as mesmas estratégias
       if (url == null) {
@@ -102,7 +127,9 @@ class _CapaMusicaState extends State<CapaMusica> {
           url = await _tentarDeezer(
               t['termo'] as String, artL, titL,
               soTitulo: t['soTitulo'] as bool);
-          if (url != null) break;
+          if (url != null) {
+            if (pular > 0) { pular--; url = null; } else { break; }
+          }
         }
       }
       // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo

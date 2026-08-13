@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Busca a letra de uma música tentando VÁRIAS fontes em cascata.
 /// Nenhuma exige cadastro ou chave.
@@ -231,6 +232,29 @@ class LetraService {
   }
 
   /// Retorna a letra, ou null.
+  /// Quantas vezes os ouvintes ja disseram que a letra desta musica esta
+  /// errada. A cada aviso, o app PULA a fonte que errou e tenta a proxima —
+  /// e assim a correcao acontece sozinha, sem ninguem mexer.
+  static Future<int> _rejeicoes(String chave) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getInt('letra_rej_$chave') ?? 0;
+    } catch (_) {}
+    return 0;
+  }
+
+  /// Chamada quando o ouvinte reporta que a letra nao e desta musica.
+  static Future<void> marcarErrada(String musicaBruta) async {
+    final chave = musicaBruta.trim().toLowerCase();
+    if (chave.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final atual = prefs.getInt('letra_rej_$chave') ?? 0;
+      await prefs.setInt('letra_rej_$chave', atual + 1);
+    } catch (_) {}
+    _cache.remove(chave); // esquece a letra rejeitada
+  }
+
   static Future<String?> buscar(String musicaBruta) async {
     final chave = musicaBruta.trim().toLowerCase();
     if (chave.isEmpty) return null;
@@ -239,6 +263,9 @@ class LetraService {
     final (artista, titulo) = _separar(musicaBruta);
     final aL = _limpar(artista);
     final tL = _limpar(titulo);
+
+    // quantas fontes ja foram rejeitadas pelos ouvintes nesta musica
+    var pular = await _rejeicoes(chave);
 
     // 0) BASE DA RADIO: correcoes feitas no painel valem mais que tudo
     final daRadio = await _daRadio(aL, tL);
@@ -261,8 +288,12 @@ class LetraService {
       vistos.add(id);
       final letra = await _lrclibGet(a, t);
       if (letra != null) {
-        _cache[chave] = letra;
-        return letra;
+        if (pular > 0) {
+          pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
+        } else {
+          _cache[chave] = letra;
+          return letra;
+        }
       }
     }
 
@@ -273,8 +304,12 @@ class LetraService {
     ]) {
       final letra = await _lrclibBusca(consulta, aL, tL);
       if (letra != null) {
-        _cache[chave] = letra;
-        return letra;
+        if (pular > 0) {
+          pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
+        } else {
+          _cache[chave] = letra;
+          return letra;
+        }
       }
     }
 
@@ -282,8 +317,12 @@ class LetraService {
     for (final (a, t) in combos) {
       final letra = await _vagalume(a, t);
       if (letra != null) {
-        _cache[chave] = letra;
-        return letra;
+        if (pular > 0) {
+          pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
+        } else {
+          _cache[chave] = letra;
+          return letra;
+        }
       }
     }
 
@@ -291,8 +330,12 @@ class LetraService {
     for (final (a, t) in combos) {
       final letra = await _lyricsOvh(a, t);
       if (letra != null) {
-        _cache[chave] = letra;
-        return letra;
+        if (pular > 0) {
+          pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
+        } else {
+          _cache[chave] = letra;
+          return letra;
+        }
       }
     }
 
@@ -300,8 +343,12 @@ class LetraService {
     for (final (a, t) in combos) {
       final letra = await _lrcmux(a, t);
       if (letra != null) {
-        _cache[chave] = letra;
-        return letra;
+        if (pular > 0) {
+          pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
+        } else {
+          _cache[chave] = letra;
+          return letra;
+        }
       }
     }
 
@@ -309,8 +356,12 @@ class LetraService {
     for (final (a, t) in combos) {
       final letra = await _chartLyrics(a, t);
       if (letra != null) {
-        _cache[chave] = letra;
-        return letra;
+        if (pular > 0) {
+          pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
+        } else {
+          _cache[chave] = letra;
+          return letra;
+        }
       }
     }
 
@@ -320,8 +371,12 @@ class LetraService {
     if (tL.isNotEmpty && aL.isEmpty) {
       final letra = await _lrclibBusca(tL, '', tL);
       if (letra != null) {
-        _cache[chave] = letra;
-        return letra;
+        if (pular > 0) {
+          pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
+        } else {
+          _cache[chave] = letra;
+          return letra;
+        }
       }
     }
 

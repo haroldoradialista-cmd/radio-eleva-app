@@ -239,6 +239,15 @@ class _HomePageState extends State<HomePage> {
   /// Grava o aviso no Firebase (no  letras_reportadas) para o painel.
   Future<void> _enviarAviso(
       AppConfig cfg, String musica, String tipo) async {
+    // CORRECAO AUTOMATICA: alem de avisar o painel, o proprio app aprende
+    // com a reclamacao — marca a fonte que errou e, na proxima vez que a
+    // musica tocar, busca em OUTRA fonte da cascata.
+    if (tipo.contains('letra')) {
+      await LetraService.marcarErrada(musica);
+    }
+    if (tipo.contains('capa')) {
+      await CapaRejeicao.marcarErrada(musica);
+    }
     if (cfg.chatUrl.isEmpty) return;
     final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
     try {
