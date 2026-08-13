@@ -235,7 +235,11 @@ class _CapaMusicaState extends State<CapaMusica> {
         final j = jsonDecode(r.body);
         if (j is Map) {
           final capa = (j['capa'] ?? '').toString();
-          if (capa.startsWith('http')) return capa;
+          // aceita link da internet OU imagem enviada pelo painel
+          // (guardada como texto no formato data:image/...;base64,...)
+          if (capa.startsWith('http') || capa.startsWith('data:image')) {
+            return capa;
+          }
         }
       }
     } catch (_) {}
@@ -341,16 +345,29 @@ class _CapaMusicaState extends State<CapaMusica> {
                     child:
                         Image.asset('assets/logo.png', fit: BoxFit.contain),
                   )
-                : Image.network(
-                    url,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: CoresEleva.azulMedio,
-                      padding: EdgeInsets.all(24),
-                      child: Image.asset('assets/logo.png',
-                          fit: BoxFit.contain),
-                    ),
-                  ),
+                : (url.startsWith('data:image')
+                    // capa ENVIADA pelo painel (imagem guardada como texto)
+                    ? Image.memory(
+                        base64Decode(url.split(',').last),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: CoresEleva.azulMedio,
+                          padding: EdgeInsets.all(24),
+                          child: Image.asset('assets/logo.png',
+                              fit: BoxFit.contain),
+                        ),
+                      )
+                    // capa vinda de um link da internet
+                    : Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: CoresEleva.azulMedio,
+                          padding: EdgeInsets.all(24),
+                          child: Image.asset('assets/logo.png',
+                              fit: BoxFit.contain),
+                        ),
+                      )),
           ],
         ),
       ),
