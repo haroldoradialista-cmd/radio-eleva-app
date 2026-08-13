@@ -56,6 +56,58 @@ class LetraService {
   static String _limparLetra(String s) =>
       s.trim().replaceAll('\r', '').replaceAll(RegExp(r'\n{3,}'), '\n\n');
 
+  // ---------- BASE DA RADIO (correcoes feitas no painel) ----------
+  /// Endereco do Firebase da radio (preenchido pelo app na abertura).
+  static String baseRtdb = '';
+
+  /// Procura a letra na BASE DA PROPRIA RADIO. Tem prioridade sobre tudo:
+  /// se o Haroldo (ou a equipe) corrigiu a letra no painel, e ela que vale.
+  static Future<String?> _daRadio(String artista, String titulo) async {
+    if (baseRtdb.isEmpty) return null;
+    try {
+      final id = _idMusica(artista, titulo);
+      final url = Uri.parse('$baseRtdb/correcoes/$id.json');
+      final r = await http.get(url).timeout(const Duration(seconds: 6));
+      if (r.statusCode == 200) {
+        final j = jsonDecode(utf8.decode(r.bodyBytes));
+        if (j is Map) {
+          final letra = (j['letra'] ?? '').toString();
+          if (letra.trim().length > 10) return _limparLetra(letra);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Identificador da musica usado na base da radio (mesmo padrao do painel)
+  static String _idMusica(String artista, String titulo) {
+    final s = '${artista}_$titulo'
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_');
+    return s.replaceAll(RegExp(r'^_|_$'), '');
+  }
+
+  // ---------- VAGALUME (acervo brasileiro, inclui gospel) ----------
+  static Future<String?> _vagalume(String artista, String titulo) async {
+    if (artista.isEmpty || titulo.isEmpty) return null;
+    try {
+      final url = Uri.parse(
+          'https://api.vagalume.com.br/search.php?art=${Uri.encodeComponent(artista)}&mus=${Uri.encodeComponent(titulo)}');
+      final r = await http.get(url).timeout(const Duration(seconds: 9));
+      if (r.statusCode != 200) return null;
+      final j = jsonDecode(utf8.decode(r.bodyBytes));
+      if (j is! Map) return null;
+      if ((j['type'] ?? '').toString() == 'notfound') return null;
+      final mus = j['mus'];
+      if (mus is List && mus.isNotEmpty) {
+        final letra = (mus.first['text'] ?? '').toString();
+        if (letra.trim().length > 10) return _limparLetra(letra);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   // ---------- LRCLIB: get exato ----------
   static Future<String?> _lrclibGet(String artista, String titulo) async {
     if (titulo.isEmpty) return null;
@@ -188,6 +240,13 @@ class LetraService {
     final aL = _limpar(artista);
     final tL = _limpar(titulo);
 
+    // 0) BASE DA RADIO: correcoes feitas no painel valem mais que tudo
+    final daRadio = await _daRadio(aL, tL);
+    if (daRadio != null) {
+      _cache[chave] = daRadio;
+      return daRadio;
+    }
+
     // 1) LRCLIB get exato, com variações de nome
     final combos = <(String, String)>[
       if (aL.isNotEmpty) (aL, tL),
@@ -213,6 +272,15 @@ class LetraService {
       if (aL.isNotEmpty) _semAcento('$aL $tL'),
     ]) {
       final letra = await _lrclibBusca(consulta, aL, tL);
+      if (letra != null) {
+        _cache[chave] = letra;
+        return letra;
+      }
+    }
+
+    // 2b) VAGALUME — acervo brasileiro, melhor chance para gospel nacional
+    for (final (a, t) in combos) {
+      final letra = await _vagalume(a, t);
       if (letra != null) {
         _cache[chave] = letra;
         return letra;

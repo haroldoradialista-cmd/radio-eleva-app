@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import '../servicos/letra_service.dart';
 import '../servicos/player_service.dart';
 import '../tema.dart';
 
@@ -83,7 +84,12 @@ class _CapaMusicaState extends State<CapaMusica> {
         if (artL.isEmpty) {'termo': titL, 'pais': 'us', 'soTitulo': true},
       ];
 
-      String? url;
+      // 0) BASE DA RADIO: se a capa foi corrigida no painel, e ela que vale
+      String? url = await _daRadio(artL, titL);
+      if (url != null) {
+        if (mounted) setState(() => _capaUrl = url);
+        return;
+      }
       for (final t in tentativas) {
         url = await _tentarItunes(
             t['termo'] as String, t['pais'] as String, artL, titL,
@@ -182,6 +188,31 @@ class _CapaMusicaState extends State<CapaMusica> {
     final pa = a.split(' ').where((w) => w.length >= 3).toSet();
     final pb = b.split(' ').where((w) => w.length >= 3).toSet();
     return pa.intersection(pb).isNotEmpty;
+  }
+
+  /// Procura a capa na BASE DA PROPRIA RADIO (correcoes feitas no painel).
+  /// Tem prioridade sobre iTunes e Deezer.
+  Future<String?> _daRadio(String artista, String titulo) async {
+    final base = LetraService.baseRtdb;
+    if (base.isEmpty) return null;
+    try {
+      final id = '${artista}_$titulo'
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+          .replaceAll(RegExp(r'_+'), '_')
+          .replaceAll(RegExp(r'^_|_$'), '');
+      final r = await http
+          .get(Uri.parse('$base/correcoes/$id.json'))
+          .timeout(const Duration(seconds: 6));
+      if (r.statusCode == 200) {
+        final j = jsonDecode(r.body);
+        if (j is Map) {
+          final capa = (j['capa'] ?? '').toString();
+          if (capa.startsWith('http')) return capa;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   /// Busca a capa no Deezer (API pública, sem chave). Boa cobertura,

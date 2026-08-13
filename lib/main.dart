@@ -17,6 +17,7 @@ import 'servicos/notificacoes_service.dart';
 import 'servicos/despertador_service.dart';
 import 'servicos/despertadores_lista.dart';
 import 'servicos/presenca_service.dart';
+import 'servicos/letra_service.dart';
 import 'servicos/player_service.dart';
 import 'tema.dart';
 
@@ -63,8 +64,12 @@ Future<void> main() async {
     ConfigService.instancia.iniciarAutoAtualizacao();
     AnalyticsService.registrarAcesso();
     PresencaService.iniciar();
-    // AUTOPLAY: a rádio começa a tocar assim que o app abre
     final cfg = ConfigService.instancia.config.value;
+    // informa o endereco do Firebase para o app poder consultar a BASE DE
+    // CORRECOES da radio (letras e capas conferidas no painel)
+    LetraService.baseRtdb =
+        cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
+    // AUTOPLAY: a rádio começa a tocar assim que o app abre
     if (cfg.streamUrl.isNotEmpty) {
       PlayerService.instancia
           .carregar(cfg.streamUrl, cfg.nome, cfg.logoUrl)
