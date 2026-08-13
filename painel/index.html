@@ -731,6 +731,19 @@
       <div class="cartao">
         <h2>🎤 Letras e capas reportadas</h2>
         <p class="rotulo-secao">Quando um ouvinte toca na bandeirinha 🚩 no topo da letra, o aviso chega aqui. Use para saber quais músicas estão com letra ou capa trocada.</p>
+        <div id="formCorrecao" style="display:none;background:rgba(0,0,0,.25);padding:14px;border-radius:12px;margin:12px 0;border-left:3px solid var(--ouro)">
+          <h2 style="font-size:15px">✏️ Corrigir esta música</h2>
+          <label>Música (Artista - Título)</label>
+          <input id="corMusica" placeholder="Fernandinho - Uma Nova História">
+          <label>Endereço da CAPA (link da imagem)</label>
+          <input id="corCapa" placeholder="https://... (clique direito na imagem → Copiar endereço da imagem)">
+          <label>LETRA da música</label>
+          <textarea id="corLetra" rows="8" placeholder="Cole aqui a letra completa"></textarea>
+          <button class="botao" onclick="salvarCorrecao()">💾 Salvar correção</button>
+          <button class="botao" style="background:#555" onclick="document.getElementById('formCorrecao').style.display='none'">Cancelar</button>
+          <p class="rotulo-secao" style="margin-top:8px">Depois de salvar, o app passa a usar ESTA capa e ESTA letra, ignorando a busca na internet. Vale para todos os ouvintes.</p>
+        </div>
+        <button class="botao" onclick="abrirCorrecao('')">➕ Corrigir uma música</button>
         <button class="botao" onclick="carregarReportes()">🔄 Atualizar lista</button>
         <button class="botao" style="background:#7a1b1b" onclick="limparReportes()">🗑️ Limpar tudo</button>
         <div id="listaReportes" style="margin-top:14px"></div>
@@ -3504,12 +3517,85 @@ async function carregarReportes(){
     const lista = Object.values(mapa).sort((a,b)=> b.n - a.n);
     el.innerHTML = lista.map(x=>{
       const q = x.ultimo ? new Date(x.ultimo).toLocaleString('pt-BR') : '';
+      const mus = (x.musica||'').replace(/'/g,"\\'");
       return `<div class="usuario-card">
         <h4>${(x.musica||'').replace(/</g,'&lt;')}</h4>
         <div class="abas-perm">Problema: <b>${x.tipo}</b> • ${x.n} aviso(s) • último: ${q}</div>
+        <div class="acoes">
+          <button class="botao mini" onclick="abrirCorrecao('${mus}')">✏️ Corrigir agora</button>
+        </div>
       </div>`;
     }).join('');
   }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+
+/// Abre o formulário de correção, já preenchido com a música escolhida
+function abrirCorrecao(musica){
+  const f = document.getElementById('formCorrecao');
+  if(!f) return;
+  f.style.display = 'block';
+  document.getElementById('corMusica').value = musica || '';
+  document.getElementById('corCapa').value = '';
+  document.getElementById('corLetra').value = '';
+  f.scrollIntoView({behavior:'smooth'});
+  // se já existe correção salva, traz o que está lá para editar
+  if(musica) carregarCorrecaoExistente(musica);
+}
+
+/// Identificador da música (tem que ser IGUAL ao usado pelo app)
+function limparNome(s){
+  // MESMA limpeza que o app faz, senao a correcao nao seria encontrada
+  let r = ' ' + (s||'') + ' ';
+  r = r.replace(/[\(\[].*?[\)\]]/g, ' ');
+  r = r.replace(/\b(feat|ft|part|participacao|participação|com)\.?\s.*$/i, ' ');
+  r = r.replace(/\b(ao vivo|acustico|acústico|playback|clipe|clip|video oficial|vídeo oficial|official video|official music video|lyric video|lyrics|cover|remix|versao|versão)\b/gi, ' ');
+  r = r.replace(/[|\/•].*$/, ' ');
+  return r.replace(/\s+/g,' ').trim();
+}
+
+function idMusica(musica){
+  const p = (musica||'').split(' - ');
+  const art = limparNome(p[0]||'').toLowerCase();
+  const tit = limparNome(p.slice(1).join(' - ')||'').toLowerCase();
+  return (art + '_' + tit)
+    .replace(/[^a-z0-9]+/g,'_')
+    .replace(/_+/g,'_')
+    .replace(/^_|_$/g,'');
+}
+
+/// Se a música já foi corrigida antes, mostra o que está salvo
+async function carregarCorrecaoExistente(musica){
+  try{
+    const r = await fetch(`${RTDB}/correcoes/${idMusica(musica)}.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(d && !d.error){
+      if(d.capa) document.getElementById('corCapa').value = d.capa;
+      if(d.letra) document.getElementById('corLetra').value = d.letra;
+    }
+  }catch(_){}
+}
+
+/// Salva a correção: a partir daí o app usa ESTA capa e ESTA letra
+async function salvarCorrecao(){
+  const musica = (document.getElementById('corMusica').value||'').trim();
+  const capa = (document.getElementById('corCapa').value||'').trim();
+  const letra = (document.getElementById('corLetra').value||'').trim();
+  if(!musica){ avisar('Digite a música no formato Artista - Título.', true); return; }
+  if(!capa && !letra){ avisar('Preencha a capa e/ou a letra.', true); return; }
+  const dados = { musica, quando: new Date().toISOString() };
+  if(capa) dados.capa = capa;
+  if(letra) dados.letra = letra;
+  try{
+    const resp = await fetch(`${RTDB}/correcoes/${idMusica(musica)}.json`,
+      { method:'PUT', body: JSON.stringify(dados) });
+    const dr = await resp.json().catch(()=>({}));
+    if(!resp.ok || (dr && dr.error)){
+      avisar('O Firebase bloqueou. Libere o nó correcoes nas Regras.', true);
+      return;
+    }
+    avisar('Correção salva! O app já vai usar. ✅');
+    document.getElementById('formCorrecao').style.display='none';
+  }catch(_){ avisar('Não foi possível salvar.', true); }
 }
 
 /// Apaga todos os avisos já conferidos
