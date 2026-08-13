@@ -3634,22 +3634,52 @@ async function carregarReportes(){
   if(!el) return;
   el.innerHTML = '<p class="rotulo-secao">Carregando...</p>';
   try{
-    const r = await fetch(`${RTDB}/letras_reportadas.json?t=${Date.now()}`);
-    const d = await r.json() || {};
+    // le os avisos dos ouvintes E as correcoes ja salvas
+    const [r1, r2] = await Promise.all([
+      fetch(`${RTDB}/letras_reportadas.json?t=${Date.now()}`),
+      fetch(`${RTDB}/correcoes.json?t=${Date.now()}`)
+    ]);
+    const d = await r1.json() || {};
+    const corr = await r2.json() || {};
     if(d && d.error){
       el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">O Firebase bloqueou a leitura. Libere o nó <b>letras_reportadas</b> nas Regras.</p>';
       return;
     }
-    // agrupa por música + tipo, contando quantos avisaram
+    const temCorr = (corr && !corr.error) ? corr : {};
+
+    // agrupa por MUSICA (uma linha por musica, nao uma por tipo de problema)
     const mapa = {};
     Object.entries(d).forEach(([id, i])=>{
-      const k = (i.musica||'?') + ' || ' + (i.tipo||'?');
-      if(!mapa[k]) mapa[k] = { musica:i.musica||'?', tipo:i.tipo||'?', n:0, ultimo:i.quando||'', ids:[] };
+      const m = (i.musica||'').trim();
+      if(!m) return;
+      const k = idMusica(m);
+      if(!mapa[k]) mapa[k] = { musica:m, id:k, precisa:new Set(), n:0, ultimo:'', ids:[] };
       mapa[k].n++;
-      mapa[k].ids.push(id);   // guarda os ids para poder apagar depois
+      mapa[k].ids.push(id);
       if((i.quando||'') > mapa[k].ultimo) mapa[k].ultimo = i.quando||'';
+      // descobre O QUE falta: letra, capa ou as duas
+      const tp = (i.tipo||'').toLowerCase();
+      if(tp.includes('letra')) mapa[k].precisa.add('letra');
+      if(tp.includes('capa'))  mapa[k].precisa.add('capa');
     });
-    _reportesLista = Object.values(mapa).sort((a,b)=> b.n - a.n);
+
+    // separa: o que JA foi resolvido sai da fila (e os avisos sao apagados)
+    const pendentes = [];
+    for(const x of Object.values(mapa)){
+      const c = temCorr[x.id] || {};
+      const faltam = [...x.precisa].filter(asp =>
+        (asp === 'letra' && !c.letra) || (asp === 'capa' && !c.capa));
+      if(faltam.length === 0){
+        // resolvido: limpa os avisos, pois agora ele mora em "Resolvidas"
+        for(const id of x.ids){
+          try{ await fetch(`${RTDB}/letras_reportadas/${id}.json`, { method:'DELETE' }); }catch(_){}
+        }
+      } else {
+        x.faltam = faltam;
+        pendentes.push(x);
+      }
+    }
+    _reportesLista = pendentes.sort((a,b)=> b.n - a.n);
     _reportesPagina = 1;
     desenharReportes();
   }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
@@ -3671,7 +3701,7 @@ function desenharReportes(){
     const mus = (x.musica||'').replace(/'/g,"\\'");
     return `<div class="usuario-card">
       <h4>${(x.musica||'').replace(/</g,'&lt;')}</h4>
-      <div class="abas-perm">Problema: <b>${x.tipo}</b> • ${x.n} aviso(s) • último: ${q}</div>
+      <div class="abas-perm">Falta corrigir: <b>${(x.faltam||[]).join(' e ') || x.tipo}</b> • ${x.n} aviso(s) • último: ${q}</div>
       <div class="acoes">
         <button class="botao mini" onclick="abrirCorrecao('${mus}')">✏️ Corrigir agora</button>
         <button class="botao mini perigo" onclick="resolverReporte('${mus}')">✔️ Já resolvi</button>
