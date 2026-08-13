@@ -3495,6 +3495,10 @@ function aplicarPerfilUsuario() {
 }
 
 /// Lista os avisos de letra/capa errada enviados pelos ouvintes
+let _reportesLista = [];   // fila completa (todas as paginas)
+let _reportesPagina = 1;   // pagina em exibicao
+const _REPORTES_POR_PAGINA = 5;
+
 async function carregarReportes(){
   const el = document.getElementById('listaReportes');
   if(!el) return;
@@ -3506,29 +3510,78 @@ async function carregarReportes(){
       el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">O Firebase bloqueou a leitura. Libere o nó <b>letras_reportadas</b> nas Regras.</p>';
       return;
     }
-    const itens = Object.values(d);
-    if(!itens.length){ el.innerHTML = '<p class="rotulo-secao">Nenhum aviso até agora. 👍</p>'; return; }
     // agrupa por música + tipo, contando quantos avisaram
     const mapa = {};
-    itens.forEach(i=>{
+    Object.entries(d).forEach(([id, i])=>{
       const k = (i.musica||'?') + ' || ' + (i.tipo||'?');
-      if(!mapa[k]) mapa[k] = { musica:i.musica||'?', tipo:i.tipo||'?', n:0, ultimo:i.quando||'' };
+      if(!mapa[k]) mapa[k] = { musica:i.musica||'?', tipo:i.tipo||'?', n:0, ultimo:i.quando||'', ids:[] };
       mapa[k].n++;
+      mapa[k].ids.push(id);   // guarda os ids para poder apagar depois
       if((i.quando||'') > mapa[k].ultimo) mapa[k].ultimo = i.quando||'';
     });
-    const lista = Object.values(mapa).sort((a,b)=> b.n - a.n);
-    el.innerHTML = lista.map(x=>{
-      const q = x.ultimo ? new Date(x.ultimo).toLocaleString('pt-BR') : '';
-      const mus = (x.musica||'').replace(/'/g,"\\'");
-      return `<div class="usuario-card">
-        <h4>${(x.musica||'').replace(/</g,'&lt;')}</h4>
-        <div class="abas-perm">Problema: <b>${x.tipo}</b> • ${x.n} aviso(s) • último: ${q}</div>
-        <div class="acoes">
-          <button class="botao mini" onclick="abrirCorrecao('${mus}')">✏️ Corrigir agora</button>
-        </div>
-      </div>`;
-    }).join('');
+    _reportesLista = Object.values(mapa).sort((a,b)=> b.n - a.n);
+    _reportesPagina = 1;
+    desenharReportes();
   }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+
+/// Mostra 5 por pagina (a varredura do robo continua usando a fila INTEIRA)
+function desenharReportes(){
+  const el = document.getElementById('listaReportes');
+  if(!el) return;
+  const total = _reportesLista.length;
+  if(!total){ el.innerHTML = '<p class="rotulo-secao">Nenhum aviso pendente. 👍</p>'; return; }
+  const paginas = Math.ceil(total / _REPORTES_POR_PAGINA);
+  if(_reportesPagina > paginas) _reportesPagina = paginas;
+  const ini = (_reportesPagina - 1) * _REPORTES_POR_PAGINA;
+  const fatia = _reportesLista.slice(ini, ini + _REPORTES_POR_PAGINA);
+
+  const cards = fatia.map(x=>{
+    const q = x.ultimo ? new Date(x.ultimo).toLocaleString('pt-BR') : '';
+    const mus = (x.musica||'').replace(/'/g,"\\'");
+    return `<div class="usuario-card">
+      <h4>${(x.musica||'').replace(/</g,'&lt;')}</h4>
+      <div class="abas-perm">Problema: <b>${x.tipo}</b> • ${x.n} aviso(s) • último: ${q}</div>
+      <div class="acoes">
+        <button class="botao mini" onclick="abrirCorrecao('${mus}')">✏️ Corrigir agora</button>
+        <button class="botao mini perigo" onclick="resolverReporte('${mus}')">✔️ Já resolvi</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  let nav = '';
+  if(paginas > 1){
+    let botoes = '';
+    for(let i=1; i<=paginas; i++){
+      const ativa = (i === _reportesPagina);
+      botoes += `<button class="botao mini" onclick="irPaginaReportes(${i})"
+        style="min-width:34px;${ativa?'background:var(--verde2);border:1px solid var(--ouro)':'background:#2a2560'}">${i}</button>`;
+    }
+    nav = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center">
+      <span class="rotulo-secao" style="margin:0">Página:</span>${botoes}</div>`;
+  }
+  el.innerHTML = `<p class="rotulo-secao">${total} música(s) na fila • mostrando ${ini+1}–${Math.min(ini+_REPORTES_POR_PAGINA,total)}</p>` + cards + nav;
+}
+
+function irPaginaReportes(n){ _reportesPagina = n; desenharReportes(); }
+
+/// Tira a música da fila (apaga os avisos dela no Firebase)
+async function _apagarAvisosDe(musica){
+  const item = _reportesLista.find(x => x.musica === musica);
+  const ids = [];
+  _reportesLista.filter(x => x.musica === musica).forEach(x => ids.push(...(x.ids||[])));
+  for(const id of ids){
+    try{ await fetch(`${RTDB}/letras_reportadas/${id}.json`, { method:'DELETE' }); }catch(_){}
+  }
+  _reportesLista = _reportesLista.filter(x => x.musica !== musica);
+  return item;
+}
+
+/// Botao "Já resolvi": tira da fila manualmente
+async function resolverReporte(musica){
+  await _apagarAvisosDe(musica);
+  desenharReportes();
+  avisar('Música retirada da fila. ✅');
 }
 
 /// Abre o formulário de correção, já preenchido com a música escolhida
@@ -3673,6 +3726,8 @@ async function corrigirTodas(){
     if(d && d.error){ painelLog.innerHTML='<p style="color:#ff6b6b">O Firebase bloqueou a leitura.</p>'; _roboRodando=false; return; }
     // lista unica de musicas reportadas
     const musicas = [...new Set(Object.values(d).map(i => (i.musica||'').trim()).filter(Boolean))];
+    // OBS: o robô varre TODAS as músicas da fila, mesmo as que estão em
+    // outras páginas — a paginação é só para a sua visualização.
     if(!musicas.length){ painelLog.innerHTML='<p class="rotulo-secao">Nenhuma música reportada. 👍</p>'; _roboRodando=false; return; }
     let okLetra=0, okCapa=0, nada=0, linhas=[];
     for(let i=0; i<musicas.length; i++){
@@ -3695,7 +3750,9 @@ async function corrigirTodas(){
         try{
           await fetch(`${RTDB}/correcoes/${idMusica(m)}.json`,
             { method:'PUT', body: JSON.stringify(dados) });
-          linhas.unshift(`<div style="font-size:12.5px;color:#8ef58e">✅ ${m} — ${letra?'letra ':''}${capa?'capa':''}</div>`);
+          // corrigiu: SAI da fila de reportados
+          await _apagarAvisosDe(m);
+          linhas.unshift(`<div style="font-size:12.5px;color:#8ef58e">✅ ${m} — ${letra?'letra ':''}${capa?'capa':''} (saiu da fila)</div>`);
         }catch(_){
           linhas.unshift(`<div style="font-size:12.5px;color:#ff6b6b">⚠️ ${m} — não salvou</div>`);
         }
@@ -3712,6 +3769,7 @@ async function corrigirTodas(){
          Letras corrigidas: <b>${okLetra}</b> • Capas corrigidas: <b>${okCapa}</b><br>
          Sem resultado (precisam de correção manual): <b>${nada}</b></p>
        </div>` + linhas.join('');
+    desenharReportes(); // a fila agora mostra só o que ele NÃO conseguiu
   }catch(e){
     painelLog.innerHTML = '<p style="color:#ff6b6b">Erro ao rodar o robô.</p>';
   }
