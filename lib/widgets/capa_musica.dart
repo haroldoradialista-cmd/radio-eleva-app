@@ -44,6 +44,10 @@ class _CapaMusicaState extends State<CapaMusica> {
   Timer? _debounce;
   String _ultimaBusca = '';
   String? _capaUrl;
+  // imagem ENVIADA pelo painel, ja convertida UMA vez.
+  // Sem isto, a conversao acontecia a cada redesenho da tela e a capa
+  // ficava PISCANDO enquanto a musica tocava.
+  Uint8List? _capaBytes;
   String _musica = '';
   String _interprete = '';
 
@@ -87,7 +91,7 @@ class _CapaMusicaState extends State<CapaMusica> {
       final artL = _limparNome(artista);
       final titL = _limparNome(titulo);
       if (titL.isEmpty) {
-        if (mounted) setState(() => _capaUrl = null);
+        _aplicarCapa(null);
         return;
       }
 
@@ -109,7 +113,7 @@ class _CapaMusicaState extends State<CapaMusica> {
       // 0) BASE DA RADIO: se a capa foi corrigida no painel, e ela que vale
       String? url = await _daRadio(artL, titL);
       if (url != null) {
-        if (mounted) setState(() => _capaUrl = url);
+        _aplicarCapa(url);
         return;
       }
       // fontes ja reprovadas pelos ouvintes nesta musica: pula e tenta outra
@@ -134,9 +138,9 @@ class _CapaMusicaState extends State<CapaMusica> {
         }
       }
       // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo
-      if (mounted) setState(() => _capaUrl = url);
+      _aplicarCapa(url);
     } catch (_) {
-      if (mounted) setState(() => _capaUrl = null);
+      _aplicarCapa(null);
     }
   }
 
@@ -216,6 +220,18 @@ class _CapaMusicaState extends State<CapaMusica> {
     final pa = a.split(' ').where((w) => w.length >= 3).toSet();
     final pb = b.split(' ').where((w) => w.length >= 3).toSet();
     return pa.intersection(pb).isNotEmpty;
+  }
+
+  /// Define a capa atual e ja converte a imagem enviada UMA unica vez.
+  void _aplicarCapa(String? url) {
+    final bytes = (url == null) ? null : _bytesDaCapa(url);
+    if (!mounted) return;
+    // evita redesenhar a toa quando nada mudou (o que causava o piscar)
+    if (_capaUrl == url && _capaBytes == bytes) return;
+    setState(() {
+      _capaUrl = url;
+      _capaBytes = bytes;
+    });
   }
 
   /// Converte a capa ENVIADA pelo painel (texto) em imagem, com seguranca.
@@ -370,11 +386,12 @@ class _CapaMusicaState extends State<CapaMusica> {
                     child:
                         Image.asset('assets/logo.png', fit: BoxFit.contain),
                   )
-                : (_bytesDaCapa(url) != null
-                    // capa ENVIADA pelo painel (imagem guardada como texto)
+                : (_capaBytes != null
+                    // capa ENVIADA pelo painel (ja convertida uma vez)
                     ? Image.memory(
-                        _bytesDaCapa(url)!,
+                        _capaBytes!,
                         fit: BoxFit.cover,
+                        gaplessPlayback: true,
                         errorBuilder: (_, __, ___) => Container(
                           color: CoresEleva.azulMedio,
                           padding: EdgeInsets.all(24),
