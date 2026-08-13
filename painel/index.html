@@ -745,7 +745,9 @@
         </div>
         <button class="botao" onclick="abrirCorrecao('')">➕ Corrigir uma música</button>
         <button class="botao" onclick="carregarReportes()">🔄 Atualizar lista</button>
+        <button class="botao" style="background:#1a7a4b" onclick="corrigirTodas()">🤖 Corrigir todas automaticamente</button>
         <button class="botao" style="background:#7a1b1b" onclick="limparReportes()">🗑️ Limpar tudo</button>
+        <div id="logRobo" style="margin-top:12px;display:none"></div>
         <div id="listaReportes" style="margin-top:14px"></div>
       </div>
     </section>
@@ -3561,6 +3563,159 @@ function idMusica(musica){
     .replace(/[^a-z0-9]+/g,'_')
     .replace(/_+/g,'_')
     .replace(/^_|_$/g,'');
+}
+
+/// ============ ROBO: CORRIGIR TODAS AUTOMATICAMENTE ============
+/// Percorre as musicas reportadas pelos ouvintes, busca letra e capa nas
+/// fontes publicas e grava direto na base de correcoes da radio.
+let _roboRodando = false;
+
+function _partes(musica){
+  const p = (musica||'').split(' - ');
+  return {
+    artista: limparNome(p[0]||''),
+    titulo : limparNome(p.slice(1).join(' - ')||'')
+  };
+}
+
+/// Busca a LETRA em cascata (LRCLIB e lyrics.ovh)
+async function _roboLetra(artista, titulo){
+  // 1) LRCLIB exato
+  try{
+    const u = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artista)}&track_name=${encodeURIComponent(titulo)}`;
+    const r = await fetch(u);
+    if(r.ok){
+      const d = await r.json();
+      const L = (d.plainLyrics||'').trim();
+      if(L.length > 20) return L;
+    }
+  }catch(_){}
+  // 2) LRCLIB busca (confere artista e titulo)
+  try{
+    const u = `https://lrclib.net/api/search?q=${encodeURIComponent(artista+' '+titulo)}`;
+    const r = await fetch(u);
+    if(r.ok){
+      const lista = await r.json();
+      const aN = artista.toLowerCase(), tN = titulo.toLowerCase();
+      for(const it of (lista||[])){
+        const a = (it.artistName||'').toLowerCase();
+        const ti = (it.trackName||'').toLowerCase();
+        const okT = ti.includes(tN) || tN.includes(ti);
+        const okA = !aN || a.includes(aN) || aN.includes(a);
+        const L = (it.plainLyrics||'').trim();
+        if(okT && okA && L.length > 20) return L;
+      }
+    }
+  }catch(_){}
+  // 3) lyrics.ovh
+  try{
+    const u = `https://api.lyrics.ovh/v1/${encodeURIComponent(artista)}/${encodeURIComponent(titulo)}`;
+    const r = await fetch(u);
+    if(r.ok){
+      const d = await r.json();
+      const L = (d.lyrics||'').trim();
+      if(L.length > 20) return L;
+    }
+  }catch(_){}
+  return '';
+}
+
+/// Busca a CAPA (iTunes e Deezer), exigindo que o ARTISTA confira
+async function _roboCapa(artista, titulo){
+  const aN = (artista||'').toLowerCase(), tN = (titulo||'').toLowerCase();
+  const bate = (a, ti) => {
+    a = (a||'').toLowerCase(); ti = (ti||'').toLowerCase();
+    const okT = ti.includes(tN) || tN.includes(ti);
+    const okA = !aN || a.includes(aN) || aN.includes(a);
+    return okT && okA;
+  };
+  // iTunes
+  try{
+    const u = `https://itunes.apple.com/search?term=${encodeURIComponent(artista+' '+titulo)}&entity=song&limit=10&country=BR`;
+    const r = await fetch(u);
+    if(r.ok){
+      const d = await r.json();
+      for(const it of (d.results||[])){
+        if(bate(it.artistName, it.trackName) && it.artworkUrl100){
+          return it.artworkUrl100.replace('100x100','600x600');
+        }
+      }
+    }
+  }catch(_){}
+  // Deezer
+  try{
+    const u = `https://api.deezer.com/search?q=${encodeURIComponent(artista+' '+titulo)}&limit=10`;
+    const r = await fetch(u);
+    if(r.ok){
+      const d = await r.json();
+      for(const it of (d.data||[])){
+        if(bate(it.artist && it.artist.name, it.title)){
+          const c = (it.album && (it.album.cover_xl || it.album.cover_big)) || '';
+          if(c) return c;
+        }
+      }
+    }
+  }catch(_){}
+  return '';
+}
+
+/// Botao "Corrigir todas": varre a fila de reportados e corrige o que der
+async function corrigirTodas(){
+  if(_roboRodando){ avisar('O robô já está trabalhando, aguarde.', true); return; }
+  const painelLog = document.getElementById('logRobo');
+  if(!confirm('O robô vai buscar letra e capa das músicas reportadas e salvar automaticamente. Continuar?')) return;
+  _roboRodando = true;
+  painelLog.style.display = 'block';
+  painelLog.innerHTML = '<p class="rotulo-secao">🤖 Iniciando...</p>';
+  try{
+    const r = await fetch(`${RTDB}/letras_reportadas.json?t=${Date.now()}`);
+    const d = await r.json() || {};
+    if(d && d.error){ painelLog.innerHTML='<p style="color:#ff6b6b">O Firebase bloqueou a leitura.</p>'; _roboRodando=false; return; }
+    // lista unica de musicas reportadas
+    const musicas = [...new Set(Object.values(d).map(i => (i.musica||'').trim()).filter(Boolean))];
+    if(!musicas.length){ painelLog.innerHTML='<p class="rotulo-secao">Nenhuma música reportada. 👍</p>'; _roboRodando=false; return; }
+    let okLetra=0, okCapa=0, nada=0, linhas=[];
+    for(let i=0; i<musicas.length; i++){
+      const m = musicas[i];
+      painelLog.innerHTML = `<p class="rotulo-secao">🤖 Trabalhando... ${i+1} de ${musicas.length}<br><b>${m}</b></p>` + linhas.join('');
+      const { artista, titulo } = _partes(m);
+      if(!titulo){ continue; }
+      // o que ja existe salvo (nao sobrescreve o que voce corrigiu na mao)
+      let jaTem = {};
+      try{
+        const rr = await fetch(`${RTDB}/correcoes/${idMusica(m)}.json?t=${Date.now()}`);
+        const dd = await rr.json(); if(dd && !dd.error) jaTem = dd || {};
+      }catch(_){}
+      const letra = jaTem.letra ? '' : await _roboLetra(artista, titulo);
+      const capa  = jaTem.capa  ? '' : await _roboCapa(artista, titulo);
+      if(letra || capa){
+        const dados = Object.assign({}, jaTem, { musica: m, quando: new Date().toISOString() });
+        if(letra) { dados.letra = letra; okLetra++; }
+        if(capa)  { dados.capa  = capa;  okCapa++;  }
+        try{
+          await fetch(`${RTDB}/correcoes/${idMusica(m)}.json`,
+            { method:'PUT', body: JSON.stringify(dados) });
+          linhas.unshift(`<div style="font-size:12.5px;color:#8ef58e">✅ ${m} — ${letra?'letra ':''}${capa?'capa':''}</div>`);
+        }catch(_){
+          linhas.unshift(`<div style="font-size:12.5px;color:#ff6b6b">⚠️ ${m} — não salvou</div>`);
+        }
+      } else {
+        nada++;
+        linhas.unshift(`<div style="font-size:12.5px;color:#e8c96a">➖ ${m} — nada encontrado (corrija na mão)</div>`);
+      }
+      await new Promise(s=>setTimeout(s, 350)); // respeita os sites
+    }
+    painelLog.innerHTML =
+      `<div class="cartao" style="border-left:3px solid var(--verde)">
+         <b>🤖 Robô terminou!</b>
+         <p class="rotulo-secao">Músicas analisadas: ${musicas.length}<br>
+         Letras corrigidas: <b>${okLetra}</b> • Capas corrigidas: <b>${okCapa}</b><br>
+         Sem resultado (precisam de correção manual): <b>${nada}</b></p>
+       </div>` + linhas.join('');
+  }catch(e){
+    painelLog.innerHTML = '<p style="color:#ff6b6b">Erro ao rodar o robô.</p>';
+  }
+  _roboRodando = false;
 }
 
 /// Se a música já foi corrigida antes, mostra o que está salvo
