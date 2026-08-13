@@ -735,8 +735,16 @@
           <h2 style="font-size:15px">✏️ Corrigir esta música</h2>
           <label>Música (Artista - Título)</label>
           <input id="corMusica" placeholder="Fernandinho - Uma Nova História">
-          <label>Endereço da CAPA (link da imagem)</label>
-          <input id="corCapa" placeholder="https://... (clique direito na imagem → Copiar endereço da imagem)">
+          <label>CAPA da música</label>
+          <p class="rotulo-secao" style="margin:2px 0 8px">Escolha UMA das formas: enviar a imagem do computador (mais fácil) ou colar o link.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+            <label for="corArquivo" class="botao mini" style="margin:0;cursor:pointer;background:#1a7a4b">📁 Enviar imagem do computador</label>
+            <input id="corArquivo" type="file" accept="image/*" style="display:none" onchange="carregarImagemCapa(this)">
+            <span id="corArquivoInfo" class="rotulo-secao" style="margin:0"></span>
+          </div>
+          <img id="corPreview" style="display:none;width:120px;height:120px;object-fit:cover;border-radius:10px;border:2px solid var(--ouro);margin-bottom:8px">
+          <label>...ou cole o link da imagem</label>
+          <input id="corCapa" placeholder="https://... (clique direito na imagem → Copiar endereço da imagem)" oninput="linkCapaDigitado()">
           <label>LETRA da música</label>
           <textarea id="corLetra" rows="8" placeholder="Cole aqui a letra completa"></textarea>
           <button class="botao" onclick="salvarCorrecao()">💾 Salvar correção</button>
@@ -3943,16 +3951,80 @@ async function carregarCorrecaoExistente(musica){
     const r = await fetch(`${RTDB}/correcoes/${idMusica(musica)}.json?t=${Date.now()}`);
     const d = await r.json();
     if(d && !d.error){
-      if(d.capa) document.getElementById('corCapa').value = d.capa;
+      if(d.capa){
+        if(String(d.capa).startsWith('data:image')){
+          // capa enviada: mostra a previa e mantem guardada
+          _capaEnviada = d.capa;
+          const pv = document.getElementById('corPreview');
+          pv.src = d.capa; pv.style.display = 'block';
+          document.getElementById('corArquivoInfo').textContent = '✅ Imagem já cadastrada';
+          document.getElementById('corCapa').value = '';
+        } else {
+          document.getElementById('corCapa').value = d.capa;
+        }
+      }
       if(d.letra) document.getElementById('corLetra').value = d.letra;
     }
   }catch(_){}
 }
 
+/// Guarda a imagem escolhida (ja reduzida) para salvar junto da correcao
+let _capaEnviada = '';
+
+/// Le a imagem do computador, REDUZ para 300x300 e prepara para salvar.
+/// Reduzir e essencial: uma foto de celular tem varios MB; a capa fica
+/// com poucos KB e cabem milhares no Firebase sem estourar o espaco.
+function carregarImagemCapa(input){
+  const arq = input.files && input.files[0];
+  if(!arq) return;
+  const info = document.getElementById('corArquivoInfo');
+  info.textContent = 'Preparando imagem...';
+  const leitor = new FileReader();
+  leitor.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const LADO = 300;
+      const cv = document.createElement('canvas');
+      cv.width = LADO; cv.height = LADO;
+      const ctx = cv.getContext('2d');
+      // recorta no centro para a capa ficar quadrada, sem distorcer
+      const menor = Math.min(img.width, img.height);
+      const sx = (img.width - menor) / 2;
+      const sy = (img.height - menor) / 2;
+      ctx.drawImage(img, sx, sy, menor, menor, 0, 0, LADO, LADO);
+      const dados = cv.toDataURL('image/jpeg', 0.82);
+      const kb = Math.round(dados.length * 0.75 / 1024);
+      if(kb > 300){
+        info.textContent = 'Imagem muito pesada (' + kb + ' KB). Tente outra.';
+        return;
+      }
+      _capaEnviada = dados;
+      document.getElementById('corCapa').value = ''; // usa a imagem, nao o link
+      const pv = document.getElementById('corPreview');
+      pv.src = dados; pv.style.display = 'block';
+      info.textContent = '✅ Imagem pronta (' + kb + ' KB)';
+    };
+    img.onerror = () => { info.textContent = 'Não consegui ler esta imagem.'; };
+    img.src = e.target.result;
+  };
+  leitor.readAsDataURL(arq);
+}
+
+/// Se o usuario digitar um link, descarta a imagem enviada (usa o link)
+function linkCapaDigitado(){
+  const v = (document.getElementById('corCapa').value||'').trim();
+  if(v){
+    _capaEnviada = '';
+    document.getElementById('corPreview').style.display = 'none';
+    document.getElementById('corArquivoInfo').textContent = '';
+  }
+}
+
 /// Salva a correção: a partir daí o app usa ESTA capa e ESTA letra
 async function salvarCorrecao(){
   const musica = (document.getElementById('corMusica').value||'').trim();
-  const capa = (document.getElementById('corCapa').value||'').trim();
+  // a imagem enviada tem prioridade sobre o link digitado
+  const capa = _capaEnviada || (document.getElementById('corCapa').value||'').trim();
   const letra = (document.getElementById('corLetra').value||'').trim();
   if(!musica){ avisar('Digite a música no formato Artista - Título.', true); return; }
   if(!capa && !letra){ avisar('Preencha a capa e/ou a letra.', true); return; }
@@ -3969,6 +4041,9 @@ async function salvarCorrecao(){
     }
     avisar('Correção salva! O app já vai usar. ✅');
     document.getElementById('formCorrecao').style.display='none';
+    _capaEnviada = '';
+    document.getElementById('corPreview').style.display='none';
+    document.getElementById('corArquivoInfo').textContent='';
     // resolvida: sai da fila de pendentes e entra no arquivo
     try{ await _apagarAvisosDe(musica); desenharReportes(); }catch(_){}
   }catch(_){ avisar('Não foi possível salvar.', true); }
