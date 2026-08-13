@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -217,6 +218,26 @@ class _CapaMusicaState extends State<CapaMusica> {
     return pa.intersection(pb).isNotEmpty;
   }
 
+  /// Converte a capa ENVIADA pelo painel (texto) em imagem, com seguranca.
+  /// Devolve null quando nao e uma imagem enviada (ou se vier corrompida),
+  /// para o app cair no caminho normal em vez de quebrar a tela.
+  Uint8List? _bytesDaCapa(String valor) {
+    if (!valor.startsWith('data:image')) return null;
+    try {
+      var b64 = valor.split(',').last;
+      // tira espacos e quebras de linha que estragam a decodificacao
+      b64 = b64.replaceAll(RegExp(r'\s'), '');
+      // completa o preenchimento final quando vier faltando
+      final resto = b64.length % 4;
+      if (resto > 0) b64 = b64 + ('=' * (4 - resto));
+      final bytes = base64Decode(b64);
+      if (bytes.isEmpty) return null;
+      return bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Procura a capa na BASE DA PROPRIA RADIO (correcoes feitas no painel).
   /// Tem prioridade sobre iTunes e Deezer.
   Future<String?> _daRadio(String artista, String titulo) async {
@@ -239,6 +260,10 @@ class _CapaMusicaState extends State<CapaMusica> {
           // (guardada como texto no formato data:image/...;base64,...)
           if (capa.startsWith('http') || capa.startsWith('data:image')) {
             return capa;
+          }
+          // tolerancia: se veio o base64 puro (sem o prefixo), monta o prefixo
+          if (capa.length > 200 && !capa.contains(' ')) {
+            return 'data:image/jpeg;base64,$capa';
           }
         }
       }
@@ -345,10 +370,10 @@ class _CapaMusicaState extends State<CapaMusica> {
                     child:
                         Image.asset('assets/logo.png', fit: BoxFit.contain),
                   )
-                : (url.startsWith('data:image')
+                : (_bytesDaCapa(url) != null
                     // capa ENVIADA pelo painel (imagem guardada como texto)
                     ? Image.memory(
-                        base64Decode(url.split(',').last),
+                        _bytesDaCapa(url)!,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           color: CoresEleva.azulMedio,
