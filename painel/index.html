@@ -243,6 +243,7 @@
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
     <button class="aba" data-aba="letras" onclick="trocarAba(this)">🎤 Letras/Capas</button>
     <button class="aba admin-only" data-aba="usuarios" onclick="trocarAba(this)">👥 Usuários</button>
+    <button class="aba admin-only" data-aba="seguranca" onclick="trocarAba(this)">🔒 Backup</button>
   </div>
 
   <main>
@@ -727,6 +728,34 @@
     </section>
 
     <!-- VOTOS -->
+    <section id="sec-seguranca" class="oculto">
+      <div class="cartao">
+        <h2>💾 Backup do conteúdo</h2>
+        <p class="rotulo-secao">Baixa uma cópia de TUDO que está no banco (banners, notícias, promoções, correções, usuários, pedidos...) para o seu computador. Se algo for apagado por engano ou por alguém mal-intencionado, você restaura por aqui.</p>
+        <button class="botao" onclick="baixarBackup()">⬇️ Baixar backup agora</button>
+        <div id="statusBackup" style="margin-top:10px"></div>
+      </div>
+
+      <div class="cartao">
+        <h2>♻️ Restaurar backup</h2>
+        <p class="rotulo-secao">Envia de volta um arquivo de backup salvo antes. <b>Atenção:</b> o conteúdo atual dos itens restaurados será substituído.</p>
+        <label for="arqBackup" class="botao mini" style="cursor:pointer;background:#7a5b1b">📁 Escolher arquivo de backup</label>
+        <input id="arqBackup" type="file" accept="application/json,.json" style="display:none" onchange="restaurarBackup(this)">
+        <div id="statusRestaura" style="margin-top:10px"></div>
+      </div>
+
+      <div class="cartao">
+        <h2>🛡️ Recomendações</h2>
+        <p class="rotulo-secao">
+          • Baixe um backup <b>uma vez por semana</b> e guarde em outro lugar (nuvem, pendrive).<br>
+          • Nos computadores da rádio, sempre clique em <b>Sair</b> ao terminar.<br>
+          • Guarde o seu <b>código-mestre</b> em lugar seguro — sem ele as senhas não abrem.<br>
+          • Ao gerar o token do GitHub, prefira dar acesso <b>somente a este repositório</b>.
+        </p>
+        <p class="rotulo-secao" id="avisoInatividade" style="color:var(--ouro)">🔐 Por segurança, o painel sai sozinho após 30 minutos sem uso.</p>
+      </div>
+    </section>
+
     <section id="sec-letras" class="oculto">
       <div class="cartao">
         <h2>🎤 Letras e capas reportadas</h2>
@@ -875,6 +904,7 @@ async function entrarPainel(silencioso){
     aplicarPerfilUsuario();
     carregarUsuarios();
     if(!silencioso) avisar('Bem-vindo ao Painel Eleva! 🎉');
+    reiniciarContagemInatividade();
   }catch(e){
     if(!silencioso) avisar('Token inválido ou sem permissão. Confira e tente de novo.', true);
     throw e;
@@ -993,7 +1023,7 @@ async function lerMidia(pref, imagemAtual, videoAtual){
 function trocarAba(botao){
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras'].forEach(s=>
+  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras','seguranca'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
   try{ sessionStorage.setItem('painel_aba', botao.dataset.aba); }catch(_){}
   if(botao.dataset.aba==='usuarios'){ carregarUsuarios(); migrarSenhasParaCofre(); }
@@ -3479,6 +3509,97 @@ async function entrarComoSetor(){
 let usuarioAtual = null; // null = admin; {login, nome, abas} = setor
 
 /// Hash simples SHA-256 (via SubtleCrypto nativo do browser)
+/// ================= BACKUP E RESTAURACAO =================
+/// Guarda uma copia de tudo que esta no banco. Se alguem apagar (ou se voce
+/// apagar sem querer), da para voltar tudo como estava.
+const NOS_BACKUP = ['config','banners','campanhas','noticias','programacao',
+  'promos','enquetes','correcoes','painel_usuarios','pedidos_musicais',
+  'anuncios','promo_participacoes','ganhadores','votos','chat',
+  'letras_reportadas','chat_suspensos'];
+
+async function baixarBackup(){
+  const el = document.getElementById('statusBackup');
+  el.innerHTML = '<p class="rotulo-secao">Reunindo os dados...</p>';
+  const pacote = { gerado_em: new Date().toISOString(), dados: {} };
+  let ok = 0, vazios = 0;
+  for(const no of NOS_BACKUP){
+    try{
+      const r = await fetch(`${RTDB}/${no}.json?t=${Date.now()}`);
+      const d = await r.json();
+      if(d && !d.error){ pacote.dados[no] = d; ok++; } else { vazios++; }
+    }catch(_){ vazios++; }
+    el.innerHTML = `<p class="rotulo-secao">Reunindo... ${ok} parte(s) salva(s)</p>`;
+  }
+  // guarda tambem o conteudo do config.json do GitHub (o que o app le)
+  try{
+    const rc = await fetch('../config.json?t=' + Date.now());
+    if(rc.ok) pacote.config_github = await rc.json();
+  }catch(_){}
+
+  const texto = JSON.stringify(pacote, null, 2);
+  const kb = Math.round(texto.length/1024);
+  const blob = new Blob([texto], { type:'application/json' });
+  const a = document.createElement('a');
+  const hoje = new Date().toISOString().slice(0,10);
+  a.href = URL.createObjectURL(blob);
+  a.download = `backup_eleva_${hoje}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  el.innerHTML = `<div class="cartao" style="border-left:3px solid var(--verde)">
+    <b>✅ Backup baixado!</b>
+    <p class="rotulo-secao">${ok} parte(s) do banco • ${kb} KB<br>
+    Arquivo: <b>backup_eleva_${hoje}.json</b><br>
+    Guarde numa pasta segura ou na nuvem.</p></div>`;
+}
+
+async function restaurarBackup(input){
+  const arq = input.files && input.files[0];
+  if(!arq) return;
+  const el = document.getElementById('statusRestaura');
+  const leitor = new FileReader();
+  leitor.onload = async e => {
+    let pacote;
+    try{ pacote = JSON.parse(e.target.result); }
+    catch(_){ el.innerHTML = '<p style="color:#ff6b6b">Arquivo inválido.</p>'; return; }
+    if(!pacote || !pacote.dados){ el.innerHTML = '<p style="color:#ff6b6b">Este arquivo não é um backup do Painel Eleva.</p>'; return; }
+    const partes = Object.keys(pacote.dados);
+    const quando = pacote.gerado_em ? new Date(pacote.gerado_em).toLocaleString('pt-BR') : '?';
+    if(!confirm(`Restaurar backup de ${quando}?\n\n${partes.length} parte(s) serão enviadas de volta.\nO conteúdo atual dessas partes será SUBSTITUÍDO.`)) return;
+    el.innerHTML = '<p class="rotulo-secao">Restaurando...</p>';
+    let ok = 0, erro = 0;
+    for(const no of partes){
+      try{
+        const r = await fetch(`${RTDB}/${no}.json`,
+          { method:'PUT', body: JSON.stringify(pacote.dados[no]) });
+        const d = await r.json().catch(()=>({}));
+        if(r.ok && !(d && d.error)) ok++; else erro++;
+      }catch(_){ erro++; }
+      el.innerHTML = `<p class="rotulo-secao">Restaurando... ${ok} de ${partes.length}</p>`;
+    }
+    el.innerHTML = `<div class="cartao" style="border-left:3px solid var(--verde)">
+      <b>♻️ Restauração concluída</b>
+      <p class="rotulo-secao">Restauradas: <b>${ok}</b>${erro?` • Falharam: <b>${erro}</b>`:''}<br>
+      Atualize a página (F5) para ver o conteúdo.</p></div>`;
+    input.value = '';
+  };
+  leitor.readAsText(arq);
+}
+
+/// ============ SAIDA AUTOMATICA POR INATIVIDADE ============
+/// Protege os computadores compartilhados da radio: se ninguem mexer por
+/// 30 minutos, o painel sai sozinho.
+let _relogioInatividade = null;
+function reiniciarContagemInatividade(){
+  if(_relogioInatividade) clearTimeout(_relogioInatividade);
+  _relogioInatividade = setTimeout(()=>{
+    try{ avisar('Saindo por inatividade (30 min). 🔐'); }catch(_){}
+    setTimeout(()=>{ try{ sairDoPainel(); }catch(_){} }, 1500);
+  }, 30*60*1000);
+}
+['click','keydown','mousemove','touchstart'].forEach(ev=>{
+  document.addEventListener(ev, ()=>{ if(_relogioInatividade) reiniciarContagemInatividade(); }, { passive:true });
+});
+
 /// ============ SENHAS PROTEGIDAS POR CODIGO-MESTRE ============
 /// A senha do colaborador e guardada EMBARALHADA com um codigo que so o
 /// Haroldo conhece. Quem abrir o banco direto ve so caracteres sem sentido.
