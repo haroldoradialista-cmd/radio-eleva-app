@@ -130,17 +130,20 @@
   @media(max-width:560px){.grade2{grid-template-columns:1fr}}
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{padding:5px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
-  /* TABELAS LARGAS (pedidos, ganhadores, promocoes): as colunas de cidade,
-     telefone e data quebravam em duas linhas e ficavam ruins de ler.
-     Agora a tabela pode passar da largura da tela e rolar na horizontal,
-     mantendo cada informacao numa linha so. */
-  .rolagem-tabela{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .rolagem-tabela table{min-width:1050px}
-  /* a ultima coluna (data/acoes) nao pode ficar colada na borda */
-  .rolagem-tabela td:last-child,.rolagem-tabela th:last-child{padding-right:14px}
-  .rolagem-tabela td,.rolagem-tabela th{white-space:nowrap}
-  /* a musica e o interprete podem ser longos: deixa quebrar so eles */
-  .rolagem-tabela td.livre{white-space:normal;min-width:150px}
+  /* TABELAS LARGAS (pedidos, ganhadores, promocoes).
+     A tabela se ajusta ao espaco; se ainda assim nao couber, aparece uma
+     barra de rolagem VISIVEL para arrastar de lado. Os dados curtos
+     (estado, telefone, data) nunca quebram em duas linhas. */
+  .rolagem-tabela{width:100%;overflow-x:auto;padding-bottom:6px}
+  .rolagem-tabela table{width:100%;font-size:12.5px}
+  .rolagem-tabela th,.rolagem-tabela td{padding:5px 7px;white-space:nowrap}
+  /* nomes longos podem quebrar, para a tabela nao ficar gigante */
+  .rolagem-tabela td.livre{white-space:normal;min-width:120px}
+  /* barra de rolagem bem visivel (senao o usuario nao percebe que rola) */
+  .rolagem-tabela::-webkit-scrollbar{height:10px}
+  .rolagem-tabela::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:6px}
+  .rolagem-tabela::-webkit-scrollbar-thumb{background:var(--ouro);border-radius:6px}
+  body[data-tema="day"] .rolagem-tabela::-webkit-scrollbar-track{background:#e4ebf5}
   th{color:var(--ouro)}
   .msgchat{background:var(--navy);border-radius:10px;padding:6px 10px;margin-bottom:5px;display:flex;gap:10px;align-items:flex-start}
   .msgchat .corpo{flex:1}
@@ -2011,11 +2014,11 @@ function renderPedidosM(){
   el.innerHTML = `<p class="rotulo-secao">📊 <b>${total}</b> pedidos recebidos — página ${pedidosMPagina} de ${Math.max(1,Math.ceil(total/PEDIDOS_POR_PAGINA))}</p>` +
     `<div class="rolagem-tabela"><table><tr><th>#</th><th>Ouvinte</th><th>Intérprete</th><th>Música</th><th>Cidade</th><th>Estado</th><th>WhatsApp</th><th>Quando</th><th></th></tr>` +
     pagina.map(([k,p],idx)=>`<tr>
-      <td>${ini+idx+1}</td><td>${p.nome||''}</td><td class="livre">${p.interprete||''}</td><td class="livre"><b>${p.musica||''}</b></td>
+      <td>${ini+idx+1}</td><td class="livre">${p.nome||''}</td><td class="livre">${p.interprete||''}</td><td class="livre"><b>${p.musica||''}</b></td>
       <td>${p.cidade||'-'}</td>
       <td>${p.estado||'-'}</td>
       <td>${p.whatsapp||'-'}</td>
-      <td>${dataBR(p.quando)}</td>
+      <td>${dataCurta(p.quando)}</td>
       <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
     </tr>`).join('') + `</table></div>` +
     controlesPagina(total, PEDIDOS_POR_PAGINA, pedidosMPagina, 'irPedidosM');
@@ -3523,6 +3526,12 @@ let usuarioAtual = null; // null = admin; {login, nome, abas} = setor
 /// ========== DATAS NO PADRAO BRASILEIRO (dia/mes/ano) ==========
 /// Antes as datas apareciam como 2026-08-13 22:55 (padrao internacional).
 /// Agora aparecem como 13/08/2026 22:55 em TODO o painel.
+/// Versao curta para caber nas tabelas da tela: 13/08/26 23:31
+function dataCurta(valor){
+  const s = dataBR(valor);
+  return s.replace(/\/(\d{2})(\d{2}) /, '/$2 ');
+}
+
 function dataBR(valor, comHora){
   if(!valor) return '-';
   try{
