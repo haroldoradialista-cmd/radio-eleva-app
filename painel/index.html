@@ -135,7 +135,9 @@
      Agora a tabela pode passar da largura da tela e rolar na horizontal,
      mantendo cada informacao numa linha so. */
   .rolagem-tabela{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .rolagem-tabela table{min-width:900px}
+  .rolagem-tabela table{min-width:1050px}
+  /* a ultima coluna (data/acoes) nao pode ficar colada na borda */
+  .rolagem-tabela td:last-child,.rolagem-tabela th:last-child{padding-right:14px}
   .rolagem-tabela td,.rolagem-tabela th{white-space:nowrap}
   /* a musica e o interprete podem ser longos: deixa quebrar so eles */
   .rolagem-tabela td.livre{white-space:normal;min-width:150px}
@@ -1927,7 +1929,7 @@ function exportarPedidosM(formato){
     let linhas = '<tr><th>#</th><th>Ouvinte</th><th>Intérprete</th><th>Música</th><th>Cidade</th><th>Estado</th><th>WhatsApp</th><th>Quando</th></tr>';
     pedidosMAtual.forEach((p,i)=>{
       const c = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-      linhas += '<tr><td>'+(i+1)+'</td><td>'+c(p.nome)+'</td><td>'+c(p.interprete)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.cidade)+'</td><td>'+c(p.estado)+'</td><td>'+c(p.whatsapp)+'</td><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td></tr>';
+      linhas += '<tr><td>'+(i+1)+'</td><td>'+c(p.nome)+'</td><td>'+c(p.interprete)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.cidade)+'</td><td>'+c(p.estado)+'</td><td>'+c(p.whatsapp)+'</td><td>'+c(dataBR(p.quando))+'</td></tr>';
     });
     const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
     const blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel'});
@@ -1935,7 +1937,7 @@ function exportarPedidosM(formato){
     a.download = 'pedidos_ouvintes_eleva.xls'; a.click();
     avisar('Pedidos salvos em Excel! 📊'); return;
   }
-  const linhas = pedidosMAtual.map((p,i)=>`<tr><td>${i+1}</td><td>${String(p.nome||'').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'').replace(/</g,'&lt;')}</td><td>${String(p.musica||'').replace(/</g,'&lt;')}</td><td>${String(p.cidade||'').replace(/</g,'&lt;')}</td><td>${String(p.estado||'').replace(/</g,'&lt;')}</td><td>${String(p.whatsapp||'').replace(/</g,'&lt;')}</td><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('');
+  const linhas = pedidosMAtual.map((p,i)=>`<tr><td>${i+1}</td><td>${String(p.nome||'').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'').replace(/</g,'&lt;')}</td><td>${String(p.musica||'').replace(/</g,'&lt;')}</td><td>${String(p.cidade||'').replace(/</g,'&lt;')}</td><td>${String(p.estado||'').replace(/</g,'&lt;')}</td><td>${String(p.whatsapp||'').replace(/</g,'&lt;')}</td><td>${dataBR(p.quando)}</td></tr>`).join('');
   const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos musicais - Rádio Eleva</title>
     <style>body{font-family:Arial;padding:24px;color:#14203a}h1{color:#0D2B52;margin:2px 0}h2{color:#1B7A4B;font-size:15px}
     table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}th{background:#0D2B52;color:#fff}
@@ -2013,7 +2015,7 @@ function renderPedidosM(){
       <td>${p.cidade||'-'}</td>
       <td>${p.estado||'-'}</td>
       <td>${p.whatsapp||'-'}</td>
-      <td>${(p.quando||'').replace('T',' ').slice(0,16)}</td>
+      <td>${dataBR(p.quando)}</td>
       <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
     </tr>`).join('') + `</table></div>` +
     controlesPagina(total, PEDIDOS_POR_PAGINA, pedidosMPagina, 'irPedidosM');
@@ -2066,7 +2068,7 @@ async function verParticipacoes(id){
     if(!d){ box.innerHTML = '<p class="rotulo-secao">Nenhuma participação ainda.</p>'; return; }
     const lista = Object.values(d).sort((a,b)=>(a.quando||'').localeCompare(b.quando||''));
     box.innerHTML = `<div class="rolagem-tabela"><table><tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Resposta</th><th>Quando</th></tr>` +
-      lista.map((x,i)=>`<tr><td>${i+1}</td><td>${x.nome||''}</td><td>${x.whatsapp||''}</td><td>${x.instagram||''}</td><td>${x.email||''}</td><td class="livre">${x.resposta||''}</td><td>${(x.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('') + `</table></div>`;
+      lista.map((x,i)=>`<tr><td>${i+1}</td><td>${x.nome||''}</td><td>${x.whatsapp||''}</td><td>${x.instagram||''}</td><td>${x.email||''}</td><td class="livre">${x.resposta||''}</td><td>${dataBR(x.quando)}</td></tr>`).join('') + `</table></div>`;
   }catch(e){ box.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
 }
 async function criarPromocao(){
@@ -2307,7 +2309,7 @@ async function carregarChat(){
       const m = d[k];
       return `<div class="msgchat">
         <div class="corpo"><b>${m.nome||'Ouvinte'}</b><p>${(m.msg||'').replace(/</g,'&lt;')}</p>
-        <small>${(m.quando||'').replace('T',' ').slice(0,16)}</small></div>
+        <small>${dataBR(m.quando)}</small></div>
         <button class="botao mini perigo" onclick="apagarMsg('${k}')">🗑️</button>
       </div>`;
     }).join('');
@@ -2499,7 +2501,7 @@ async function gerarRelatorioPedidos(){
     const topo = Object.entries(ranking).sort((a,b)=>b[1]-a[1]);
     const periodo = `${de? de.toLocaleString('pt-BR'):'início'} até ${ate? ate.toLocaleString('pt-BR'):'agora'}`;
     const linhasRank = topo.map(([k,v],i)=>`<tr><td>${i+1}º</td><td>${k.replace(/</g,'&lt;')}</td><td>${v}</td></tr>`).join('') || '<tr><td colspan=3>Sem dados</td></tr>';
-    const linhasPed = pedidos.map(p=>`<tr><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td><td>${(p.nome||'—').replace(/</g,'&lt;')}</td><td>${(p.whatsapp||'—').replace(/</g,'&lt;')}</td><td>${(p.musica||'—').replace(/</g,'&lt;')}</td><td>${(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('') || '<tr><td colspan=5>Sem pedidos no período</td></tr>';
+    const linhasPed = pedidos.map(p=>`<tr><td>${dataBR(p.quando)}</td><td>${(p.nome||'—').replace(/</g,'&lt;')}</td><td>${(p.whatsapp||'—').replace(/</g,'&lt;')}</td><td>${(p.musica||'—').replace(/</g,'&lt;')}</td><td>${(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('') || '<tr><td colspan=5>Sem pedidos no período</td></tr>';
     const w = window.open('', '_blank');
     w.document.write(`<!DOCTYPE html><html><head><title>Relatório de Pedidos - Rádio Eleva</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
@@ -2562,7 +2564,7 @@ async function gerarRelatorioPedidos(){
         let linhas = '<tr><th>Quando</th><th>Ouvinte</th><th>WhatsApp</th><th>Música</th><th>Intérprete</th></tr>';
         dados.forEach(p=>{
           const c = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-          linhas += '<tr><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td><td>'+c(p.nome)+'</td><td>'+c(p.whatsapp)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td></tr>';
+          linhas += '<tr><td>'+c(dataBR(p.quando))+'</td><td>'+c(p.nome)+'</td><td>'+c(p.whatsapp)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td></tr>';
         });
         const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
         const blob = new Blob(['\\ufeff'+html], {type:'application/vnd.ms-excel'});
@@ -3299,7 +3301,7 @@ async function carregarPedidosRelatorio(){
     pedidosResumo = `${de? de.toLocaleString('pt-BR'):'início'} até ${ate? ate.toLocaleString('pt-BR'):'agora'}`;
     const el = document.getElementById('listaPedidosRel');
     if(!pedidosAtual.length){ el.innerHTML = '<p class="rotulo-secao">Nenhum pedido no período.</p>'; return; }
-    const linhas = pedidosAtual.map(p=>`<tr><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td><td>${(p.nome||'—').replace(/</g,'&lt;')}</td><td>${(p.whatsapp||'—').replace(/</g,'&lt;')}</td><td>${(p.musica||'—').replace(/</g,'&lt;')}</td><td>${(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('');
+    const linhas = pedidosAtual.map(p=>`<tr><td>${dataBR(p.quando)}</td><td>${(p.nome||'—').replace(/</g,'&lt;')}</td><td>${(p.whatsapp||'—').replace(/</g,'&lt;')}</td><td>${(p.musica||'—').replace(/</g,'&lt;')}</td><td>${(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('');
     el.innerHTML = `<p class="rotulo-secao">${pedidosAtual.length} pedidos • ${pedidosResumo}</p>
       <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
       <tr><th style="text-align:left;padding:5px;border-bottom:1px solid #444">Quando</th><th style="text-align:left;padding:5px;border-bottom:1px solid #444">Ouvinte</th><th style="text-align:left;padding:5px;border-bottom:1px solid #444">Música</th><th style="text-align:left;padding:5px;border-bottom:1px solid #444">Intérprete</th></tr>
@@ -3314,7 +3316,7 @@ function salvarPedidos(formato){
     let linhas = '<tr><th>Quando</th><th>Ouvinte</th><th>WhatsApp</th><th>Música</th><th>Intérprete</th></tr>';
     pedidosAtual.forEach(p=>{
       const c = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-      linhas += '<tr><td>'+c((p.quando||'').replace('T',' ').slice(0,16))+'</td><td>'+c(p.nome)+'</td><td>'+c(p.whatsapp)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td></tr>';
+      linhas += '<tr><td>'+c(dataBR(p.quando))+'</td><td>'+c(p.nome)+'</td><td>'+c(p.whatsapp)+'</td><td>'+c(p.musica)+'</td><td>'+c(p.interprete)+'</td></tr>';
     });
     const html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">'+linhas+'</table></body></html>';
     const blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel'});
@@ -3322,7 +3324,7 @@ function salvarPedidos(formato){
     a.download = 'pedidos_eleva.xls'; a.click();
     avisar('Pedidos salvos em Excel! 📊'); return;
   }
-  const linhas = pedidosAtual.map(p=>`<tr><td>${(p.quando||'').replace('T',' ').slice(0,16)}</td><td>${String(p.nome||'—').replace(/</g,'&lt;')}</td><td>${String(p.whatsapp||'—').replace(/</g,'&lt;')}</td><td>${String(p.musica||'—').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('');
+  const linhas = pedidosAtual.map(p=>`<tr><td>${dataBR(p.quando)}</td><td>${String(p.nome||'—').replace(/</g,'&lt;')}</td><td>${String(p.whatsapp||'—').replace(/</g,'&lt;')}</td><td>${String(p.musica||'—').replace(/</g,'&lt;')}</td><td>${String(p.interprete||'—').replace(/</g,'&lt;')}</td></tr>`).join('');
   const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos - Rádio Eleva</title>
     <style>body{font-family:Arial;padding:24px;color:#14203a}h1{color:#0D2B52}h2{color:#1B7A4B;font-size:15px}
     table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #cfd8e6;padding:6px 9px;text-align:left}th{background:#0D2B52;color:#fff}
@@ -3518,6 +3520,29 @@ async function entrarComoSetor(){
 let usuarioAtual = null; // null = admin; {login, nome, abas} = setor
 
 /// Hash simples SHA-256 (via SubtleCrypto nativo do browser)
+/// ========== DATAS NO PADRAO BRASILEIRO (dia/mes/ano) ==========
+/// Antes as datas apareciam como 2026-08-13 22:55 (padrao internacional).
+/// Agora aparecem como 13/08/2026 22:55 em TODO o painel.
+function dataBR(valor, comHora){
+  if(!valor) return '-';
+  try{
+    const s = String(valor);
+    // formato ISO: 2026-08-13T22:55:00
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
+    if(m){
+      const data = `${m[3]}/${m[2]}/${m[1]}`;
+      return (comHora !== false && m[4]) ? `${data} ${m[4]}:${m[5]}` : data;
+    }
+    const d = new Date(s);
+    if(!isNaN(d)){
+      return (comHora !== false)
+        ? d.toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+        : d.toLocaleDateString('pt-BR');
+    }
+  }catch(_){}
+  return String(valor);
+}
+
 /// ================= BACKUP E RESTAURACAO =================
 /// Guarda uma copia de tudo que esta no banco. Se alguem apagar (ou se voce
 /// apagar sem querer), da para voltar tudo como estava.
