@@ -996,7 +996,7 @@ function trocarAba(botao){
   ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
   try{ sessionStorage.setItem('painel_aba', botao.dataset.aba); }catch(_){}
-  if(botao.dataset.aba==='usuarios') carregarUsuarios();
+  if(botao.dataset.aba==='usuarios'){ carregarUsuarios(); migrarSenhasParaCofre(); }
   if(botao.dataset.aba==='letras') carregarReportes();
 }
 
@@ -3479,6 +3479,58 @@ async function entrarComoSetor(){
 let usuarioAtual = null; // null = admin; {login, nome, abas} = setor
 
 /// Hash simples SHA-256 (via SubtleCrypto nativo do browser)
+/// ============ SENHAS PROTEGIDAS POR CODIGO-MESTRE ============
+/// A senha do colaborador e guardada EMBARALHADA com um codigo que so o
+/// Haroldo conhece. Quem abrir o banco direto ve so caracteres sem sentido.
+/// Para ver a senha no painel, e preciso digitar o codigo-mestre.
+let _codigoMestre = '';   // fica so na memoria desta sessao (nunca e salvo)
+
+/// Deriva uma chave a partir do codigo-mestre (PBKDF2, 120 mil voltas)
+async function _chaveDoMestre(codigo, salt){
+  const enc = new TextEncoder();
+  const base = await crypto.subtle.importKey(
+    'raw', enc.encode(codigo), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations:120000, hash:'SHA-256' },
+    base, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+}
+
+/// Embaralha a senha com o codigo-mestre (devolve texto seguro para o banco)
+async function cifrarSenha(senha, codigo){
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+  const chave = await _chaveDoMestre(codigo, salt);
+  const cifrado = await crypto.subtle.encrypt(
+    { name:'AES-GCM', iv }, chave, enc.encode(senha));
+  const juntar = (a) => btoa(String.fromCharCode(...new Uint8Array(a)));
+  return 'v1:' + juntar(salt) + ':' + juntar(iv) + ':' + juntar(cifrado);
+}
+
+/// Desembaralha a senha (so funciona com o codigo-mestre certo)
+async function decifrarSenha(guardado, codigo){
+  try{
+    const p = (guardado||'').split(':');
+    if(p.length !== 4 || p[0] !== 'v1') return null;
+    const bytes = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+    const chave = await _chaveDoMestre(codigo, bytes(p[1]));
+    const aberto = await crypto.subtle.decrypt(
+      { name:'AES-GCM', iv: bytes(p[2]) }, chave, bytes(p[3]));
+    return new TextDecoder().decode(aberto);
+  }catch(_){ return null; }
+}
+
+/// Pede o codigo-mestre uma vez por sessao
+async function pedirCodigoMestre(){
+  if(_codigoMestre) return _codigoMestre;
+  const c = prompt('Digite o seu CÓDIGO-MESTRE para ver as senhas:\n\n(é o código que só você conhece — ele não fica salvo em lugar nenhum)');
+  if(c === null) return '';
+  const s = (c||'').trim();
+  if(s.length < 4){ avisar('O código-mestre precisa ter pelo menos 4 caracteres.', true); return ''; }
+  _codigoMestre = s;
+  return s;
+}
+
 async function sha256(texto) {
   const buf = await crypto.subtle.digest('SHA-256',
     new TextEncoder().encode(texto));
@@ -4060,6 +4112,36 @@ async function limparReportes(){
 }
 
 /// Carregar e exibir a lista de usuários cadastrados
+/// FAXINA: as versoes antigas guardavam a senha em TEXTO PURO no banco.
+/// Ao abrir a aba Usuarios, essas senhas sao movidas para o cofre (se o
+/// codigo-mestre ja tiver sido informado) e apagadas do texto puro.
+async function migrarSenhasParaCofre(){
+  try{
+    const r = await fetch(`${RTDB}/painel_usuarios.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!d || d.error) return;
+    const pendentes = Object.entries(d).filter(([_,u]) => u && u.senha_visivel);
+    if(!pendentes.length) return;
+    let cod = _codigoMestre;
+    if(!cod){
+      const ok = confirm('Existem ' + pendentes.length + ' senha(s) guardadas em texto puro (versão antiga).\n\nDeseja protegê-las agora com o seu código-mestre?');
+      if(!ok) return;
+      cod = await pedirCodigoMestre();
+      if(!cod) return;
+    }
+    for(const [login, u] of pendentes){
+      try{
+        u.senha_cofre = await cifrarSenha(u.senha_visivel, cod);
+        delete u.senha_visivel;
+        await fetch(`${RTDB}/painel_usuarios/${login}.json`,
+          { method:'PUT', body: JSON.stringify(u) });
+      }catch(_){}
+    }
+    avisar(pendentes.length + ' senha(s) protegidas no cofre. 🔒');
+    carregarUsuarios();
+  }catch(_){}
+}
+
 async function carregarUsuarios() {
   const el = document.getElementById('listaUsuarios');
   if (!el) return;
@@ -4089,8 +4171,7 @@ async function carregarUsuarios() {
     el.innerHTML = lista.map(([login, u]) => {
       const abasNomes = (u.abas||[]).map(a => ABAS_NOMES[a]||a).join(', ') || '(nenhuma)';
       const status = u.ativo ? '🟢 Ativo' : '🔴 Inativo';
-      const temSenha = u.senha_visivel ? true : false;
-      const senhaSegura = (u.senha_visivel||'').replace(/</g,'&lt;').replace(/'/g,'&#39;');
+      const temSenha = u.senha_cofre ? true : false;
       return `<div class="usuario-card">
         <h4>${(u.nome||login).replace(/</g,'&lt;')} <small style="color:#9a93d9;font-weight:400">@${login}</small>
           <span style="float:right;font-size:12px">${status}</span>
@@ -4098,11 +4179,11 @@ async function carregarUsuarios() {
         <div class="abas-perm">Abas: ${abasNomes}</div>
         <div class="senha-linha" style="font-size:13px;margin-top:6px;color:#c9c3f0">
           🔑 Senha:
-          <span id="senha_${login}" data-senha="${senhaSegura}" style="letter-spacing:2px">••••••••</span>
+          <span id="senha_${login}" style="letter-spacing:2px">••••••••</span>
           ${temSenha
             ? `<button class="botao mini" style="padding:3px 9px;margin-left:6px;background:#3a3468"
                  onclick="alternarSenha('${login}')" id="btnolho_${login}">👁️ Ver</button>`
-            : '<span style="color:#9a93d9;font-size:12px;margin-left:6px">(cadastre a senha de novo para poder ver)</span>'}
+            : '<span style="color:#9a93d9;font-size:12px;margin-left:6px">(edite e salve a senha para guardá-la no cofre)</span>'}
         </div>
         <div class="acoes">
           <button class="botao mini" onclick="editarUsuario('${login}')">✏️ Editar</button>
@@ -4116,19 +4197,36 @@ async function carregarUsuarios() {
 }
 
 /// Mostra ou esconde a senha de um usuário no card
-function alternarSenha(login){
+async function alternarSenha(login){
   const span = document.getElementById('senha_'+login);
   const btn  = document.getElementById('btnolho_'+login);
   if(!span) return;
-  const revelada = span.dataset.revelada === 'sim';
-  if(revelada){
+  // ja esta aberta? entao so fecha
+  if(span.dataset.revelada === 'sim'){
     span.textContent = '••••••••';
     span.dataset.revelada = 'nao';
     if(btn) btn.innerHTML = '👁️ Ver';
-  } else {
-    span.textContent = span.dataset.senha || '(sem senha)';
+    return;
+  }
+  const cod = await pedirCodigoMestre();
+  if(!cod) return;
+  span.textContent = 'abrindo...';
+  try{
+    const r = await fetch(`${RTDB}/painel_usuarios/${login}.json?t=${Date.now()}`);
+    const u = await r.json();
+    const aberta = (u && u.senha_cofre) ? await decifrarSenha(u.senha_cofre, cod) : null;
+    if(aberta === null){
+      span.textContent = '••••••••';
+      _codigoMestre = ''; // deixa tentar de novo com outro codigo
+      avisar('Código-mestre incorreto (ou senha ainda não guardada no cofre).', true);
+      return;
+    }
+    span.textContent = aberta;
     span.dataset.revelada = 'sim';
     if(btn) btn.innerHTML = '🙈 Ocultar';
+  }catch(_){
+    span.textContent = '••••••••';
+    avisar('Não foi possível abrir a senha.', true);
   }
 }
 
@@ -4149,7 +4247,11 @@ async function salvarUsuario(loginEditando) {
     const u = { nome, abas, ativo: true };
     if (senha) {
       u.senha_hash = await sha256(senha);
-      u.senha_visivel = senha; // guardada para o admin poder consultar
+      // guarda a senha EMBARALHADA com o codigo-mestre (nunca em texto puro)
+      const cod = await pedirCodigoMestre();
+      if (cod) {
+        u.senha_cofre = await cifrarSenha(senha, cod);
+      }
     } else if (loginEditando) {
       // editando sem trocar a senha: preserva a senha atual
       try {
@@ -4157,7 +4259,7 @@ async function salvarUsuario(loginEditando) {
         const atual = await rr.json();
         if (atual) {
           if (atual.senha_hash) u.senha_hash = atual.senha_hash;
-          if (atual.senha_visivel) u.senha_visivel = atual.senha_visivel;
+          if (atual.senha_cofre) u.senha_cofre = atual.senha_cofre;
         }
       } catch(_) {}
     }
