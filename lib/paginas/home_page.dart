@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:share_plus/share_plus.dart';
@@ -155,6 +156,7 @@ class _HomePageState extends State<HomePage> {
   /// Haroldo conferir e corrigir.
   void _reportarProblema(BuildContext ctx, AppConfig cfg, String musica) {
     if (musica.isEmpty) return;
+    FocusManager.instance.primaryFocus?.unfocus();
     showModalBottomSheet(
       context: ctx,
       backgroundColor: CoresEleva.azulProfundo,
@@ -270,6 +272,8 @@ class _HomePageState extends State<HomePage> {
   /// Abre um painel deslizante com a letra da música tocando agora
   void _abrirLetra(BuildContext context, AppConfig cfg) {
     final musica = _musicaAtual.trim();
+    // fecha o teclado antes de abrir a letra (se estiver aberto em outra aba)
+    FocusManager.instance.primaryFocus?.unfocus();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -438,7 +442,12 @@ class _HomePageState extends State<HomePage> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      // Ao fechar a letra, garante que o teclado do Android NAO apareca:
+      // tira o foco de qualquer campo e manda o sistema esconder o teclado.
+      FocusManager.instance.primaryFocus?.unfocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+    });
   }
 
   Widget _letraMensagem(String texto) {

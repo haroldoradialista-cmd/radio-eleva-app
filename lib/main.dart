@@ -188,6 +188,12 @@ class _TelaPrincipalState extends State<TelaPrincipal>
   /// vídeo e retoma o rádio, se ele havia sido pausado.
   void _aoTrocarAba(int novo) {
     final anterior = _abaAtual;
+    // IMPORTANTE: solta o campo de escrita da aba que estamos deixando.
+    // Sem isto, o campo do chat (ou do pedido musical) continuava ativo em
+    // segundo plano: o teclado abria sozinho e o que era digitado ia parar
+    // naquele campo, mesmo o ouvinte estando em outra tela.
+    FocusManager.instance.primaryFocus?.unfocus();
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
     if (novo == _abaTv && anterior != _abaTv) {
       // só tenta tocar o vídeo; o corte do rádio vem depois, se houver live
       Future.delayed(const Duration(milliseconds: 250), TvControle.tocar);
@@ -301,6 +307,7 @@ class _TelaPrincipalState extends State<TelaPrincipal>
 
   void _irParaAba(int i) {
     _manterTelaAcesa();
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _abaAtual = i);
     _pageCtrl.animateToPage(i,
         duration: Duration(milliseconds: 320), curve: Curves.easeOutCubic);

@@ -62,6 +62,9 @@ class _TelaChat extends StatefulWidget {
 
 class _TelaChatState extends State<_TelaChat> {
   final _msg = TextEditingController();
+  // controle de foco do campo: permite SOLTAR o teclado quando o ouvinte
+  // sai da aba do chat (senao o campo continuava ativo em segundo plano)
+  final _focoMsg = FocusNode();
   final _scroll = ScrollController();
   Timer? _timer;
   List<Map<String, dynamic>> _mensagens = [];
@@ -176,6 +179,7 @@ class _TelaChatState extends State<_TelaChat> {
 
   @override
   void dispose() {
+    _focoMsg.dispose();
     _timer?.cancel();
     _timerSuspensao?.cancel();
     _msg.dispose();
@@ -637,6 +641,7 @@ class _TelaChatState extends State<_TelaChat> {
               Expanded(
                 child: TextField(
                   controller: _msg,
+                  focusNode: _focoMsg,
                   maxLength: 200,
                   decoration: InputDecoration(
                     counterText: '',

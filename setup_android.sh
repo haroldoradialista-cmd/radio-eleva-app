@@ -60,6 +60,12 @@ def add_orient(m):
     if 'screenOrientation' not in tag:
         tag = tag.replace('<activity',
             '<activity android:screenOrientation="portrait"', 1)
+    # EVITA ABRIR O APP DUAS VEZES: se o ouvinte tocar no icone com o app
+    # ja aberto, o Android TRAZ DE VOLTA a tela que ja estava rodando em
+    # vez de criar outra (o que causava dois audios ao mesmo tempo).
+    if 'launchMode' not in tag:
+        tag = tag.replace('<activity',
+            '<activity android:launchMode="singleTask"', 1)
     return tag
 novo = re.sub(r'<activity\b[^>]*android:name="\.MainActivity"[^>]*>',
               add_orient, s, count=1)
