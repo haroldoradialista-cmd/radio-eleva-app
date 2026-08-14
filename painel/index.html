@@ -130,6 +130,15 @@
   @media(max-width:560px){.grade2{grid-template-columns:1fr}}
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{padding:5px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
+  /* TABELAS LARGAS (pedidos, ganhadores, promocoes): as colunas de cidade,
+     telefone e data quebravam em duas linhas e ficavam ruins de ler.
+     Agora a tabela pode passar da largura da tela e rolar na horizontal,
+     mantendo cada informacao numa linha so. */
+  .rolagem-tabela{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .rolagem-tabela table{min-width:900px}
+  .rolagem-tabela td,.rolagem-tabela th{white-space:nowrap}
+  /* a musica e o interprete podem ser longos: deixa quebrar so eles */
+  .rolagem-tabela td.livre{white-space:normal;min-width:150px}
   th{color:var(--ouro)}
   .msgchat{background:var(--navy);border-radius:10px;padding:6px 10px;margin-bottom:5px;display:flex;gap:10px;align-items:flex-start}
   .msgchat .corpo{flex:1}
@@ -1998,15 +2007,15 @@ function renderPedidosM(){
   const ini = (pedidosMPagina-1)*PEDIDOS_POR_PAGINA;
   const pagina = pedidosMLista.slice(ini, ini+PEDIDOS_POR_PAGINA);
   el.innerHTML = `<p class="rotulo-secao">📊 <b>${total}</b> pedidos recebidos — página ${pedidosMPagina} de ${Math.max(1,Math.ceil(total/PEDIDOS_POR_PAGINA))}</p>` +
-    `<table><tr><th>#</th><th>Ouvinte</th><th>Intérprete</th><th>Música</th><th>Cidade</th><th>Estado</th><th>WhatsApp</th><th>Quando</th><th></th></tr>` +
+    `<div class="rolagem-tabela"><table><tr><th>#</th><th>Ouvinte</th><th>Intérprete</th><th>Música</th><th>Cidade</th><th>Estado</th><th>WhatsApp</th><th>Quando</th><th></th></tr>` +
     pagina.map(([k,p],idx)=>`<tr>
-      <td>${ini+idx+1}</td><td>${p.nome||''}</td><td>${p.interprete||''}</td><td><b>${p.musica||''}</b></td>
+      <td>${ini+idx+1}</td><td>${p.nome||''}</td><td class="livre">${p.interprete||''}</td><td class="livre"><b>${p.musica||''}</b></td>
       <td>${p.cidade||'-'}</td>
       <td>${p.estado||'-'}</td>
       <td>${p.whatsapp||'-'}</td>
       <td>${(p.quando||'').replace('T',' ').slice(0,16)}</td>
       <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
-    </tr>`).join('') + `</table>` +
+    </tr>`).join('') + `</table></div>` +
     controlesPagina(total, PEDIDOS_POR_PAGINA, pedidosMPagina, 'irPedidosM');
 }
 async function apagarPedidoM(chave){
@@ -2056,8 +2065,8 @@ async function verParticipacoes(id){
     const d = await r.json();
     if(!d){ box.innerHTML = '<p class="rotulo-secao">Nenhuma participação ainda.</p>'; return; }
     const lista = Object.values(d).sort((a,b)=>(a.quando||'').localeCompare(b.quando||''));
-    box.innerHTML = `<table><tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Resposta</th><th>Quando</th></tr>` +
-      lista.map((x,i)=>`<tr><td>${i+1}</td><td>${x.nome||''}</td><td>${x.whatsapp||''}</td><td>${x.instagram||''}</td><td>${x.email||''}</td><td>${x.resposta||''}</td><td>${(x.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('') + `</table>`;
+    box.innerHTML = `<div class="rolagem-tabela"><table><tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>Instagram</th><th>E-mail</th><th>Resposta</th><th>Quando</th></tr>` +
+      lista.map((x,i)=>`<tr><td>${i+1}</td><td>${x.nome||''}</td><td>${x.whatsapp||''}</td><td>${x.instagram||''}</td><td>${x.email||''}</td><td class="livre">${x.resposta||''}</td><td>${(x.quando||'').replace('T',' ').slice(0,16)}</td></tr>`).join('') + `</table></div>`;
   }catch(e){ box.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
 }
 async function criarPromocao(){
