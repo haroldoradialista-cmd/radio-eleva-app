@@ -253,7 +253,16 @@ class _HomePageState extends State<HomePage> {
     if (cfg.chatUrl.isEmpty) return;
     final base = cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
     try {
-      await http.post(Uri.parse('$base/letras_reportadas.json'),
+      // UM AVISO POR MUSICA: se 100 ouvintes reclamarem da mesma musica,
+      // o painel recebe UMA linha para corrigir (e nao 100 iguais).
+      // A chave e sempre a mesma para a mesma musica+problema, entao o
+      // registro e SUBSTITUIDO em vez de criar outro.
+      final chave = ('${musica}_$tipo')
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+          .replaceAll(RegExp(r'_+'), '_')
+          .replaceAll(RegExp(r'^_|_\$'), '');
+      await http.put(Uri.parse('$base/letras_reportadas/$chave.json'),
           body: jsonEncode({
             'musica': musica,
             'tipo': tipo,

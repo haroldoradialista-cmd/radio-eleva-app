@@ -3899,6 +3899,16 @@ async function carregarReportes(){
           try{ await fetch(`${RTDB}/letras_reportadas/${id}.json`, { method:'DELETE' }); }catch(_){}
         }
       } else {
+        // FAXINA: se a mesma musica gerou varios avisos iguais (100 ouvintes
+        // reclamando do mesmo problema), mantem UM registro e apaga o resto.
+        // Assim o banco nao incha e o painel mostra uma linha so.
+        if(x.ids.length > 1){
+          const manter = x.ids[0];
+          for(const id of x.ids.slice(1)){
+            try{ await fetch(`${RTDB}/letras_reportadas/${id}.json`, { method:'DELETE' }); }catch(_){}
+          }
+          x.ids = [manter];
+        }
         x.faltam = faltam;
         pendentes.push(x);
       }
@@ -3925,7 +3935,7 @@ function desenharReportes(){
     const mus = (x.musica||'').replace(/'/g,"\\'");
     return `<div class="usuario-card">
       <h4>${(x.musica||'').replace(/</g,'&lt;')}</h4>
-      <div class="abas-perm">Falta corrigir: <b>${(x.faltam||[]).join(' e ') || x.tipo}</b> • ${x.n} aviso(s) • último: ${q}</div>
+      <div class="abas-perm">Falta corrigir: <b>${(x.faltam||[]).join(' e ') || x.tipo}</b>${x.n>1?` • reportado por <b>${x.n}</b> ouvintes`:''} • ${q}</div>
       <div class="acoes">
         <button class="botao mini" onclick="abrirCorrecao('${mus}')">✏️ Corrigir agora</button>
         <button class="botao mini perigo" onclick="resolverReporte('${mus}')">✔️ Já resolvi</button>
