@@ -4025,84 +4025,178 @@ function _partes(musica){
   };
 }
 
-/// Busca a LETRA em cascata (LRCLIB e lyrics.ovh)
+/// ---------- FERRAMENTAS DE BUSCA DO ROBO ----------
+/// Tira acentos (muitos catalogos guardam sem acento)
+function _semAcento(s){
+  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+/// Gera VARIAS formas de escrever o mesmo artista/musica, porque a
+/// transmissao manda o nome de um jeito e os catalogos guardam de outro.
+function _variacoes(artista, titulo){
+  const v = [];
+  const add = (a,t) => {
+    a = (a||'').trim(); t = (t||'').trim();
+    if(!t) return;
+    if(!v.some(x => x.a===a && x.t===t)) v.push({a,t});
+  };
+  add(artista, titulo);
+  add(_semAcento(artista), _semAcento(titulo));
+  // o streaming as vezes inverte: "MUSICA - ARTISTA"
+  add(titulo, artista);
+  // so o primeiro nome do artista (ex.: "MINISTERIO SARANDO A TERRA FERIDA")
+  const p1 = (artista||'').split(' ').slice(0,2).join(' ');
+  if(p1 && p1 !== artista) add(p1, titulo);
+  // tira "e", "&" e tudo depois (duplas/participacoes)
+  const semDupla = (artista||'').split(/\s+(?:e|&|com)\s+/i)[0];
+  if(semDupla && semDupla !== artista) add(semDupla, titulo);
+  // titulo sem subtitulo depois de traco/dois pontos
+  const tCurto = (titulo||'').split(/[-:–]/)[0].trim();
+  if(tCurto && tCurto !== titulo) add(artista, tCurto);
+  // sem artista (ultimo recurso, validado depois)
+  add('', titulo);
+  return v;
+}
+
+/// Confere se o resultado bate mesmo com a musica procurada
+function _confere(aResp, tResp, aBusca, tBusca, frouxo){
+  const a1=_semAcento(aResp||'').toLowerCase(), t1=_semAcento(tResp||'').toLowerCase();
+  const a2=_semAcento(aBusca||'').toLowerCase(), t2=_semAcento(tBusca||'').toLowerCase();
+  if(!t1 || !t2) return false;
+  const tOk = t1===t2 || t1.includes(t2) || t2.includes(t1);
+  if(!tOk) return false;
+  if(!a2) return frouxo === true;         // sem artista: so no modo frouxo
+  if(a1===a2 || a1.includes(a2) || a2.includes(a1)) return true;
+  // alguma palavra relevante em comum (ex.: "ministerio sarando")
+  const pa=new Set(a1.split(/\s+/).filter(w=>w.length>=4));
+  const pb=a2.split(/\s+/).filter(w=>w.length>=4);
+  return pb.some(w=>pa.has(w));
+}
+
+/// Busca a LETRA insistindo em varias fontes e varias formas de escrever
 async function _roboLetra(artista, titulo){
-  // 1) LRCLIB exato
+  const combos = _variacoes(artista, titulo);
+  // ---- 1a rodada: LRCLIB exato (a fonte mais confiavel) ----
+  for(const {a,t} of combos){
+    if(!a) continue;
+    try{
+      const r = await fetch(`https://lrclib.net/api/get?artist_name=${encodeURIComponent(a)}&track_name=${encodeURIComponent(t)}`);
+      if(r.ok){
+        const d = await r.json();
+        const L = (d.plainLyrics||d.syncedLyrics||'').trim();
+        if(L.length > 20) return L;
+      }
+    }catch(_){}
+  }
+  // ---- 2a rodada: LRCLIB busca, conferindo artista e titulo ----
+  for(const {a,t} of combos){
+    try{
+      const q = (a ? a+' ' : '') + t;
+      const r = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+      if(r.ok){
+        const lista = await r.json();
+        for(const it of (lista||[])){
+          const L = (it.plainLyrics||'').trim();
+          if(L.length > 20 && _confere(it.artistName, it.trackName, a||artista, t)) return L;
+        }
+      }
+    }catch(_){}
+  }
+  // ---- 3a rodada: lyrics.ovh ----
+  for(const {a,t} of combos){
+    if(!a) continue;
+    try{
+      const r = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(a)}/${encodeURIComponent(t)}`);
+      if(r.ok){
+        const d = await r.json();
+        const L = (d.lyrics||'').trim();
+        if(L.length > 20) return L;
+      }
+    }catch(_){}
+  }
+  // ---- 4a rodada (ultimo recurso): LRCLIB so pelo titulo, aceitando
+  //      quando o titulo casa muito bem (evita letra de outra musica) ----
   try{
-    const u = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artista)}&track_name=${encodeURIComponent(titulo)}`;
-    const r = await fetch(u);
-    if(r.ok){
-      const d = await r.json();
-      const L = (d.plainLyrics||'').trim();
-      if(L.length > 20) return L;
-    }
-  }catch(_){}
-  // 2) LRCLIB busca (confere artista e titulo)
-  try{
-    const u = `https://lrclib.net/api/search?q=${encodeURIComponent(artista+' '+titulo)}`;
-    const r = await fetch(u);
+    const r = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(titulo)}`);
     if(r.ok){
       const lista = await r.json();
-      const aN = artista.toLowerCase(), tN = titulo.toLowerCase();
+      const tAlvo=_semAcento(titulo).toLowerCase();
       for(const it of (lista||[])){
-        const a = (it.artistName||'').toLowerCase();
-        const ti = (it.trackName||'').toLowerCase();
-        const okT = ti.includes(tN) || tN.includes(ti);
-        const okA = !aN || a.includes(aN) || aN.includes(a);
-        const L = (it.plainLyrics||'').trim();
-        if(okT && okA && L.length > 20) return L;
+        const tR=_semAcento(it.trackName||'').toLowerCase();
+        const L=(it.plainLyrics||'').trim();
+        if(L.length>20 && tR===tAlvo) return L;
       }
-    }
-  }catch(_){}
-  // 3) lyrics.ovh
-  try{
-    const u = `https://api.lyrics.ovh/v1/${encodeURIComponent(artista)}/${encodeURIComponent(titulo)}`;
-    const r = await fetch(u);
-    if(r.ok){
-      const d = await r.json();
-      const L = (d.lyrics||'').trim();
-      if(L.length > 20) return L;
     }
   }catch(_){}
   return '';
 }
 
-/// Busca a CAPA (iTunes e Deezer), exigindo que o ARTISTA confira
+/// Busca a CAPA insistindo em varias lojas e formas de escrever
 async function _roboCapa(artista, titulo){
-  const aN = (artista||'').toLowerCase(), tN = (titulo||'').toLowerCase();
-  const bate = (a, ti) => {
-    a = (a||'').toLowerCase(); ti = (ti||'').toLowerCase();
-    const okT = ti.includes(tN) || tN.includes(ti);
-    const okA = !aN || a.includes(aN) || aN.includes(a);
-    return okT && okA;
-  };
-  // iTunes
-  try{
-    const u = `https://itunes.apple.com/search?term=${encodeURIComponent(artista+' '+titulo)}&entity=song&limit=10&country=BR`;
-    const r = await fetch(u);
-    if(r.ok){
+  const combos = _variacoes(artista, titulo);
+  const paises = ['BR','US'];
+
+  // ---- iTunes: musica, em varios paises e variacoes ----
+  for(const {a,t} of combos){
+    for(const pais of paises){
+      try{
+        const q = (a ? a+' ' : '') + t;
+        const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=15&country=${pais}`);
+        if(!r.ok) continue;
+        const d = await r.json();
+        for(const it of (d.results||[])){
+          if(_confere(it.artistName, it.trackName, a||artista, t) && it.artworkUrl100){
+            return it.artworkUrl100.replace('100x100','600x600');
+          }
+        }
+      }catch(_){}
+    }
+  }
+  // ---- iTunes: buscando pelo ALBUM (muita coletanea gospel so aparece assim)
+  for(const {a,t} of combos){
+    if(!a) continue;
+    try{
+      const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(a+' '+t)}&entity=album&limit=10&country=BR`);
+      if(!r.ok) continue;
       const d = await r.json();
       for(const it of (d.results||[])){
-        if(bate(it.artistName, it.trackName) && it.artworkUrl100){
+        if(_confere(it.artistName, it.collectionName, a, t) && it.artworkUrl100){
           return it.artworkUrl100.replace('100x100','600x600');
         }
       }
-    }
-  }catch(_){}
-  // Deezer
+    }catch(_){}
+  }
+  // ---- iTunes: so o artista (pega a capa de um album dele, melhor que nada)
   try{
-    const u = `https://api.deezer.com/search?q=${encodeURIComponent(artista+' '+titulo)}&limit=10`;
-    const r = await fetch(u);
-    if(r.ok){
-      const d = await r.json();
-      for(const it of (d.data||[])){
-        if(bate(it.artist && it.artist.name, it.title)){
-          const c = (it.album && (it.album.cover_xl || it.album.cover_big)) || '';
-          if(c) return c;
+    if(artista){
+      const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artista)}&entity=song&limit=25&country=BR`);
+      if(r.ok){
+        const d = await r.json();
+        const tAlvo=_semAcento(titulo).toLowerCase();
+        for(const it of (d.results||[])){
+          const tR=_semAcento(it.trackName||'').toLowerCase();
+          if((tR===tAlvo || tR.includes(tAlvo) || tAlvo.includes(tR)) && it.artworkUrl100){
+            return it.artworkUrl100.replace('100x100','600x600');
+          }
         }
       }
     }
   }catch(_){}
+  // ---- Deezer (as vezes o navegador bloqueia; se falhar, seguimos) ----
+  for(const {a,t} of combos){
+    if(!a) continue;
+    try{
+      const r = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(a+' '+t)}&limit=10`);
+      if(!r.ok) continue;
+      const d = await r.json();
+      for(const it of (d.data||[])){
+        if(_confere(it.artist && it.artist.name, it.title, a, t)){
+          const c=(it.album && (it.album.cover_xl||it.album.cover_big))||'';
+          if(c) return c;
+        }
+      }
+    }catch(_){}
+  }
   return '';
 }
 
@@ -4110,7 +4204,7 @@ async function _roboCapa(artista, titulo){
 async function corrigirTodas(){
   if(_roboRodando){ avisar('O robô já está trabalhando, aguarde.', true); return; }
   const painelLog = document.getElementById('logRobo');
-  if(!confirm('O robô vai buscar letra e capa das músicas reportadas e salvar automaticamente. Continuar?')) return;
+  if(!confirm('O robô vai vasculhar VÁRIAS fontes (e várias formas de escrever o nome) para cada música.\n\nPode levar alguns minutos se a fila for grande. Não feche esta aba.\n\nContinuar?')) return;
   _roboRodando = true;
   painelLog.style.display = 'block';
   painelLog.innerHTML = '<p class="rotulo-secao">🤖 Iniciando...</p>';
@@ -4154,7 +4248,7 @@ async function corrigirTodas(){
         nada++;
         linhas.unshift(`<div style="font-size:12.5px;color:#e8c96a">➖ ${m} — nada encontrado (corrija na mão)</div>`);
       }
-      await new Promise(s=>setTimeout(s, 350)); // respeita os sites
+      await new Promise(s=>setTimeout(s, 150)); // respeita os sites
     }
     painelLog.innerHTML =
       `<div class="cartao" style="border-left:3px solid var(--verde)">
