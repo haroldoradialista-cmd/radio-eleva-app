@@ -76,6 +76,9 @@ Future<void> main() async {
     // aparelho. A partir dai, letra e capa corrigidas aparecem NA HORA,
     // sem depender de internet e sem depender do nome vir igualzinho.
     CorrecoesService.iniciar(LetraService.baseRtdb);
+    // MANTEM O OUVINTE CONECTADO: reabre a sessao guardada no aparelho,
+    // para ele nao precisar fazer login toda vez que abre o app.
+    AuthService.instancia.restaurarSessao();
     // AUTOPLAY: a rádio começa a tocar assim que o app abre
     if (cfg.streamUrl.isNotEmpty) {
       PlayerService.instancia
@@ -423,9 +426,8 @@ class _ComLogin extends StatelessWidget {
                           color: CoresEleva.dourado)),
                   SizedBox(height: 8),
                   Text(
-                      'Faça login com o Google ou com e-mail e senha para $oQue.\n\n'
-                      'Ouvir a rádio e ver a programação continuam liberados, '
-                      'sem precisar de conta. 💛',
+                      'Para participar do Chat e das Promoções, entre com o '
+                      'Google ou com e-mail e senha. Você só faz isso uma vez. 💛',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: 13.5,
