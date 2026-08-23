@@ -5,9 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
+import 'promo_cadastro_page.dart';
 import '../servicos/analytics_service.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/login_widget.dart';
@@ -266,7 +268,7 @@ class _PromocoesPageState extends State<PromocoesPage> {
                           : ListView(
                               padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
                               children: ativas
-                                  .map((p) => _cartaoPromo(cfg, p, u))
+                                  .map((p) => _bannerPromo(cfg, p))
                                   .toList(),
                             ),
                     ),
@@ -275,6 +277,146 @@ class _PromocoesPageState extends State<PromocoesPage> {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+
+  /// Banner clicavel da promocao (cerca de 4 cm de altura na tela).
+  /// Se o ouvinte ja participou, no lugar do banner aparece o parabens.
+  Widget _bannerPromo(AppConfig cfg, Map<String, dynamic> promo) {
+    final id = (promo['id'] ?? '').toString();
+    final nome = (promo['nome'] ?? promo['pergunta'] ?? 'PROMOÇÃO').toString();
+    final participou = _participadas.contains(id);
+
+    if (participou) {
+      return Container(
+        margin: EdgeInsets.only(bottom: 14),
+        padding: EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient:
+              LinearGradient(colors: [CoresEleva.verde, CoresEleva.azulVivo]),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+                color: CoresEleva.verde.withOpacity(0.3), blurRadius: 14)
+          ],
+        ),
+        child: Column(
+          children: [
+            Text('🎉', style: TextStyle(fontSize: 34)),
+            SizedBox(height: 6),
+            Text('PARABÉNS!',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.1)),
+            SizedBox(height: 6),
+            Text('Você já está participando da\n${nome.toUpperCase()}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 14,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white)),
+            SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Share.share(
+                    'Estou participando da ${nome.toUpperCase()} na '
+                    '${cfg.nome}! Baixe o app e participe também. 🎁📻'),
+                icon: Icon(Icons.share_rounded, size: 18),
+                label: Text('COMPARTILHAR',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CoresEleva.dourado,
+                  foregroundColor: Colors.black87,
+                  padding: EdgeInsets.symmetric(vertical: 11),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PromoCadastroPage(promo: promo, cfg: cfg),
+          ),
+        );
+        _carregarParticipadas(); // atualiza ao voltar
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 14),
+        height: 150, // ~4 cm
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: CoresEleva.dourado.withOpacity(0.55)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10)
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(17),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              MidiaEleva(item: promo, fit: BoxFit.cover),
+              // faixa com o nome e o convite para participar
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(12, 16, 12, 9),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.85)
+                      ],
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(nome.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 11, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: CoresEleva.verde,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text('PARTICIPAR',
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

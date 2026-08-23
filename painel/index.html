@@ -588,11 +588,28 @@
           <div><label>⏰ Início (opcional)</label><input type="datetime-local" id="prInicio"></div>
           <div><label>⏰ Término (opcional)</label><input type="datetime-local" id="prFim"></div>
         </div>
+        <div class="grade2">
+          <div><label>🎁 Brinde / prêmio</label><input id="prBrinde" placeholder="Ex.: 2 ingressos + kit da rádio"></div>
+          <div><label>🔢 Ordem de exibição</label><input type="number" id="prOrdem" min="1" value="1"></div>
+        </div>
+        <div class="grade2">
+          <div><label>⭐ Destaque</label>
+            <select id="prDestaque"><option value="nao">Não</option><option value="sim">Sim</option></select></div>
+          <div><label>🔘 Situação</label>
+            <select id="prStatus"><option value="ativado">Ativado</option><option value="desativado">Desativado</option></select></div>
+        </div>
+        <label>🔗 Link (ao tocar na imagem da promoção)</label>
+        <input id="prLink" placeholder="https://... (deixe vazio se não houver)">
+        <label>📧 E-mail para aviso de cada participação</label>
+        <input id="prEmail" placeholder="Ex.: promocoes@radioeleva.com.br">
+        <label>➕ Campos extras no cadastro (separados por vírgula)</label>
+        <input id="prExtras" placeholder="Ex.: PLACA DO VEÍCULO, MODELO">
         <label class="aviso-repetir" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
           <input type="checkbox" id="rep_promocoes" checked style="width:17px;height:17px;cursor:pointer">
           <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados da promoção anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
         </label>
-        <button class="botao" onclick="criarPromocao()">➕ Publicar promoção</button>
+        <div id="avisoEditandoPromo" style="display:none;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0;font-size:12.5px;color:#E9E7FF"></div>
+        <button class="botao" id="btnPublicarPromo" onclick="criarPromocao()">➕ Publicar promoção</button>
       </div>
     </section>
 
@@ -2050,6 +2067,7 @@ async function desenharPromos(){
       <div class="info"><b>${p.nome||p.pergunta} ${etiquetaAgenda(p)}</b>
       <span>${p.opcao1} / ${p.opcao2} — <b>${total} participações</b></span></div>
       <button class="botao mini neutro" onclick="trocarImagemItem('promocoes',${i})" title="Trocar imagem sem apagar">🔄</button>
+      <button class="botao mini" style="background:#1a7a4b" onclick="abrirCadastroPromo(${i})">📝 Cadastro</button>
       <button class="botao mini" onclick="verParticipacoes('${p.id}')">👥 Ver</button>
       ${botaoFinalizar('promocoes', i)}
       <button class="botao mini" style="background:#7a4fb5" onclick="repetirItem('promocoes',${i})" title="Repetir esta promoção">🔁</button>
@@ -2078,6 +2096,28 @@ async function criarPromocao(){
   if(!prNome.value.trim() || !prPergunta.value.trim() || !prOp1.value.trim() || !prOp2.value.trim()){
     avisar('Preencha o nome, a pergunta e as duas opções de resposta.', true); return;
   }
+  // se veio do botao CADASTRO, salva por cima da promocao existente
+  if(_promoEditando >= 0){
+    const p = config.promocoes[_promoEditando];
+    p.nome = prNome.value.trim(); p.pergunta = prPergunta.value.trim();
+    p.opcao1 = prOp1.value.trim(); p.opcao2 = prOp2.value.trim();
+    p.regulamento = prRegulamento.value.trim();
+    p.publicar_em = prInicio.value || ''; p.expirar_em = prFim.value || '';
+    p.brinde = (document.getElementById('prBrinde').value||'').trim();
+    p.ordem = parseInt(document.getElementById('prOrdem').value||'1') || 1;
+    p.destaque = document.getElementById('prDestaque').value;
+    p.status = document.getElementById('prStatus').value;
+    p.link = (document.getElementById('prLink').value||'').trim();
+    p.email = (document.getElementById('prEmail').value||'').trim();
+    p.extras = (document.getElementById('prExtras').value||'').trim();
+    config.promocoes.sort((a,b)=>(a.ordem||99)-(b.ordem||99));
+    try{
+      await salvarConfig('Painel: cadastro da promocao');
+      cancelarEdicaoPromo(); desenharPromos();
+      avisar('Cadastro da promoção salvo! ✅');
+    }catch(e){ avisar('Falhou: '+e.message, true); }
+    return;
+  }
   try{
     avisar('Enviando mídia...');
     const midia = await lerMidia('pr', '', '');
@@ -2085,13 +2125,60 @@ async function criarPromocao(){
     const nova = Object.assign({ id:'p'+Date.now(), nome:prNome.value.trim(), pergunta:prPergunta.value.trim(), opcao1:prOp1.value.trim(), opcao2:prOp2.value.trim(), regulamento:prRegulamento.value.trim() }, midia);
     if(prInicio.value) nova.publicar_em = prInicio.value;
     if(prFim.value) nova.expirar_em = prFim.value;
+    // campos novos do cadastro completo da promocao
+    nova.brinde   = (document.getElementById('prBrinde').value||'').trim();
+    nova.ordem    = parseInt(document.getElementById('prOrdem').value||'1') || 1;
+    nova.destaque = document.getElementById('prDestaque').value;
+    nova.status   = document.getElementById('prStatus').value;
+    nova.link     = (document.getElementById('prLink').value||'').trim();
+    nova.email    = (document.getElementById('prEmail').value||'').trim();
+    nova.extras   = (document.getElementById('prExtras').value||'').trim();
     config.promocoes.unshift(nova);
+    config.promocoes.sort((a,b)=>(a.ordem||99)-(b.ordem||99));
     await salvarConfig('Painel: promocao');
     prNome.value=prPergunta.value=prOp1.value=prOp2.value=''; prRegulamento.value=''; prInicio.value=''; prFim.value='';
+    ['prBrinde','prLink','prEmail','prExtras'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+    document.getElementById('prOrdem').value='1';
     ['arqImg_pr','arqVid_pr','ytLink_pr'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
     desenharPromos(); avisar('Promoção publicada! 🎁');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
+/// Abre o CADASTRO COMPLETO de uma promocao ja criada, para editar todos
+/// os dados dela (regulamento, brinde, datas, link, e-mail, ordem...).
+function abrirCadastroPromo(i){
+  const p = (config.promocoes||[])[i];
+  if(!p) return;
+  const v = (id, val) => { const el=document.getElementById(id); if(el) el.value = val ?? ''; };
+  v('prNome', p.nome); v('prPergunta', p.pergunta);
+  v('prOp1', p.opcao1); v('prOp2', p.opcao2);
+  v('prRegulamento', p.regulamento);
+  v('prInicio', p.publicar_em); v('prFim', p.expirar_em);
+  v('prBrinde', p.brinde); v('prOrdem', p.ordem || 1);
+  v('prLink', p.link); v('prEmail', p.email); v('prExtras', p.extras);
+  const d=document.getElementById('prDestaque'); if(d) d.value = p.destaque || 'nao';
+  const s=document.getElementById('prStatus');   if(s) s.value = p.status   || 'ativado';
+  _promoEditando = i;
+  const btn = document.getElementById('btnPublicarPromo');
+  if(btn) btn.innerHTML = '💾 Salvar alterações desta promoção';
+  const cx = document.getElementById('avisoEditandoPromo');
+  if(cx){ cx.style.display='block'; cx.innerHTML = `✏️ Editando: <b>${(p.nome||'').replace(/</g,'&lt;')}</b> — <a href="#" onclick="cancelarEdicaoPromo();return false" style="color:var(--ouro)">cancelar</a>`; }
+  document.getElementById('prNome').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+let _promoEditando = -1;
+
+function cancelarEdicaoPromo(){
+  _promoEditando = -1;
+  ['prNome','prPergunta','prOp1','prOp2','prRegulamento','prInicio','prFim',
+   'prBrinde','prLink','prEmail','prExtras'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const o=document.getElementById('prOrdem'); if(o) o.value='1';
+  const btn=document.getElementById('btnPublicarPromo');
+  if(btn) btn.innerHTML='➕ Publicar promoção';
+  const cx=document.getElementById('avisoEditandoPromo'); if(cx) cx.style.display='none';
+}
+
 async function removerPromo(i){
   if(!confirm('Remover esta promoção? (as participações ficam guardadas no banco)')) return;
   config.promocoes.splice(i,1);
