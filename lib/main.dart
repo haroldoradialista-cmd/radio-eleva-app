@@ -12,6 +12,7 @@ import 'paginas/tv_page.dart';
 import 'paginas/menu_page.dart';
 import 'widgets/campanha_popup.dart';
 import 'servicos/config_service.dart';
+import 'servicos/correcoes_service.dart';
 import 'servicos/analytics_service.dart';
 import 'servicos/notificacoes_service.dart';
 import 'servicos/despertador_service.dart';
@@ -69,6 +70,10 @@ Future<void> main() async {
     // CORRECOES da radio (letras e capas conferidas no painel)
     LetraService.baseRtdb =
         cfg.chatUrl.replaceAll(RegExp(r'/chat/?$'), '');
+    // CENTRAL DE CORRECOES: baixa a lista uma vez e deixa guardada no
+    // aparelho. A partir dai, letra e capa corrigidas aparecem NA HORA,
+    // sem depender de internet e sem depender do nome vir igualzinho.
+    CorrecoesService.iniciar(LetraService.baseRtdb);
     // AUTOPLAY: a rádio começa a tocar assim que o app abre
     if (cfg.streamUrl.isNotEmpty) {
       PlayerService.instancia

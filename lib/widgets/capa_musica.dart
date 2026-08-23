@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:just_audio/just_audio.dart';
 import '../servicos/letra_service.dart';
 import '../servicos/player_service.dart';
+import '../servicos/correcoes_service.dart';
 import '../tema.dart';
 
 /// Capa quadrada da música que está tocando (busca automática pela
@@ -110,8 +111,15 @@ class _CapaMusicaState extends State<CapaMusica> {
         if (artL.isEmpty) {'termo': titL, 'pais': 'us', 'soTitulo': true},
       ];
 
-      // 0) BASE DA RADIO: se a capa foi corrigida no painel, e ela que vale
-      String? url = await _daRadio(artL, titL);
+      // 0) BASE DA RADIO: se a capa foi corrigida no painel, e ela que vale.
+      //    Busca TOLERANTE (com/sem acento, "ao vivo", invertida) para a
+      //    capa nao "sumir" quando a transmissao muda o nome da musica.
+      String? url = CorrecoesService.capaDe(bruto);
+      if (url == null) {
+        url = await _daRadio(artL, titL);
+      }
+      // 0b) capa ja encontrada antes neste aparelho (nunca some)
+      url ??= await CorrecoesService.lembrancaCapa(bruto);
       if (url != null) {
         _aplicarCapa(url);
         return;
@@ -137,7 +145,9 @@ class _CapaMusicaState extends State<CapaMusica> {
           }
         }
       }
-      // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo
+      // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo.
+      // Se achou, GUARDA no aparelho para nunca mais sumir.
+      if (url != null) CorrecoesService.lembrar(bruto, capa: url);
       _aplicarCapa(url);
     } catch (_) {
       _aplicarCapa(null);

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'correcoes_service.dart';
 
 /// Busca a letra de uma música tentando VÁRIAS fontes em cascata.
 /// Nenhuma exige cadastro ou chave.
@@ -267,11 +268,25 @@ class LetraService {
     // quantas fontes ja foram rejeitadas pelos ouvintes nesta musica
     var pular = await _rejeicoes(chave);
 
-    // 0) BASE DA RADIO: correcoes feitas no painel valem mais que tudo
+    // 0) BASE DA RADIO: correcoes feitas no painel valem mais que tudo.
+    //    A busca e TOLERANTE (com/sem acento, com "ao vivo", invertida),
+    //    entao a correcao nao "some" quando a transmissao muda o nome.
+    final daCentral = CorrecoesService.letraDe(musicaBruta);
+    if (daCentral != null) {
+      _cache[chave] = _limparLetra(daCentral);
+      return _cache[chave];
+    }
     final daRadio = await _daRadio(aL, tL);
     if (daRadio != null) {
       _cache[chave] = daRadio;
       return daRadio;
+    }
+    // 0b) o que JA foi encontrado antes neste aparelho (nunca some)
+    final lembrada = await CorrecoesService.lembrancaLetra(musicaBruta);
+    if (lembrada != null && lembrada.trim().length > 10) {
+      _cache[chave] = lembrada;
+      // segue tentando na internet em segundo plano, mas ja mostra esta
+      return lembrada;
     }
 
     // 1) LRCLIB get exato, com variações de nome
@@ -292,6 +307,7 @@ class LetraService {
           pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
         } else {
           _cache[chave] = letra;
+          CorrecoesService.lembrar(musicaBruta, letra: letra);
           return letra;
         }
       }
@@ -308,6 +324,7 @@ class LetraService {
           pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
         } else {
           _cache[chave] = letra;
+          CorrecoesService.lembrar(musicaBruta, letra: letra);
           return letra;
         }
       }
@@ -321,6 +338,7 @@ class LetraService {
           pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
         } else {
           _cache[chave] = letra;
+          CorrecoesService.lembrar(musicaBruta, letra: letra);
           return letra;
         }
       }
@@ -334,6 +352,7 @@ class LetraService {
           pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
         } else {
           _cache[chave] = letra;
+          CorrecoesService.lembrar(musicaBruta, letra: letra);
           return letra;
         }
       }
@@ -347,6 +366,7 @@ class LetraService {
           pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
         } else {
           _cache[chave] = letra;
+          CorrecoesService.lembrar(musicaBruta, letra: letra);
           return letra;
         }
       }
@@ -360,6 +380,7 @@ class LetraService {
           pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
         } else {
           _cache[chave] = letra;
+          CorrecoesService.lembrar(musicaBruta, letra: letra);
           return letra;
         }
       }
@@ -375,6 +396,7 @@ class LetraService {
           pular--; // fonte ja reprovada pelos ouvintes: tenta a proxima
         } else {
           _cache[chave] = letra;
+          CorrecoesService.lembrar(musicaBruta, letra: letra);
           return letra;
         }
       }
