@@ -282,6 +282,14 @@ class _PromocoesPageState extends State<PromocoesPage> {
     );
   }
 
+  /// Fundo verde padrao do banner de conclusao (quando nao ha imagem)
+  Widget _fundoVerde() => Container(
+        decoration: BoxDecoration(
+          gradient:
+              LinearGradient(colors: [CoresEleva.verde, CoresEleva.azulVivo]),
+        ),
+      );
+
   /// Banner clicavel da promocao (cerca de 4 cm de altura na tela).
   /// Se o ouvinte ja participou, no lugar do banner aparece o parabens.
   Widget _bannerPromo(AppConfig cfg, Map<String, dynamic> promo) {
@@ -290,56 +298,94 @@ class _PromocoesPageState extends State<PromocoesPage> {
     final participou = _participadas.contains(id);
 
     if (participou) {
+      // imagem propria do banner de conclusao (cadastrada no painel).
+      // Se nao houver, mostra o card verde padrao.
+      final imagemFim = (promo['imagem_fim'] ?? '').toString();
+      final temImagem = imagemFim.startsWith('http') ||
+          imagemFim.startsWith('data:image');
+
       return Container(
-        margin: EdgeInsets.only(bottom: 14),
-        padding: EdgeInsets.all(18),
+        margin: EdgeInsets.only(bottom: 12),
+        height: 122, // um pouco menor que o banner normal (150)
         decoration: BoxDecoration(
-          gradient:
-              LinearGradient(colors: [CoresEleva.verde, CoresEleva.azulVivo]),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: CoresEleva.verde.withOpacity(0.3), blurRadius: 14)
+                color: CoresEleva.verde.withOpacity(0.28), blurRadius: 12)
           ],
         ),
-        child: Column(
-          children: [
-            Text('🎉', style: TextStyle(fontSize: 34)),
-            SizedBox(height: 6),
-            Text('PARABÉNS!',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 1.1)),
-            SizedBox(height: 6),
-            Text('Você já está participando da\n${nome.toUpperCase()}',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 14,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white)),
-            SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => Share.share(
-                    'Estou participando da ${nome.toUpperCase()} na '
-                    '${cfg.nome}! Baixe o app e participe também. 🎁📻'),
-                icon: Icon(Icons.share_rounded, size: 18),
-                label: Text('COMPARTILHAR',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: CoresEleva.dourado,
-                  foregroundColor: Colors.black87,
-                  padding: EdgeInsets.symmetric(vertical: 11),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(22)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // fundo: imagem da promoção ou degradê verde
+              if (temImagem)
+                imagemFim.startsWith('data:image')
+                    ? Image.memory(
+                        base64Decode(imagemFim.split(',').last),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _fundoVerde(),
+                      )
+                    : Image.network(
+                        imagemFim,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _fundoVerde(),
+                      )
+              else
+                _fundoVerde(),
+
+              // véu escuro para o texto ficar legível sobre a imagem
+              if (temImagem)
+                Container(color: Colors.black.withOpacity(0.45)),
+
+              // conteúdo
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('🎉 PARABÉNS!',
+                        style: TextStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.8)),
+                    SizedBox(height: 3),
+                    Text('Você já está participando da\n${nome.toUpperCase()}',
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.3,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white)),
+                    SizedBox(height: 8),
+                    SizedBox(
+                      height: 30,
+                      child: ElevatedButton.icon(
+                        onPressed: () => Share.share(
+                            'Estou participando da ${nome.toUpperCase()} na '
+                            '${cfg.nome}! Baixe o app e participe também. 🎁📻'),
+                        icon: Icon(Icons.share_rounded, size: 15),
+                        label: Text('COMPARTILHAR',
+                            style: TextStyle(
+                                fontSize: 11.5, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: CoresEleva.dourado,
+                          foregroundColor: Colors.black87,
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }

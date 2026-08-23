@@ -112,8 +112,56 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
     if (_insta.text.trim().isEmpty) return 'Escreva seu @ do INSTAGRAM';
     if (_cidade.text.trim().length < 3) return 'Escreva sua CIDADE';
     if (_estado.text.trim().length < 2) return 'Escreva seu ESTADO (UF)';
-    if (_nasc.text.replaceAll(RegExp(r'\D'), '').length < 8) {
-      return 'Escreva sua DATA DE NASCIMENTO';
+    final erroData = _erroNascimento();
+    if (erroData.isNotEmpty) return erroData;
+    return '';
+  }
+
+  /// Confere a DATA DE NASCIMENTO por completo:
+  /// - dia entre 1 e 31, mes entre 1 e 12, data que realmente existe
+  /// - ano nao pode ser mais antigo que 90 anos atras
+  /// - a data nao pode ser no futuro
+  /// - e a pessoa precisa ter 18 anos COMPLETOS (evita que alguem marque
+  ///   "sou maior de 18" e coloque uma data de menor de idade)
+  String _erroNascimento() {
+    final so = _nasc.text.replaceAll(RegExp(r'\D'), '');
+    if (so.length < 8) return 'Escreva sua DATA DE NASCIMENTO completa (DD/MM/AAAA)';
+    final dia = int.tryParse(so.substring(0, 2)) ?? 0;
+    final mes = int.tryParse(so.substring(2, 4)) ?? 0;
+    final ano = int.tryParse(so.substring(4, 8)) ?? 0;
+
+    if (mes < 1 || mes > 12) {
+      return '❌ MÊS INCORRETO — o mês vai de 01 a 12. Digite a data de novo.';
+    }
+    if (dia < 1 || dia > 31) {
+      return '❌ DIA INCORRETO — o dia vai de 01 a 31. Digite a data de novo.';
+    }
+
+    final agora = DateTime.now();
+    if (ano < agora.year - 90) {
+      return '❌ ANO INCORRETO — confira o ano de nascimento e digite de novo.';
+    }
+    if (ano > agora.year) {
+      return '❌ ANO INCORRETO — o ano não pode ser no futuro. Digite de novo.';
+    }
+
+    // confere se a data existe mesmo (ex.: 31/02 nao existe)
+    final d = DateTime(ano, mes, dia);
+    if (d.day != dia || d.month != mes || d.year != ano) {
+      return '❌ DATA INCORRETA — este dia não existe neste mês. Digite de novo.';
+    }
+    if (d.isAfter(agora)) {
+      return '❌ DATA INCORRETA — a data não pode ser no futuro. Digite de novo.';
+    }
+
+    // idade completa
+    var idade = agora.year - ano;
+    if (agora.month < mes || (agora.month == mes && agora.day < dia)) {
+      idade--;
+    }
+    if (idade < 18) {
+      return '🔞 Esta promoção é só para quem já tem 18 anos completos. '
+          'Continue ouvindo a rádio e fique de olho nas próximas! 💛';
     }
     return '';
   }
@@ -306,7 +354,7 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
                   'Ao participar desta promoção, os ouvintes autorizam, de forma '
                   'gratuita, o uso de seu nome, imagem e voz para fins de '
                   'divulgação da Promoção ${_nomePromo.toUpperCase()} nas redes '
-                  'sociais, site e demais canais da ${widget.cfg.nome}, caso '
+                  'sociais e demais canais da ${widget.cfg.nome}, caso '
                   'sejam contemplados.\n\n'
                   'O uso será realizado em total conformidade com a Lei Geral '
                   'de Proteção de Dados (LGPD).',
@@ -369,35 +417,46 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
                 icone: Icons.cake_rounded,
                 teclado: TextInputType.number,
                 formatadores: [_DataFormatter()],
-                dica: 'DD/MM/AAAA'),
+                dica: 'DD/MM/AAAA',
+                comErro: _nasc.text.replaceAll(RegExp(r'\D'), '').length >= 8 &&
+                    _erroNascimento().isNotEmpty),
 
             SizedBox(height: 10),
 
-            // aviso do que falta
+            // aviso do que falta (laranja) ou do que esta ERRADO (vermelho)
             if (falta.isNotEmpty)
-              Container(
-                margin: EdgeInsets.only(bottom: 10),
-                padding: EdgeInsets.all(11),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade900.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.shade400),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.arrow_downward_rounded,
-                        color: Colors.orange.shade300, size: 18),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(falta,
-                          style: TextStyle(
-                              fontSize: 12.8,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.orange.shade100)),
-                    ),
-                  ],
-                ),
-              ),
+              Builder(builder: (_) {
+                final ehErro = _erroNascimento().isNotEmpty &&
+                    falta == _erroNascimento();
+                final cor = ehErro ? Colors.red : Colors.orange;
+                return Container(
+                  margin: EdgeInsets.only(bottom: 10),
+                  padding: EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: cor.shade900.withOpacity(0.32),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cor.shade400),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                          ehErro
+                              ? Icons.error_outline_rounded
+                              : Icons.arrow_downward_rounded,
+                          color: cor.shade300,
+                          size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(falta,
+                            style: TextStyle(
+                                fontSize: 12.8,
+                                fontWeight: FontWeight.w700,
+                                color: cor.shade100)),
+                      ),
+                    ],
+                  ),
+                );
+              }),
 
             // botão concluir (só "acende" quando tudo está preenchido)
             SizedBox(
@@ -475,8 +534,9 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
       {IconData? icone,
       TextInputType? teclado,
       List<TextInputFormatter>? formatadores,
-      String? dica}) {
-    final preenchido = ctrl.text.trim().length >= 2;
+      String? dica,
+      bool comErro = false}) {
+    final preenchido = ctrl.text.trim().length >= 2 && !comErro;
     return Padding(
       padding: EdgeInsets.only(bottom: 10),
       child: TextField(
@@ -511,7 +571,10 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(
-                color: preenchido ? CoresEleva.verde : Colors.white24),
+                color: comErro
+                    ? Colors.red.shade400
+                    : (preenchido ? CoresEleva.verde : Colors.white24),
+                width: comErro ? 1.6 : 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),

@@ -604,6 +604,17 @@
         <input id="prEmail" placeholder="Ex.: promocoes@radioeleva.com.br">
         <label>➕ Campos extras no cadastro (separados por vírgula)</label>
         <input id="prExtras" placeholder="Ex.: PLACA DO VEÍCULO, MODELO">
+
+        <label>🎉 Imagem do banner de CONCLUSÃO (opcional)</label>
+        <p class="rotulo-secao" style="margin:2px 0 8px">É a imagem que o ouvinte vê depois de concluir o cadastro desta promoção. Se ficar vazio, aparece o card verde padrão.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+          <label for="prArqFim" class="botao mini" style="margin:0;cursor:pointer;background:#1a7a4b">📁 Enviar imagem</label>
+          <input id="prArqFim" type="file" accept="image/*" style="display:none" onchange="carregarImagemFim(this)">
+          <span id="prArqFimInfo" class="rotulo-secao" style="margin:0"></span>
+          <button class="botao mini perigo" onclick="limparImagemFim()">🗑️ Remover</button>
+        </div>
+        <img id="prPreviewFim" style="display:none;width:200px;border-radius:10px;border:2px solid var(--ouro);margin-bottom:8px">
+        <p class="rotulo-secao" style="margin:0 0 8px;font-size:11.5px">📐 Tamanho ideal: <b>1200 x 460 px</b> (mesma proporção do banner da promoção)</p>
         <label class="aviso-repetir" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0 0">
           <input type="checkbox" id="rep_promocoes" checked style="width:17px;height:17px;cursor:pointer">
           <span style="font-size:12px;color:#E9E7FF">🔁 Ao usar <b>Repetir</b>, manter todos os dados da promoção anterior. <i style="color:#BDB8F0">Desmarcado: repete em branco, só o modelo.</i></span>
@@ -2127,6 +2138,7 @@ async function criarPromocao(){
     p.link = (document.getElementById('prLink').value||'').trim();
     p.email = (document.getElementById('prEmail').value||'').trim();
     p.extras = (document.getElementById('prExtras').value||'').trim();
+    p.imagem_fim = _imagemFim || p.imagem_fim || '';
     config.promocoes.sort((a,b)=>(a.ordem||99)-(b.ordem||99));
     try{
       await salvarConfig('Painel: cadastro da promocao');
@@ -2150,6 +2162,7 @@ async function criarPromocao(){
     nova.link     = (document.getElementById('prLink').value||'').trim();
     nova.email    = (document.getElementById('prEmail').value||'').trim();
     nova.extras   = (document.getElementById('prExtras').value||'').trim();
+    if(_imagemFim) nova.imagem_fim = _imagemFim;
     config.promocoes.unshift(nova);
     config.promocoes.sort((a,b)=>(a.ordem||99)-(b.ordem||99));
     await salvarConfig('Painel: promocao');
@@ -2160,6 +2173,45 @@ async function criarPromocao(){
     desenharPromos(); avisar('Promoção publicada! 🎁');
   }catch(e){ avisar('Falhou: '+e.message, true); }
 }
+/// Imagem do banner de CONCLUSAO da promocao (guardada junto da promocao)
+let _imagemFim = '';
+
+function carregarImagemFim(input){
+  const arq = input.files && input.files[0];
+  if(!arq) return;
+  const info = document.getElementById('prArqFimInfo');
+  info.textContent = 'Preparando imagem...';
+  const leitor = new FileReader();
+  leitor.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      // reduz mantendo a proporcao (largura 900) para nao pesar no banco
+      const LARG = 900;
+      const alt = Math.round(img.height * (LARG / img.width));
+      const cv = document.createElement('canvas');
+      cv.width = LARG; cv.height = alt;
+      cv.getContext('2d').drawImage(img, 0, 0, LARG, alt);
+      const dados = cv.toDataURL('image/jpeg', 0.82);
+      const kb = Math.round(dados.length * 0.75 / 1024);
+      if(kb > 400){ info.textContent = 'Imagem muito pesada ('+kb+' KB). Tente outra.'; return; }
+      _imagemFim = dados;
+      const pv = document.getElementById('prPreviewFim');
+      pv.src = dados; pv.style.display = 'block';
+      info.textContent = '✅ Imagem pronta ('+kb+' KB)';
+    };
+    img.onerror = () => { info.textContent = 'Não consegui ler esta imagem.'; };
+    img.src = e.target.result;
+  };
+  leitor.readAsDataURL(arq);
+}
+
+function limparImagemFim(){
+  _imagemFim = '';
+  const pv=document.getElementById('prPreviewFim'); if(pv) pv.style.display='none';
+  const info=document.getElementById('prArqFimInfo'); if(info) info.textContent='(sem imagem — usará o card padrão)';
+  const arq=document.getElementById('prArqFim'); if(arq) arq.value='';
+}
+
 /// Abre o CADASTRO COMPLETO de uma promocao ja criada, para editar todos
 /// os dados dela (regulamento, brinde, datas, link, e-mail, ordem...).
 function abrirCadastroPromo(i){
@@ -2172,6 +2224,11 @@ function abrirCadastroPromo(i){
   v('prInicio', p.publicar_em); v('prFim', p.expirar_em);
   v('prBrinde', p.brinde); v('prOrdem', p.ordem || 1);
   v('prLink', p.link); v('prEmail', p.email); v('prExtras', p.extras);
+  _imagemFim = p.imagem_fim || '';
+  const pvf = document.getElementById('prPreviewFim');
+  const inf = document.getElementById('prArqFimInfo');
+  if(_imagemFim){ pvf.src=_imagemFim; pvf.style.display='block'; inf.textContent='✅ Imagem já cadastrada'; }
+  else { pvf.style.display='none'; inf.textContent='(sem imagem — usará o card padrão)'; }
   const d=document.getElementById('prDestaque'); if(d) d.value = p.destaque || 'nao';
   const s=document.getElementById('prStatus');   if(s) s.value = p.status   || 'ativado';
   _promoEditando = i;
@@ -2191,6 +2248,7 @@ function cancelarEdicaoPromo(){
     const el=document.getElementById(id); if(el) el.value='';
   });
   const o=document.getElementById('prOrdem'); if(o) o.value='1';
+  limparImagemFim();
   const btn=document.getElementById('btnPublicarPromo');
   if(btn) btn.innerHTML='➕ Publicar promoção';
   const cx=document.getElementById('avisoEditandoPromo'); if(cx) cx.style.display='none';
