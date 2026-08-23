@@ -183,79 +183,83 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
                 color: CoresEleva.dourado)),
       ),
       body: SafeArea(
-        child: _concluido ? _telaParabens() : _formulario(),
+        child: _concluido ? _telaCompartilhar() : _formulario(),
       ),
     );
   }
 
-  // ---------- TELA DE PARABÉNS (depois de concluir) ----------
-  Widget _telaParabens() {
+  // ---------- TELA DE COMPARTILHAR (depois de concluir) ----------
+  /// Aparece assim que o cadastro e concluido: convida a compartilhar,
+  /// mas sem obrigar — da a opcao de deixar para depois.
+  Widget _telaCompartilhar() {
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(18, 24, 18, 40),
+      padding: EdgeInsets.fromLTRB(20, 30, 20, 40),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Text('😄', style: TextStyle(fontSize: 64)),
+          SizedBox(height: 16),
+          Text('CADASTRO CONCLUÍDO!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: CoresEleva.verde,
+                  letterSpacing: 0.8)),
+          SizedBox(height: 22),
           Container(
-            padding: EdgeInsets.all(22),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                   colors: [CoresEleva.verde, CoresEleva.azulVivo]),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                    color: CoresEleva.verde.withOpacity(0.35), blurRadius: 18)
+                    color: CoresEleva.verde.withOpacity(0.32), blurRadius: 16)
               ],
             ),
             child: Column(
               children: [
-                Text('🎉', style: TextStyle(fontSize: 52)),
-                SizedBox(height: 10),
-                Text('PARABÉNS!',
+                Text('COMPARTILHE ESTA PROMOÇÃO\nPARA AUMENTAR SUAS CHANCES 😄',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 16.5,
+                        height: 1.4,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2)),
-                SizedBox(height: 10),
-                Text(
-                  'Você já está participando da\n${_nomePromo.toUpperCase()}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 16,
-                      height: 1.4,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white),
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'Fique ligado na ${widget.cfg.nome} — o resultado sai no ar!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13.5, color: Colors.white70),
+                        color: Colors.white)),
+                SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _compartilhar();
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.share_rounded),
+                    label: Text('COMPARTILHAR AGORA',
+                        style: TextStyle(
+                            fontSize: 14.5, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: CoresEleva.dourado,
+                      foregroundColor: Colors.black87,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26)),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _compartilhar,
-              icon: Icon(Icons.share_rounded),
-              label: Text('COMPARTILHAR',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: CoresEleva.dourado,
-                foregroundColor: Colors.black87,
-                padding: EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(26)),
-              ),
-            ),
-          ),
-          SizedBox(height: 10),
+          SizedBox(height: 14),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Voltar às promoções',
-                style: TextStyle(color: CoresEleva.textoFraco)),
+            child: Text('MAIS TARDE',
+                style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    color: CoresEleva.brancoSuave)),
           ),
         ],
       ),
@@ -367,34 +371,7 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
                 formatadores: [_DataFormatter()],
                 dica: 'DD/MM/AAAA'),
 
-            SizedBox(height: 6),
-            // compartilhar para aumentar as chances
-            InkWell(
-              onTap: _compartilhar,
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 13, horizontal: 14),
-                decoration: BoxDecoration(
-                  color: CoresEleva.azulProfundo,
-                  borderRadius: BorderRadius.circular(14),
-                  border:
-                      Border.all(color: CoresEleva.dourado.withOpacity(0.55)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.share_rounded, color: CoresEleva.dourado),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text('COMPARTILHE PARA AUMENTAR SUAS CHANCES',
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.bold,
-                              color: CoresEleva.dourado)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 14),
+            SizedBox(height: 10),
 
             // aviso do que falta
             if (falta.isNotEmpty)
