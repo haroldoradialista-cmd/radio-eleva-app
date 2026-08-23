@@ -299,7 +299,7 @@
     <section id="sec-banners">
       <div class="cartao">
         <h2>Banners no topo do app</h2>
-        <p class="rotulo-secao">Tamanho ideal: <b>1200 x 400</b>. As mudanças chegam aos ouvintes na próxima vez que abrirem o app.</p>
+        <p class="rotulo-secao">As mudanças chegam aos ouvintes na próxima vez que abrirem o app.</p>
         <div id="listaBanners"></div>
         <hr style="border-color:#20365555;margin:16px 0">
         <h2>📊 Relatório de cliques (pós-venda para anunciantes)</h2>
@@ -799,6 +799,7 @@
           <p class="rotulo-secao" style="margin:2px 0 8px">Escolha UMA das formas: enviar a imagem do computador (mais fácil) ou colar o link.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
             <label for="corArquivo" class="botao mini" style="margin:0;cursor:pointer;background:#1a7a4b">📁 Enviar imagem do computador</label>
+            <span class="rotulo-secao" style="margin:0;font-size:11.5px">📐 Capa QUADRADA (ideal 600 x 600 px) — o painel reduz e corta no centro sozinho</span>
             <input id="corArquivo" type="file" accept="image/*" style="display:none" onchange="carregarImagemCapa(this)">
             <span id="corArquivoInfo" class="rotulo-secao" style="margin:0"></span>
           </div>
@@ -975,8 +976,24 @@ async function subirImagem(arquivo, pasta){
 
 // ============ MÍDIA REUTILIZÁVEL (imagem / vídeo MP4 / YouTube + som) ============
 // HTML dos campos de mídia para uma aba. 'pref' é um prefixo único (ex.: 'bn').
+/// MEDIDAS REAIS conferidas na tela do app (proporcao de cada espaco).
+/// Enviar fora dessa proporcao faz a imagem ser CORTADA nas bordas.
+const MEDIDAS_MIDIA = {
+  bn: { txt:'1200 x 600 px (proporção 2:1)', obs:'Banner do topo — a imagem preenche a largura e é cortada nas bordas se for mais alta.' },
+  cp: { txt:'1080 x 1350 px (retrato 4:5)',  obs:'Anúncio de abertura — no modo TELA CHEIA use 1080 x 1920 px.' },
+  nt: { txt:'1200 x 490 px (proporção 2,4:1)', obs:'Imagem da notícia no card.' },
+  eq: { txt:'1200 x 600 px (proporção 2:1)', obs:'Imagem da enquete.' },
+  pr: { txt:'1200 x 460 px (proporção 2,6:1)', obs:'Banner da promoção — é o que o ouvinte toca para participar.' }
+};
+
 function camposMidiaHTML(pref){
+  const m = MEDIDAS_MIDIA[pref] || { txt:'1200 x 600 px', obs:'' };
   return `
+  <div style="background:#1a7a4b26;border:1px solid #1a7a4b;border-radius:10px;padding:9px 11px;margin:6px 0 10px">
+    <b style="font-size:12.5px;color:#8ef58e">📐 Tamanho ideal: ${m.txt}</b>
+    ${m.obs ? `<div style="font-size:11.5px;color:#BDB8F0;margin-top:3px">${m.obs}</div>` : ''}
+    <div style="font-size:11.5px;color:#BDB8F0;margin-top:3px">Formatos: JPG ou PNG • Vídeo: MP4 na mesma proporção, até ~5 MB</div>
+  </div>
   <label>🎬 Tipo de mídia</label>
   <select id="tipoMidia_${pref}" onchange="trocarTipoMidia('${pref}')">
     <option value="imagem">🖼️ Imagem</option>
