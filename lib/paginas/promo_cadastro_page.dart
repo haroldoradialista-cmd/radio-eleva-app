@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
 import '../widgets/midia_eleva.dart';
@@ -192,12 +193,14 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
           'estado': _estado.text.trim().toUpperCase(),
           'nascimento': _nasc.text.trim(),
           'maior_idade': 'SIM',
+          'uid': AuthService.instancia.usuario.value?.uid ?? '',
           'promocao': _nomePromo,
           'quando': DateTime.now().toIso8601String(),
         }),
       );
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('promo_$_id', true);
+      final uid = AuthService.instancia.usuario.value?.uid ?? 'anon';
+      await prefs.setBool('promo_${uid}_$_id', true);
       if (mounted) setState(() => _concluido = true);
     } catch (_) {
       if (mounted) {

@@ -11,6 +11,8 @@ import 'paginas/pedidos_page.dart';
 import 'paginas/tv_page.dart';
 import 'paginas/menu_page.dart';
 import 'widgets/campanha_popup.dart';
+import 'widgets/login_widget.dart';
+import 'servicos/auth_service.dart';
 import 'servicos/config_service.dart';
 import 'servicos/correcoes_service.dart';
 import 'servicos/analytics_service.dart';
@@ -323,12 +325,15 @@ class _TelaPrincipalState extends State<TelaPrincipal>
   Widget build(BuildContext context) {
     // Recriadas a cada build: garante que TODAS as abas troquem de tema
     // juntas (fundo, textos e cartões), sem perder o estado interno.
+    // O ouvinte OUVE A RADIO e ve a PROGRAMACAO sem precisar de conta.
+    // Para o resto (chat, promocoes, pedidos, TV) e preciso estar logado —
+    // assim cada participacao fica ligada a uma pessoa de verdade.
     final paginas = [
       HomePage(),
-      ChatPage(),
-      PromocoesPage(),
-      PedidosPage(),
-      TvPage(),
+      _ComLogin(child: ChatPage(), oQue: 'participar do chat'),
+      _ComLogin(child: PromocoesPage(), oQue: 'participar das promoções'),
+      _ComLogin(child: PedidosPage(), oQue: 'pedir sua música'),
+      _ComLogin(child: TvPage(), oQue: 'assistir à TV Eleva'),
       MenuPage(),
     ];
     return Scaffold(
@@ -382,6 +387,58 @@ class _TelaPrincipalState extends State<TelaPrincipal>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Portao de entrada: mostra a tela de login quando o ouvinte ainda nao
+/// entrou com a conta dele. Assim que ele entra, o conteudo aparece.
+/// A radio e a programacao NAO passam por aqui — sao livres.
+class _ComLogin extends StatelessWidget {
+  final Widget child;
+  final String oQue;
+  const _ComLogin({required this.child, required this.oQue});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Usuario?>(
+      valueListenable: AuthService.instancia.usuario,
+      builder: (context, usuario, _) {
+        if (usuario != null) return child;
+        return Container(
+          decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(18, 26, 18, 30),
+              child: Column(
+                children: [
+                  Image.asset('assets/logo.png', height: 74),
+                  SizedBox(height: 16),
+                  Text('ENTRE PARA CONTINUAR',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.6,
+                          color: CoresEleva.dourado)),
+                  SizedBox(height: 8),
+                  Text(
+                      'Faça login com o Google ou com e-mail e senha para $oQue.\n\n'
+                      'Ouvir a rádio e ver a programação continuam liberados, '
+                      'sem precisar de conta. 💛',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 13.5,
+                          height: 1.5,
+                          color: CoresEleva.brancoSuave)),
+                  SizedBox(height: 20),
+                  LoginEleva(titulo: 'Entrar na Rádio Eleva'),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -39,6 +39,8 @@ class _PromocoesPageState extends State<PromocoesPage> {
   void initState() {
     super.initState();
     _carregarParticipadas();
+    // ao trocar de conta, as promocoes ficam disponiveis de novo
+    AuthService.instancia.usuario.addListener(_carregarParticipadas);
     // contagem regressiva ao vivo
     _timerContagem = Timer.periodic(Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
@@ -51,15 +53,19 @@ class _PromocoesPageState extends State<PromocoesPage> {
     super.dispose();
   }
 
+  /// Participacoes sao guardadas POR USUARIO (nao por aparelho).
+  /// Assim, se o ouvinte entrar com outra conta, ele pode participar de novo;
+  /// e se voltar para a conta antiga, o app lembra do que ele ja fez.
   Future<void> _carregarParticipadas() async {
     final prefs = await SharedPreferences.getInstance();
-    final chaves =
-        prefs.getKeys().where((k) => k.startsWith('promo_')).toList();
+    final uid = AuthService.instancia.usuario.value?.uid ?? 'anon';
+    final prefixo = 'promo_${uid}_';
     if (mounted) {
       setState(() {
-        for (final k in chaves) {
-          if (prefs.getBool(k) == true) {
-            _participadas.add(k.replaceFirst('promo_', ''));
+        _participadas.clear();
+        for (final k in prefs.getKeys()) {
+          if (k.startsWith(prefixo) && prefs.getBool(k) == true) {
+            _participadas.add(k.replaceFirst(prefixo, ''));
           }
         }
       });

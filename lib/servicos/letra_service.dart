@@ -290,11 +290,21 @@ class LetraService {
     }
 
     // 1) LRCLIB get exato, com variações de nome
+    // MUITAS formas de escrever a mesma musica. A transmissao manda de um
+    // jeito e os catalogos guardam de outro — por isso insistimos em varias.
+    final primeirasDoArtista = aL.split(' ').take(2).join(' ');
+    final artistaSemDupla = aL.split(RegExp(r'\s+(?:e|&|com)\s+')).first;
+    final tituloCurto = tL.split(RegExp(r'[-:–]')).first.trim();
     final combos = <(String, String)>[
       if (aL.isNotEmpty) (aL, tL),
-      if (aL.isNotEmpty) (tL, aL), // stream pode vir "Título - Artista"
       if (aL.isNotEmpty) (_semAcento(aL), _semAcento(tL)),
+      if (aL.isNotEmpty) (tL, aL), // stream pode vir "Título - Artista"
+      if (aL.isNotEmpty && primeirasDoArtista != aL) (primeirasDoArtista, tL),
+      if (aL.isNotEmpty && artistaSemDupla != aL) (artistaSemDupla, tL),
+      if (aL.isNotEmpty && tituloCurto.isNotEmpty && tituloCurto != tL)
+        (aL, tituloCurto),
       if (aL.isNotEmpty && (artista != aL || titulo != tL)) (artista, titulo),
+      if (aL.isNotEmpty) (_semAcento(primeirasDoArtista), _semAcento(tL)),
     ];
     final vistos = <String>{};
     for (final (a, t) in combos) {

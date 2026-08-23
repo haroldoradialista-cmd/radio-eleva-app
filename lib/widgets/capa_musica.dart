@@ -99,10 +99,21 @@ class _CapaMusicaState extends State<CapaMusica> {
       // Estratégias em cascata (para na primeira que validar):
       //  1) artista+título no Brasil   2) artista+título nos EUA
       //  3) título+artista (invertido) 4) só o título (validação forte)
+      // MUITAS formas de procurar a mesma capa (o catalogo pode guardar o
+      // nome sem acento, com o artista abreviado, sem a dupla, etc.)
+      final artCurto = artL.split(' ').take(2).join(' ');
+      final artSemDupla = artL.split(RegExp(r'\s+(?:e|&|com)\s+')).first;
+      final titCurto = titL.split(RegExp(r'[-:–]')).first.trim();
       final tentativas = <Map<String, dynamic>>[
         if (artL.isNotEmpty) {'termo': '$artL $titL', 'pais': 'br', 'soTitulo': false},
         if (artL.isNotEmpty) {'termo': '$artL $titL', 'pais': 'us', 'soTitulo': false},
         if (artL.isNotEmpty) {'termo': '$titL $artL', 'pais': 'br', 'soTitulo': false},
+        if (artL.isNotEmpty && artCurto != artL)
+          {'termo': '$artCurto $titL', 'pais': 'br', 'soTitulo': false},
+        if (artL.isNotEmpty && artSemDupla != artL)
+          {'termo': '$artSemDupla $titL', 'pais': 'br', 'soTitulo': false},
+        if (artL.isNotEmpty && titCurto.isNotEmpty && titCurto != titL)
+          {'termo': '$artL $titCurto', 'pais': 'br', 'soTitulo': false},
         // ATENCAO: buscar SO pelo titulo trazia capas de outro genero
         // (ex.: uma musica sertaneja com o mesmo nome de um louvor).
         // Por isso, so aceitamos busca por titulo quando NAO sabemos o
