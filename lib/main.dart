@@ -80,11 +80,24 @@ Future<void> main() async {
     // MANTEM O OUVINTE CONECTADO: reabre a sessao guardada no aparelho,
     // para ele nao precisar fazer login toda vez que abre o app.
     AuthService.instancia.restaurarSessao();
-    // AUTOPLAY: a rádio começa a tocar assim que o app abre
+    // AUTOPLAY: a rádio começa a tocar assim que o app abre.
+    // Se por algum motivo nao comecar, tenta de novo em 4 segundos.
     if (cfg.streamUrl.isNotEmpty) {
       PlayerService.instancia
           .carregar(cfg.streamUrl, cfg.nome, cfg.logoUrl)
-          .then((_) => PlayerService.instancia.player.play());
+          .then((_) async {
+        try {
+          await PlayerService.instancia.player.play();
+        } catch (_) {}
+        await Future.delayed(const Duration(seconds: 4));
+        if (!PlayerService.instancia.player.playing) {
+          try {
+            await PlayerService.instancia
+                .carregar(cfg.streamUrl, cfg.nome, cfg.logoUrl);
+            await PlayerService.instancia.player.play();
+          } catch (_) {}
+        }
+      });
     }
   });
   await carregarTemaSalvo();
@@ -114,9 +127,19 @@ class RadioElevaApp extends StatelessWidget {
           // pouco os textos, para continuar legivel de longe.
           builder: (context, filho) {
             final base = MediaQuery.of(context);
+            // No CELULAR nao mexemos em nada: o tamanho do texto continua
+            // sendo o do proprio aparelho (se o ouvinte configurou letras
+            // maiores no Android, o app respeita).
+            // Antes forcavamos escala 1.0 aqui, e isso DIMINUIA o texto de
+            // quem usava fonte maior no celular.
+            if (base.size.shortestSide < 600) {
+              return filho ?? const SizedBox.shrink();
+            }
+            // Telas grandes: aumenta um pouco POR CIMA do ajuste do aparelho
             return MediaQuery(
               data: base.copyWith(
-                textScaler: TextScaler.linear(Tela.escala(context)),
+                textScaler:
+                    base.textScaler.clamp(minScaleFactor: Tela.escala(context)),
               ),
               child: filho ?? const SizedBox.shrink(),
             );

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -114,32 +113,39 @@ class PlayerService {
     try {
       await SystemNavigator.pop(); // fecha o app pelo caminho normal
     } catch (_) {}
-    // reforco: em alguns celulares o pop apenas manda para segundo plano.
-    // Como o ouvinte esta dormindo, encerramos de vez para nao sobrar
-    // nenhuma sessao antiga tocando no dia seguinte.
-    await Future.delayed(const Duration(milliseconds: 500));
-    try {
-      exit(0);
-    } catch (_) {}
+    // ATENCAO: NAO usar exit(0) aqui. Matar o app a forca com o servico de
+    // audio ainda ativo deixava a sessao de som presa no Android, e nas
+    // aberturas seguintes a radio nao tocava mais.
   }
 
   Future<void> carregar(String streamUrl, String nome, String logoUrl) async {
     if (_carregado) return;
     _carregado = true;
-    try {
-      await player.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(streamUrl),
-          tag: MediaItem(
-            id: 'radio_eleva_ao_vivo',
-            title: nome,
-            artist: 'Ao vivo',
-            artUri: logoUrl.isNotEmpty ? Uri.parse(logoUrl) : null,
+    // Tenta ate 3 vezes: a primeira conexao pode falhar por internet lenta
+    // ou porque o servico de audio ainda esta subindo. Sem isto, uma falha
+    // passageira deixava a radio muda ate o ouvinte reabrir o app.
+    for (var tentativa = 1; tentativa <= 3; tentativa++) {
+      try {
+        await player.setVolume(1.0); // garante que nao ficou mudo
+        await player.setAudioSource(
+          AudioSource.uri(
+            Uri.parse(streamUrl),
+            tag: MediaItem(
+              id: 'radio_eleva_ao_vivo',
+              title: nome,
+              artist: 'Ao vivo',
+              artUri: logoUrl.isNotEmpty ? Uri.parse(logoUrl) : null,
+            ),
           ),
-        ),
-      );
-    } catch (_) {
-      _carregado = false;
+        );
+        return; // conseguiu
+      } catch (_) {
+        _carregado = false;
+        if (tentativa < 3) {
+          await Future.delayed(Duration(seconds: tentativa * 2));
+          _carregado = true; // segue tentando
+        }
+      }
     }
   }
 
