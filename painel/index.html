@@ -1140,34 +1140,44 @@ function ajustarImagem(arquivo, pref){
   return new Promise((resolve) => {
     const medida = medidaDe(pref);
     if(!medida){ resolve(arquivo); return; } // sem referencia: manda como veio
-    const proporcao = medida.w / medida.h;
     const largura = medida.w;
+    const altura  = medida.h;
     const leitor = new FileReader();
     leitor.onload = e => {
       const img = new Image();
       img.onload = () => {
         try{
-          const alturaFinal = Math.round(largura / proporcao);
           const cv = document.createElement('canvas');
-          cv.width = largura; cv.height = alturaFinal;
+          cv.width = largura; cv.height = altura;
           const ctx = cv.getContext('2d');
-          // RECORTE PELO CENTRO: pega a maior area possivel na proporcao
-          // certa, sem esticar nem deformar a imagem
-          const pOrig = img.width / img.height;
-          let sx=0, sy=0, sw=img.width, sh=img.height;
-          if(pOrig > proporcao){          // imagem larga demais: corta os lados
-            sw = Math.round(img.height * proporcao);
-            sx = Math.round((img.width - sw) / 2);
-          } else if(pOrig < proporcao){   // imagem alta demais: corta topo/base
-            sh = Math.round(img.width / proporcao);
-            sy = Math.round((img.height - sh) / 2);
-          }
-          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, largura, alturaFinal);
+
+          // ===== 1) FUNDO: a propria imagem ampliada e DESFOCADA =====
+          // Assim o espaco que sobra nao fica preto nem branco: fica com
+          // as cores da propria arte, com aparencia proposital.
+          const escalaFundo = Math.max(largura/img.width, altura/img.height);
+          const fw = img.width * escalaFundo, fh = img.height * escalaFundo;
+          try{ ctx.filter = 'blur(24px)'; }catch(_){}
+          ctx.drawImage(img, (largura-fw)/2, (altura-fh)/2, fw, fh);
+          try{ ctx.filter = 'none'; }catch(_){}
+          // veu leve para o fundo nao competir com a imagem da frente
+          ctx.fillStyle = 'rgba(0,0,0,0.28)';
+          ctx.fillRect(0, 0, largura, altura);
+
+          // ===== 2) A IMAGEM INTEIRA, centralizada e sem deformar =====
+          // Nada e cortado e nada e esticado: ela e reduzida (ou ampliada)
+          // ate caber por completo dentro da medida.
+          const escala = Math.min(largura/img.width, altura/img.height);
+          const iw = Math.round(img.width * escala);
+          const ih = Math.round(img.height * escala);
+          const ix = Math.round((largura - iw) / 2);
+          const iy = Math.round((altura - ih) / 2);
+          ctx.drawImage(img, ix, iy, iw, ih);
+
           cv.toBlob(blob => {
             if(!blob){ resolve(arquivo); return; }
             const nome = (arquivo.name||'imagem').replace(/\.[^.]+$/,'') + '.jpg';
             resolve(new File([blob], nome, { type:'image/jpeg' }));
-          }, 'image/jpeg', 0.88);
+          }, 'image/jpeg', 0.9);
         }catch(_){ resolve(arquivo); }
       };
       img.onerror = () => resolve(arquivo);
