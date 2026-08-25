@@ -665,6 +665,15 @@
     <!-- TEXTOS/REDES -->
     <section id="sec-textos" class="oculto">
       <div class="cartao">
+        <h2>📐 Medidas das imagens</h2>
+        <p class="rotulo-secao">Toda imagem enviada é ajustada automaticamente para estas medidas (recortada pelo centro, sem deformar). Se alguma ficar cortada demais no app, mude aqui e teste — não precisa mexer no código.</p>
+        <div id="listaMedidas"></div>
+        <button class="botao" onclick="salvarMedidas()">💾 Salvar medidas</button>
+        <button class="botao mini neutro" onclick="restaurarMedidas()">↩️ Voltar ao padrão</button>
+      </div>
+
+
+      <div class="cartao">
         <h2>Dados da rádio</h2>
         <label>Nome</label><input id="cfNome">
         <label>Slogan</label><input id="cfSlogan">
@@ -998,7 +1007,9 @@ const MEDIDAS_MIDIA = {
 };
 
 function camposMidiaHTML(pref){
-  const m = MEDIDAS_MIDIA[pref] || { txt:'1200 x 600 px', obs:'' };
+  const md = medidaDe(pref);
+  const m = MEDIDAS_MIDIA[pref] || { txt:'', obs:'' };
+  if(md) m.txt = md.w + ' x ' + md.h + ' px';
   return `
   <div style="background:#1a7a4b26;border:1px solid #1a7a4b;border-radius:10px;padding:9px 11px;margin:6px 0 10px">
     <b style="font-size:12.5px;color:#8ef58e">📐 Tamanho ideal: ${m.txt}</b>
@@ -1061,20 +1072,76 @@ function preencherMidia(pref, item){
 /// Redimensiona e recorta a imagem escolhida para a proporcao certa do
 /// lugar onde ela vai aparecer no app. Assim o banner nunca sai cortado
 /// de um jeito estranho, e voce nao precisa preparar a imagem antes.
-const PROPORCAO_MIDIA = {
-  bn: 1200/600,   // banner do topo (2:1)
-  cp: 1080/1350,  // anuncio de abertura (retrato 4:5)
-  nt: 1200/490,   // noticias
-  eq: 1200/600,   // enquetes
-  pr: 1200/460    // promocoes
+/// Medidas padrao (conferidas no celular). Podem ser ajustadas na aba
+/// Rádio & Redes → "Medidas das imagens", sem precisar mexer no código.
+const MEDIDAS_PADRAO = {
+  bn: { w:900,  h:350  },  // banner do topo (medida testada no aparelho)
+  cp: { w:1080, h:1350 },  // anuncio de abertura (retrato)
+  nt: { w:1200, h:490  },  // noticias
+  eq: { w:1200, h:600  },  // enquetes
+  pr: { w:1200, h:460  }   // promocoes
 };
-const LARGURA_MIDIA = { bn:1200, cp:1080, nt:1200, eq:1200, pr:1200 };
+
+const NOMES_MIDIA = {
+  bn:'🖼️ Banner do topo', cp:'📢 Anúncio de abertura',
+  nt:'📰 Notícias', eq:'📊 Enquetes', pr:'🎁 Promoções'
+};
+
+function desenharMedidas(){
+  const el = document.getElementById('listaMedidas');
+  if(!el) return;
+  el.innerHTML = Object.keys(MEDIDAS_PADRAO).map(pref=>{
+    const m = medidaDe(pref) || MEDIDAS_PADRAO[pref];
+    const prop = (m.w/m.h).toFixed(2);
+    return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px">
+      <span style="min-width:170px;font-size:13px;color:var(--branco)">${NOMES_MIDIA[pref]}</span>
+      <input type="number" id="med_w_${pref}" value="${m.w}" style="width:92px" title="largura">
+      <span style="color:var(--ouro)">×</span>
+      <input type="number" id="med_h_${pref}" value="${m.h}" style="width:92px" title="altura">
+      <span class="rotulo-secao" style="margin:0;font-size:11.5px">proporção ${prop}:1</span>
+    </div>`;
+  }).join('');
+}
+
+async function salvarMedidas(){
+  config.medidas = config.medidas || {};
+  for(const pref of Object.keys(MEDIDAS_PADRAO)){
+    const w = parseInt(document.getElementById('med_w_'+pref).value||'0');
+    const h = parseInt(document.getElementById('med_h_'+pref).value||'0');
+    if(w > 50 && h > 50) config.medidas[pref] = { w, h };
+  }
+  try{
+    await salvarConfig('Painel: medidas das imagens');
+    avisar('Medidas salvas! As próximas imagens já usam estes valores. ✅');
+    desenharMedidas();
+    // atualiza as referencias mostradas nos formularios
+    ['bn','cp','nt','eq','pr'].forEach(pref=>{
+      const box=document.getElementById('midiaBox_'+pref);
+      if(box){ box.innerHTML=camposMidiaHTML(pref); trocarTipoMidia(pref); }
+    });
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+async function restaurarMedidas(){
+  if(!confirm('Voltar todas as medidas para o padrão?')) return;
+  config.medidas = {};
+  try{ await salvarConfig('Painel: medidas padrao'); desenharMedidas(); avisar('Medidas restauradas.'); }
+  catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+function medidaDe(pref){
+  const salvas = (config && config.medidas) || {};
+  const m = salvas[pref] || MEDIDAS_PADRAO[pref];
+  if(!m || !m.w || !m.h) return null;
+  return { w: parseInt(m.w), h: parseInt(m.h) };
+}
 
 function ajustarImagem(arquivo, pref){
   return new Promise((resolve) => {
-    const proporcao = PROPORCAO_MIDIA[pref];
-    const largura = LARGURA_MIDIA[pref] || 1200;
-    if(!proporcao){ resolve(arquivo); return; } // sem referencia: manda como veio
+    const medida = medidaDe(pref);
+    if(!medida){ resolve(arquivo); return; } // sem referencia: manda como veio
+    const proporcao = medida.w / medida.h;
+    const largura = medida.w;
     const leitor = new FileReader();
     leitor.onload = e => {
       const img = new Image();
@@ -3308,7 +3375,7 @@ async function restaurarSessao(){
         if(abas.includes('enquetes'))    desenharEnquetes();
         if(abas.includes('promos'))      desenharPromos();
         if(abas.includes('pedidosm'))    carregarPedidosM();
-        if(abas.includes('textos'))      preencherTextos();
+        if(abas.includes('textos'))      preencherTextos(); desenharMedidas();
         if(abas.includes('chat'))        carregarChat();
         if(abas.includes('votos'))       carregarVotos();
         if(abas.includes('stats'))       iniciarOuvintesAgora();
