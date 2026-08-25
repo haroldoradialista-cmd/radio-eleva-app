@@ -6,18 +6,7 @@
   "whatsapp": "5521978994649",
   "mensagem_pedido": "Olá, Rádio Eleva! Quero pedir uma música:",
   "chat_url": "https://radio-eleva-default-rtdb.firebaseio.com/chat",
-  "banners": [
-    {
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1786125393305_banner_eleva_1200_400_inicial1.jpeg",
-      "link": "",
-      "id": "b1786123938946"
-    },
-    {
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1786896899551_Vocouve.png",
-      "link": "https://www.youtube.com/watch?v=SsFFlAQmzqc",
-      "id": "b1786896901430"
-    }
-  ],
+  "banners": [],
   "noticias": [
     {
       "titulo": "Fuxico Gospel",
