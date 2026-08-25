@@ -8,7 +8,7 @@ import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
 import '../widgets/midia_eleva.dart';
-import 'pedidos_page.dart' show MaiusculasFormatter, TelefoneFormatter;
+import 'pedidos_page.dart' show MaiusculasFormatter, TelefoneFormatter, erroTelefone;
 
 /// Tela de cadastro do ouvinte numa promoção.
 /// Abre quando ele toca no banner da promoção na aba Promoções.
@@ -107,9 +107,8 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
     if (_maiorIdade == null) return 'Marque se você é maior de 18 anos';
     if (_maiorIdade == false) return '';
     if (_nome.text.trim().length < 3) return 'Escreva seu NOME COMPLETO';
-    if (_zap.text.replaceAll(RegExp(r'\D'), '').length < 10) {
-      return 'Escreva seu WHATSAPP com DDD';
-    }
+    final erroZap = erroTelefone(_zap.text);
+    if (erroZap.isNotEmpty) return erroZap;
     if (_insta.text.trim().isEmpty) return 'Escreva seu @ do INSTAGRAM';
     if (_cidade.text.trim().length < 3) return 'Escreva sua CIDADE';
     if (_estado.text.trim().length < 2) return 'Escreva seu ESTADO (UF)';
@@ -194,6 +193,7 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
           'nascimento': _nasc.text.trim(),
           'maior_idade': 'SIM',
           'uid': AuthService.instancia.usuario.value?.uid ?? '',
+          'email': AuthService.instancia.usuario.value?.email ?? '',
           'promocao': _nomePromo,
           'quando': DateTime.now().toIso8601String(),
         }),

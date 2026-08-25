@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
 import '../widgets/anuncio_banner.dart';
@@ -205,6 +206,29 @@ class TelefoneFormatter extends TextInputFormatter {
   }
 }
 
+/// Confere se o telefone tem a quantidade certa de numeros.
+/// Devolve '' quando esta certo, ou a mensagem de erro.
+///  - CELULAR: DDD + 9 numeros  = 11 no total
+///  - FIXO:    DDD + 8 numeros  = 10 no total
+String erroTelefone(String texto) {
+  final so = texto.replaceAll(RegExp(r'\D'), '');
+  if (so.isEmpty) return 'Escreva seu WHATSAPP com DDD';
+  if (so.length < 10) {
+    return '❌ NÚMERO INCOMPLETO — use DDD + 9 números (celular) '
+        'ou DDD + 8 números (fixo)';
+  }
+  if (so.length > 11) {
+    return '❌ NÚMERO MUITO LONGO — confira e digite de novo';
+  }
+  // com 11 digitos (celular) o primeiro numero apos o DDD tem que ser 9
+  if (so.length == 11 && so[2] != '9') {
+    return '❌ NÚMERO DE CELULAR INVÁLIDO — depois do DDD deve começar com 9';
+  }
+  final ddd = int.tryParse(so.substring(0, 2)) ?? 0;
+  if (ddd < 11 || ddd > 99) return '❌ DDD INVÁLIDO — confira o número';
+  return '';
+}
+
 class MaiusculasFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -249,6 +273,23 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
               'Preencha TODOS os campos (seu nome, WhatsApp, a música, o intérprete, a cidade e o estado) para enviar o pedido.')));
       return;
     }
+    // confere a quantidade de numeros do telefone
+    final erroZap = erroTelefone(_whatsapp.text);
+    if (erroZap.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: Colors.red.shade700,
+          duration: Duration(seconds: 4),
+          content: Text(erroZap)));
+      return;
+    }
+    final erroZap2 = erroTelefone(_whatsapp.text);
+    if (erroZap2.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: Colors.red.shade700,
+          duration: Duration(seconds: 4),
+          content: Text(erroZap2)));
+      return;
+    }
     if (widget.cfg.chatUrl.isEmpty || _enviando) return;
     setState(() => _enviando = true);
     try {
@@ -262,6 +303,8 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
           'whatsapp': _whatsapp.text.trim(),
           'cidade': _cidade.text.trim(),
           'estado': _estado.text.trim(),
+          // e-mail da conta de quem enviou (aparece no painel)
+          'email': AuthService.instancia.usuario.value?.email ?? '',
           'quando': DateTime.now().toIso8601String(),
         }),
       );

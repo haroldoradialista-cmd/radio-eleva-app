@@ -130,13 +130,27 @@ class LetraService {
   /// Compara dois nomes ignorando acentos, maiúsculas e pontuação.
   /// Retorna true se um contém o outro (match forte).
   static bool _combina(String a, String b) {
+    // tira tambem os "extras" (ao vivo, playback...), senao a mesma musica
+    // em versao ao vivo seria tratada como uma musica diferente
     String n(String s) => _semAcento(s.toLowerCase())
+        .replaceAll(
+            RegExp(
+                r'\b(ao vivo|acustico|playback|clipe|oficial|official|live|remix|versao|feat|ft|part)\b'),
+            ' ')
         .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     final x = n(a), y = n(b);
     if (x.isEmpty || y.isEmpty) return false;
-    return x == y || x.contains(y) || y.contains(x);
+    if (x == y) return true;
+    // "um contem o outro" so vale quando o pedaco e GRANDE e os tamanhos
+    // sao parecidos. Sem isto, "Fe" casava com "Fe Inabalavel" e a letra
+    // vinha de outra musica.
+    final menor = x.length <= y.length ? x : y;
+    final maior = x.length <= y.length ? y : x;
+    if (menor.length < 6) return false;
+    if (!maior.contains(menor)) return false;
+    return menor.length >= maior.length * 0.7;
   }
 
   // ---------- LRCLIB: busca aproximada COM VALIDAÇÃO ----------

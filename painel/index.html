@@ -2250,12 +2250,13 @@ function renderPedidosM(){
   const ini = (pedidosMPagina-1)*PEDIDOS_POR_PAGINA;
   const pagina = pedidosMLista.slice(ini, ini+PEDIDOS_POR_PAGINA);
   el.innerHTML = `<p class="rotulo-secao">📊 <b>${total}</b> pedidos recebidos — página ${pedidosMPagina} de ${Math.max(1,Math.ceil(total/PEDIDOS_POR_PAGINA))}</p>` +
-    `<div class="rolagem-tabela"><table><tr><th>#</th><th>Ouvinte</th><th>Intérprete</th><th>Música</th><th>Cidade</th><th>Estado</th><th>WhatsApp</th><th>Quando</th><th></th></tr>` +
+    `<div class="rolagem-tabela"><table><tr><th>#</th><th>Ouvinte</th><th>Intérprete</th><th>Música</th><th>Cidade</th><th>Estado</th><th>WhatsApp</th><th>E-mail</th><th>Quando</th><th></th></tr>` +
     pagina.map(([k,p],idx)=>`<tr>
       <td>${ini+idx+1}</td><td class="livre">${p.nome||''}</td><td class="livre">${p.interprete||''}</td><td class="livre"><b>${p.musica||''}</b></td>
       <td>${p.cidade||'-'}</td>
       <td>${p.estado||'-'}</td>
       <td>${p.whatsapp||'-'}</td>
+      <td class="livre">${p.email||'-'}</td>
       <td>${dataCurta(p.quando)}</td>
       <td><button class="botao mini perigo" onclick="apagarPedidoM('${k}')">🗑️</button></td>
     </tr>`).join('') + `</table></div>` +

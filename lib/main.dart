@@ -146,6 +146,18 @@ class _TelaPrincipalState extends State<TelaPrincipal>
   @override
   void initState() {
     super.initState();
+    // ORIENTACAO: no CELULAR o app fica sempre EM PE (nao gira sozinho).
+    // Em tablet, multimidia de carro e TV — que sao deitados — ele pode
+    // acompanhar a orientacao do aparelho.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final menorLado = MediaQuery.of(context).size.shortestSide;
+      if (menorLado < 600) {
+        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      } else {
+        SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+      }
+    });
     // pulso do "AO VIVO" na aba TV
     _pulso = AnimationController(
       vsync: this,
