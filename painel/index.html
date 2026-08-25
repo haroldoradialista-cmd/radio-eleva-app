@@ -1057,11 +1057,67 @@ function preencherMidia(pref, item){
 }
 // lê os campos e devolve {tipo, imagem?, video?, youtube?, som}; sobe o arquivo se houver.
 // 'imagemAtual' e 'videoAtual' preservam a mídia já existente ao editar sem trocar arquivo.
+/// AJUSTE AUTOMATICO DA IMAGEM
+/// Redimensiona e recorta a imagem escolhida para a proporcao certa do
+/// lugar onde ela vai aparecer no app. Assim o banner nunca sai cortado
+/// de um jeito estranho, e voce nao precisa preparar a imagem antes.
+const PROPORCAO_MIDIA = {
+  bn: 1200/600,   // banner do topo (2:1)
+  cp: 1080/1350,  // anuncio de abertura (retrato 4:5)
+  nt: 1200/490,   // noticias
+  eq: 1200/600,   // enquetes
+  pr: 1200/460    // promocoes
+};
+const LARGURA_MIDIA = { bn:1200, cp:1080, nt:1200, eq:1200, pr:1200 };
+
+function ajustarImagem(arquivo, pref){
+  return new Promise((resolve) => {
+    const proporcao = PROPORCAO_MIDIA[pref];
+    const largura = LARGURA_MIDIA[pref] || 1200;
+    if(!proporcao){ resolve(arquivo); return; } // sem referencia: manda como veio
+    const leitor = new FileReader();
+    leitor.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        try{
+          const alturaFinal = Math.round(largura / proporcao);
+          const cv = document.createElement('canvas');
+          cv.width = largura; cv.height = alturaFinal;
+          const ctx = cv.getContext('2d');
+          // RECORTE PELO CENTRO: pega a maior area possivel na proporcao
+          // certa, sem esticar nem deformar a imagem
+          const pOrig = img.width / img.height;
+          let sx=0, sy=0, sw=img.width, sh=img.height;
+          if(pOrig > proporcao){          // imagem larga demais: corta os lados
+            sw = Math.round(img.height * proporcao);
+            sx = Math.round((img.width - sw) / 2);
+          } else if(pOrig < proporcao){   // imagem alta demais: corta topo/base
+            sh = Math.round(img.width / proporcao);
+            sy = Math.round((img.height - sh) / 2);
+          }
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, largura, alturaFinal);
+          cv.toBlob(blob => {
+            if(!blob){ resolve(arquivo); return; }
+            const nome = (arquivo.name||'imagem').replace(/\.[^.]+$/,'') + '.jpg';
+            resolve(new File([blob], nome, { type:'image/jpeg' }));
+          }, 'image/jpeg', 0.88);
+        }catch(_){ resolve(arquivo); }
+      };
+      img.onerror = () => resolve(arquivo);
+      img.src = e.target.result;
+    };
+    leitor.onerror = () => resolve(arquivo);
+    leitor.readAsDataURL(arquivo);
+  });
+}
+
 async function lerMidia(pref, imagemAtual, videoAtual){
   const t = document.getElementById('tipoMidia_'+pref).value;
   const out = { tipo: t };
   if(t==='imagem'){
-    const arq = document.getElementById('arqImg_'+pref).files[0];
+    let arq = document.getElementById('arqImg_'+pref).files[0];
+    // ajusta a imagem para a proporcao certa deste espaco antes de enviar
+    if(arq) arq = await ajustarImagem(arq, pref);
     out.imagem = arq ? await subirImagem(arq,'imagens') : (imagemAtual||'');
     if(!out.imagem) throw new Error('Escolha a imagem.');
   } else if(t==='video'){
@@ -3632,11 +3688,17 @@ function trocarImagemItem(tipo, i){
   trocaTipo = tipo; trocaIdxG = i;
   document.getElementById('arqTrocaGeral').click();
 }
+/// qual proporcao usar quando a imagem e trocada pelo botao 🔄
+const PREF_POR_TIPO = { banners:'bn', campanhas:'cp', noticias:'nt',
+                        enquetes:'eq', promocoes:'pr' };
+
 document.getElementById('arqTrocaGeral').addEventListener('change', async (ev)=>{
-  const arq = ev.target.files[0];
+  let arq = ev.target.files[0];
   if(!arq || trocaIdxG < 0 || !trocaTipo) return;
   try{
-    avisar('Enviando nova imagem...');
+    avisar('Ajustando e enviando a nova imagem...');
+    const pref = PREF_POR_TIPO[trocaTipo];
+    if(pref) arq = await ajustarImagem(arq, pref);
     const url = await subirImagem(arq, 'imagens');
     config[trocaTipo][trocaIdxG].imagem = url;
     await salvarConfig('Painel: imagem trocada em ' + trocaTipo);
@@ -3649,10 +3711,11 @@ document.getElementById('arqTrocaGeral').addEventListener('change', async (ev)=>
 });
 
 document.getElementById('arqTroca').addEventListener('change', async (ev)=>{
-  const arq = ev.target.files[0];
+  let arq = ev.target.files[0];
   if(!arq || idxTroca < 0) return;
   try{
-    avisar('Enviando nova imagem...');
+    avisar('Ajustando e enviando a nova imagem...');
+    arq = await ajustarImagem(arq, 'bn'); // proporcao do banner do topo
     const url = await subirImagem(arq, 'imagens');
     config.banners[idxTroca].imagem = url;
     if(!config.banners[idxTroca].id) config.banners[idxTroca].id = 'b'+Date.now();
