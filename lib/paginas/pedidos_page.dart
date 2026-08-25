@@ -206,6 +206,19 @@ class TelefoneFormatter extends TextInputFormatter {
   }
 }
 
+/// Os 27 estados do Brasil — o ouvinte escolhe na lista, nao digita.
+const List<List<String>> ESTADOS_BR = [
+  ['AC', 'Acre'], ['AL', 'Alagoas'], ['AP', 'Amapá'], ['AM', 'Amazonas'],
+  ['BA', 'Bahia'], ['CE', 'Ceará'], ['DF', 'Distrito Federal'],
+  ['ES', 'Espírito Santo'], ['GO', 'Goiás'], ['MA', 'Maranhão'],
+  ['MT', 'Mato Grosso'], ['MS', 'Mato Grosso do Sul'], ['MG', 'Minas Gerais'],
+  ['PA', 'Pará'], ['PB', 'Paraíba'], ['PR', 'Paraná'], ['PE', 'Pernambuco'],
+  ['PI', 'Piauí'], ['RJ', 'Rio de Janeiro'], ['RN', 'Rio Grande do Norte'],
+  ['RS', 'Rio Grande do Sul'], ['RO', 'Rondônia'], ['RR', 'Roraima'],
+  ['SC', 'Santa Catarina'], ['SP', 'São Paulo'], ['SE', 'Sergipe'],
+  ['TO', 'Tocantins'],
+];
+
 /// Confere se o telefone tem a quantidade certa de numeros.
 /// Devolve '' quando esta certo, ou a mensagem de erro.
 ///  - CELULAR: DDD + 9 numeros  = 11 no total
@@ -256,6 +269,147 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   final _interprete = TextEditingController();
   final _cidade = TextEditingController();
   final _estado = TextEditingController();
+  List<String> _cidadesDoEstado = [];
+  List<String> _sugestoes = [];
+  bool _carregandoCidades = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cidade.addListener(_filtrarCidades);
+  }
+
+  /// Baixa as cidades do estado escolhido (lista oficial do IBGE)
+  Future<void> _carregarCidadesDoEstado(String uf) async {
+    if (uf.isEmpty) return;
+    setState(() {
+      _carregandoCidades = true;
+      _cidadesDoEstado = [];
+      _sugestoes = [];
+      _cidade.clear();
+    });
+    try {
+      final r = await http
+          .get(Uri.parse(
+              'https://servicodados.ibge.gov.br/api/v1/localidades/estados/$uf/municipios'))
+          .timeout(const Duration(seconds: 12));
+      if (r.statusCode == 200) {
+        final lista = jsonDecode(utf8.decode(r.bodyBytes)) as List;
+        final nomes = lista
+            .map((m) => (m['nome'] ?? '').toString().toUpperCase())
+            .where((n) => n.isNotEmpty)
+            .toList()
+          ..sort();
+        if (mounted) setState(() => _cidadesDoEstado = nomes);
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _carregandoCidades = false);
+  }
+
+  String _semAcentoP(String s) {
+    const com = 'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ';
+    const sem = 'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC';
+    var r = s;
+    for (int i = 0; i < com.length; i++) {
+      r = r.replaceAll(com[i], sem[i]);
+    }
+    return r;
+  }
+
+  void _filtrarCidades() {
+    final termo = _semAcentoP(_cidade.text.trim().toLowerCase());
+    if (termo.isEmpty || _cidadesDoEstado.isEmpty) {
+      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
+      return;
+    }
+    if (_cidadesDoEstado.contains(_cidade.text.trim().toUpperCase())) {
+      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
+      return;
+    }
+    final achados = _cidadesDoEstado
+        .where((c) => _semAcentoP(c.toLowerCase()).contains(termo))
+        .take(12)
+        .toList();
+    if (mounted) setState(() => _sugestoes = achados);
+  }
+
+  /// Lista pronta com os 27 estados
+  Widget _listaEstados() {
+    final uf = _estado.text.trim().toUpperCase();
+    final ok = uf.length == 2;
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10),
+      child: DropdownButtonFormField<String>(
+        value: ok ? uf : null,
+        isExpanded: true,
+        dropdownColor: CoresEleva.azulMedio,
+        style: TextStyle(color: CoresEleva.branco, fontSize: 14.5),
+        decoration: InputDecoration(
+          labelText: 'ESTADO',
+          labelStyle: TextStyle(
+              color: ok ? CoresEleva.verde : CoresEleva.dourado,
+              fontSize: 12.5,
+              fontWeight: FontWeight.bold),
+          prefixIcon: Icon(Icons.map_rounded,
+              color: ok ? CoresEleva.verde : CoresEleva.textoFraco, size: 20),
+          filled: true,
+          fillColor: CoresEleva.azulProfundo,
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide:
+                BorderSide(color: ok ? CoresEleva.verde : Colors.white24),
+          ),
+        ),
+        hint: Text('Escolha o seu estado',
+            style: TextStyle(color: CoresEleva.textoFraco, fontSize: 13.5)),
+        items: ESTADOS_BR
+            .map((e) => DropdownMenuItem(
+                value: e[0],
+                child:
+                    Text('${e[0]} — ${e[1]}', style: TextStyle(fontSize: 14))))
+            .toList(),
+        onChanged: (v) {
+          if (v == null) return;
+          setState(() => _estado.text = v);
+          _carregarCidadesDoEstado(v);
+        },
+      ),
+    );
+  }
+
+  /// Sugestoes de cidade do estado escolhido
+  Widget _sugestoesCidade() {
+    if (_sugestoes.isEmpty) return SizedBox.shrink();
+    return Container(
+      margin: EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: CoresEleva.azulMedio,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: CoresEleva.dourado.withOpacity(0.4)),
+      ),
+      child: Column(
+        children: _sugestoes
+            .map((nome) => ListTile(
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  leading: Icon(Icons.place_rounded,
+                      color: CoresEleva.dourado, size: 18),
+                  title: Text(nome,
+                      style:
+                          TextStyle(fontSize: 13.5, color: CoresEleva.branco)),
+                  onTap: () {
+                    _cidade.text = nome;
+                    setState(() => _sugestoes = []);
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
+                ))
+            .toList(),
+      ),
+    );
+  }
   final _whatsapp = TextEditingController();
   bool _enviando = false;
 
@@ -359,20 +513,14 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
                   teclado: TextInputType.phone, mascara: true),
               _campo(_musica, 'MÚSICA', Icons.music_note_rounded),
               _campo(_interprete, 'INTÉRPRETE', Icons.mic_rounded),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: _campo(_estado, 'ESTADO', Icons.map_rounded),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    flex: 3,
-                    child: _campo(
-                        _cidade, 'SUA CIDADE', Icons.location_city_rounded),
-                  ),
-                ],
-              ),
+              _listaEstados(),
+              _campo(_cidade, 'SUA CIDADE', Icons.location_city_rounded,
+                  dica: _estado.text.trim().isEmpty
+                      ? 'Escolha o estado primeiro'
+                      : (_carregandoCidades
+                          ? 'Carregando as cidades...'
+                          : 'Comece a digitar e escolha na lista')),
+              _sugestoesCidade(),
               SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
@@ -405,7 +553,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   }
 
   Widget _campo(TextEditingController c, String rotulo, IconData icone,
-      {TextInputType? teclado, bool mascara = false}) {
+      {TextInputType? teclado, bool mascara = false, String? dica}) {
     return Padding(
       padding: EdgeInsets.only(bottom: 9),
       child: TextField(
@@ -419,6 +567,8 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
           contentPadding:
               EdgeInsets.symmetric(vertical: 12, horizontal: 10),
           labelText: rotulo,
+          hintText: dica,
+          hintStyle: TextStyle(color: CoresEleva.textoFraco, fontSize: 12),
           labelStyle:
               TextStyle(color: CoresEleva.textoFraco, fontSize: 13),
           prefixIcon: Icon(icone, color: CoresEleva.dourado, size: 18),

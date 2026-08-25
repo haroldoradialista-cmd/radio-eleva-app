@@ -35,7 +35,6 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
 
   // sugestões de cidade (autocompletar)
   List<String> _sugestoes = [];
-  bool _buscandoCidade = false;
 
   @override
   void initState() {
@@ -59,36 +58,67 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
       (widget.promo['nome'] ?? widget.promo['pergunta'] ?? 'PROMOÇÃO')
           .toString();
 
-  // ---------- AUTOCOMPLETAR CIDADE (lista oficial do IBGE) ----------
-  Future<void> _buscarCidades() async {
-    final termo = _cidade.text.trim();
-    if (termo.length < 3) {
-      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
-      return;
-    }
-    if (_buscandoCidade) return;
-    _buscandoCidade = true;
+  // ---------- ESTADO E CIDADE (lista oficial do IBGE) ----------
+  /// Os 27 estados do Brasil (o ouvinte escolhe, nao digita)
+  static const List<List<String>> estadosBR = [
+    ['AC', 'Acre'], ['AL', 'Alagoas'], ['AP', 'Amapá'], ['AM', 'Amazonas'],
+    ['BA', 'Bahia'], ['CE', 'Ceará'], ['DF', 'Distrito Federal'],
+    ['ES', 'Espírito Santo'], ['GO', 'Goiás'], ['MA', 'Maranhão'],
+    ['MT', 'Mato Grosso'], ['MS', 'Mato Grosso do Sul'], ['MG', 'Minas Gerais'],
+    ['PA', 'Pará'], ['PB', 'Paraíba'], ['PR', 'Paraná'], ['PE', 'Pernambuco'],
+    ['PI', 'Piauí'], ['RJ', 'Rio de Janeiro'], ['RN', 'Rio Grande do Norte'],
+    ['RS', 'Rio Grande do Sul'], ['RO', 'Rondônia'], ['RR', 'Roraima'],
+    ['SC', 'Santa Catarina'], ['SP', 'São Paulo'], ['SE', 'Sergipe'],
+    ['TO', 'Tocantins'],
+  ];
+
+  List<String> _cidadesDoEstado = [];
+  bool _carregandoCidades = false;
+
+  /// Baixa a lista de cidades do estado escolhido (uma vez por estado)
+  Future<void> _carregarCidadesDoEstado(String uf) async {
+    if (uf.isEmpty) return;
+    setState(() {
+      _carregandoCidades = true;
+      _cidadesDoEstado = [];
+      _cidade.clear();
+      _sugestoes = [];
+    });
     try {
       final r = await http
           .get(Uri.parse(
-              'https://servicodados.ibge.gov.br/api/v1/localidades/municipios'))
-          .timeout(const Duration(seconds: 8));
+              'https://servicodados.ibge.gov.br/api/v1/localidades/estados/$uf/municipios'))
+          .timeout(const Duration(seconds: 12));
       if (r.statusCode == 200) {
         final lista = jsonDecode(utf8.decode(r.bodyBytes)) as List;
-        final t = _semAcento(termo.toLowerCase());
-        final achados = <String>[];
-        for (final m in lista) {
-          final nome = (m['nome'] ?? '').toString();
-          if (_semAcento(nome.toLowerCase()).startsWith(t)) {
-            final uf = m['microrregiao']?['mesorregiao']?['UF']?['sigla'] ?? '';
-            achados.add('$nome|$uf');
-            if (achados.length >= 8) break;
-          }
-        }
-        if (mounted) setState(() => _sugestoes = achados);
+        final nomes = lista
+            .map((m) => (m['nome'] ?? '').toString().toUpperCase())
+            .where((n) => n.isNotEmpty)
+            .toList()
+          ..sort();
+        if (mounted) setState(() => _cidadesDoEstado = nomes);
       }
     } catch (_) {}
-    _buscandoCidade = false;
+    if (mounted) setState(() => _carregandoCidades = false);
+  }
+
+  /// Filtra as cidades do estado conforme o ouvinte digita
+  void _buscarCidades() {
+    final termo = _semAcento(_cidade.text.trim().toLowerCase());
+    if (termo.isEmpty || _cidadesDoEstado.isEmpty) {
+      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
+      return;
+    }
+    // se ja escolheu exatamente uma cidade da lista, nao sugere mais
+    if (_cidadesDoEstado.contains(_cidade.text.trim().toUpperCase())) {
+      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
+      return;
+    }
+    final achados = _cidadesDoEstado
+        .where((c) => _semAcento(c.toLowerCase()).contains(termo))
+        .take(12)
+        .toList();
+    if (mounted) setState(() => _sugestoes = achados);
   }
 
   String _semAcento(String s) {
@@ -412,10 +442,8 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
             _campo('@ DO INSTAGRAM *', _insta,
                 icone: Icons.camera_alt_rounded,
                 formatadores: [MaiusculasFormatter()]),
+            _campoEstado(),
             _campoCidade(),
-            _campo('ESTADO (UF) *', _estado,
-                icone: Icons.map_rounded,
-                formatadores: [MaiusculasFormatter()]),
             _campo('DATA DE NASCIMENTO *', _nasc,
                 icone: Icons.cake_rounded,
                 teclado: TextInputType.number,
@@ -589,12 +617,68 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
   }
 
   /// Campo cidade com sugestões (autocompletar) para digitar menos
+  /// ESTADO: lista pronta com os 27 estados (evita digitar errado)
+  Widget _campoEstado() {
+    final uf = _estado.text.trim().toUpperCase();
+    final preenchido = uf.length == 2;
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10),
+      child: DropdownButtonFormField<String>(
+        value: preenchido ? uf : null,
+        isExpanded: true,
+        dropdownColor: CoresEleva.azulMedio,
+        style: TextStyle(color: CoresEleva.branco, fontSize: 14.5),
+        decoration: InputDecoration(
+          labelText: 'ESTADO *',
+          labelStyle: TextStyle(
+              color: preenchido ? CoresEleva.verde : CoresEleva.dourado,
+              fontSize: 12.5,
+              fontWeight: FontWeight.bold),
+          prefixIcon: Icon(Icons.map_rounded,
+              color: preenchido ? CoresEleva.verde : CoresEleva.textoFraco,
+              size: 20),
+          filled: true,
+          fillColor: CoresEleva.azulProfundo,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(
+                color: preenchido ? CoresEleva.verde : Colors.white24),
+          ),
+        ),
+        hint: Text('Escolha o seu estado',
+            style: TextStyle(color: CoresEleva.textoFraco, fontSize: 13.5)),
+        items: estadosBR
+            .map((e) => DropdownMenuItem(
+                  value: e[0],
+                  child: Text('${e[0]} — ${e[1]}',
+                      style: TextStyle(fontSize: 14)),
+                ))
+            .toList(),
+        onChanged: (v) {
+          if (v == null) return;
+          setState(() => _estado.text = v);
+          _carregarCidadesDoEstado(v); // ja traz as cidades deste estado
+        },
+      ),
+    );
+  }
+
   Widget _campoCidade() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _campo('CIDADE *', _cidade, icone: Icons.location_city_rounded,
-            formatadores: [MaiusculasFormatter()]),
+        _campo('CIDADE *', _cidade,
+            icone: Icons.location_city_rounded,
+            formatadores: [MaiusculasFormatter()],
+            dica: _estado.text.trim().isEmpty
+                ? 'Escolha o estado primeiro'
+                : (_carregandoCidades
+                    ? 'Carregando as cidades...'
+                    : 'Comece a digitar e escolha na lista')),
         if (_sugestoes.isNotEmpty)
           Container(
             margin: EdgeInsets.only(bottom: 10),
@@ -604,19 +688,17 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
               border: Border.all(color: CoresEleva.dourado.withOpacity(0.4)),
             ),
             child: Column(
-              children: _sugestoes.map((s) {
-                final partes = s.split('|');
+              children: _sugestoes.map((nome) {
                 return ListTile(
                   dense: true,
                   visualDensity: VisualDensity.compact,
                   leading: Icon(Icons.place_rounded,
                       color: CoresEleva.dourado, size: 18),
-                  title: Text('${partes[0].toUpperCase()} — ${partes[1]}',
+                  title: Text(nome,
                       style: TextStyle(
                           fontSize: 13.5, color: CoresEleva.branco)),
                   onTap: () {
-                    _cidade.text = partes[0].toUpperCase();
-                    if (partes.length > 1) _estado.text = partes[1];
+                    _cidade.text = nome;
                     setState(() => _sugestoes = []);
                     FocusManager.instance.primaryFocus?.unfocus();
                   },
