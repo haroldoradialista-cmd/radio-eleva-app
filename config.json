@@ -8,14 +8,6 @@
   "chat_url": "https://radio-eleva-default-rtdb.firebaseio.com/chat",
   "banners": [
     {
-      "id": "b1787623777769",
-      "link": "https://www.youtube.com/watch?v=ldK43s9UyQI&list=RDldK43s9UyQI&start_radio=1",
-      "tipo": "youtube",
-      "youtube": "https://www.youtube.com/watch?v=XJg15wy0lKQ&list=RDXJg15wy0lKQ&start_radio=1",
-      "som": "sem",
-      "publicar_em": "2026-08-24T23:09"
-    },
-    {
       "id": "b1787623926586",
       "link": "",
       "tipo": "imagem",
