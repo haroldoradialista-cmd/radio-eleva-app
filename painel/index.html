@@ -2,7 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- permite instalar o painel na tela inicial do celular, como um app -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E0857">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Painel Eleva">
+<link rel="apple-touch-icon" href="../assets/logo.png">
 <title>Painel Eleva — Gerenciador do App</title>
 <style>
   :root{
@@ -96,13 +103,55 @@
   .aba.sair{margin-top:auto;background:linear-gradient(180deg,#9a2323,#6e1414);color:#fff;border-color:#ff9a9a}
   .topo{margin-left:196px}
   main{padding:16px;max-width:860px;margin:0 auto;margin-left:196px}
-  @media(max-width:820px){
-    .abas{position:static;width:auto;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:2px solid var(--ouro)}
-    .abas .marca{display:none}
-    .aba{width:auto}
-    .aba.sair{margin-top:0;margin-left:auto}
-    .topo{margin-left:0}
-    main{margin-left:auto}
+  /* ================== CELULAR E TABLET ==================
+     No celular o menu lateral vira uma GAVETA que abre pelo botao ☰,
+     em vez de empilhar 14 abas e comer metade da tela. */
+  .btn-menu{display:none}
+  .fundo-menu{display:none}
+
+  @media(max-width:900px){
+    /* botao de menu no topo */
+    .btn-menu{display:inline-flex;align-items:center;justify-content:center;
+      width:42px;height:42px;border-radius:12px;border:1px solid var(--ouro);
+      background:var(--navy);color:var(--ouro);font-size:20px;cursor:pointer;
+      margin-right:10px;flex:0 0 auto}
+
+    /* menu vira gaveta deslizante */
+    .abas{position:fixed;top:0;left:0;bottom:0;width:240px;z-index:120;
+      transform:translateX(-105%);transition:transform .25s ease;
+      border-right:2px solid var(--ouro);overflow-y:auto}
+    body.menu-aberto .abas{transform:translateX(0)}
+    .fundo-menu{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:110}
+    body.menu-aberto .fundo-menu{display:block}
+
+    .topo{margin-left:0;padding:10px 12px;position:sticky;top:0;z-index:100}
+    .topo h1{font-size:16px}
+    .topo .sub{display:none}
+    main{margin-left:0;padding:12px}
+
+    /* formularios e botoes confortaveis para o dedo */
+    .grade2{grid-template-columns:1fr}
+    input,textarea,select{font-size:16px;padding:12px}  /* 16px evita zoom no iOS */
+    .botao{padding:13px 18px;font-size:14.5px}
+    .botao.mini{padding:9px 13px;font-size:12.5px}
+    .cartao{padding:13px}
+    .cartao h2{font-size:15px}
+
+    /* listas: a imagem e os botoes se reorganizam */
+    .item{flex-wrap:wrap}
+    .item img{width:100%;height:120px}
+    .item .acoes,.usuario-card .acoes{width:100%}
+
+    /* tabelas rolam de lado sem espremer */
+    .rolagem-tabela table{font-size:12px}
+  }
+
+  @media(max-width:560px){
+    .topo{gap:6px}
+    main{padding:10px}
+    .botao{width:100%;margin-top:8px}      /* botoes de largura cheia */
+    .botao.mini{width:auto}
+    .acoes{display:flex;flex-wrap:wrap;gap:6px}
   }
   .cartao{background:var(--navy2);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid rgba(255,255,255,.06)}
   .cartao h2{font-size:16px;color:var(--branco);margin-bottom:10px}
@@ -199,9 +248,11 @@
 
 
 
+<div class="fundo-menu" onclick="fecharMenu()"></div>
 <div class="topo">
+  <button class="btn-menu" onclick="alternarMenu()" title="Menu">☰</button>
   <img src="../assets/logo.png" alt="logo" onerror="this.style.display='none'">
-  <div><h1>Painel Eleva</h1><small>GERENCIADOR DO APLICATIVO</small></div>
+  <div><h1>Painel Eleva</h1><small class="sub">GERENCIADOR DO APLICATIVO</small></div>
   <div class="topo-acoes">
     <button class="btn-tema" onclick="alternarTema()" title="Alternar tema claro/escuro"><span id="iconeTema">🌙</span> <span id="rotuloTema">Escuro</span></button>
     <button class="btn-sair" id="btnSairTopo" onclick="sairDoPainel()" style="display:none">🚪 Sair</button>
@@ -1212,7 +1263,12 @@ async function lerMidia(pref, imagemAtual, videoAtual){
 }
 
 // ================== ABAS ==================
+/// ====== MENU EM GAVETA (celular e tablet) ======
+function alternarMenu(){ document.body.classList.toggle('menu-aberto'); }
+function fecharMenu(){ document.body.classList.remove('menu-aberto'); }
+
 function trocarAba(botao){
+  fecharMenu(); // no celular, fecha a gaveta ao escolher a aba
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
   ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras','seguranca'].forEach(s=>
