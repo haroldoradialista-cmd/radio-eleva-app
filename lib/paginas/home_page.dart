@@ -928,18 +928,20 @@ class RelogioAgora extends StatefulWidget {
 class _RelogioAgoraState extends State<RelogioAgora> {
   Timer? _timer;
 
+  // dias sem o sufixo "-feira" (formato curto da tarja do banner)
   static final _dias = [
-    'segunda-feira',
-    'terça-feira',
-    'quarta-feira',
-    'quinta-feira',
-    'sexta-feira',
-    'sábado',
-    'domingo'
+    'Segunda',
+    'Terça',
+    'Quarta',
+    'Quinta',
+    'Sexta',
+    'Sábado',
+    'Domingo'
   ];
+  // meses abreviados: Jan, Fev, Mar...
   static final _meses = [
-    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
   ];
 
   @override
@@ -960,9 +962,9 @@ class _RelogioAgoraState extends State<RelogioAgora> {
   Widget build(BuildContext context) {
     final agora = DateTime.now();
     final diaSemana = _dias[agora.weekday - 1];
-    final diaCap = diaSemana[0].toUpperCase() + diaSemana.substring(1);
+    final diaDoMes = agora.day.toString().padLeft(2, '0');
     final data =
-        '$diaCap, ${agora.day} de ${_meses[agora.month - 1]} de ${agora.year}';
+        '$diaSemana, $diaDoMes/${_meses[agora.month - 1]}/${agora.year}';
     final hora =
         '${agora.hour.toString().padLeft(2, '0')}:${agora.minute.toString().padLeft(2, '0')}';
     return Row(
