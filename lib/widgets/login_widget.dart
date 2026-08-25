@@ -7,7 +7,14 @@ import '../tema.dart';
 // ============================================================
 class LoginEleva extends StatefulWidget {
   final String titulo;
-  LoginEleva({super.key, this.titulo = 'Entre para participar'});
+  /// Quando a tela que chama JA mostra logo e titulo, passe false aqui
+  /// para nao repetir tudo de novo.
+  final bool mostrarCabecalho;
+  LoginEleva({
+    super.key,
+    this.titulo = 'Entre para participar',
+    this.mostrarCabecalho = true,
+  });
   @override
   State<LoginEleva> createState() => _LoginElevaState();
 }
@@ -34,25 +41,32 @@ class _LoginElevaState extends State<LoginEleva> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(28),
+      padding: EdgeInsets.fromLTRB(
+          22, widget.mostrarCabecalho ? 28 : 4, 22, 20),
       child: Column(
         children: [
-          SizedBox(height: 20),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.asset('assets/logo.png', width: 90, height: 90),
-          ),
-          SizedBox(height: 18),
-          Text(_cadastro ? 'Crie sua conta' : widget.titulo,
-              style:
-                  TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          SizedBox(height: 6),
-          Text(
-            'Sua conta vale para o chat e para as promoções da Rádio Eleva',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: CoresEleva.brancoSuave),
-          ),
-          SizedBox(height: 26),
+          if (widget.mostrarCabecalho) ...[
+            SizedBox(height: 20),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset('assets/logo.png', width: 90, height: 90),
+            ),
+            SizedBox(height: 18),
+            Text(_cadastro ? 'Crie sua conta' : widget.titulo,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            SizedBox(height: 6),
+            Text(
+              'Sua conta vale para o chat e para as promoções da Rádio Eleva',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: CoresEleva.brancoSuave),
+            ),
+            SizedBox(height: 26),
+          ] else if (_cadastro) ...[
+            // no modo cadastro, mantem so um titulo curto
+            Text('Crie sua conta',
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+            SizedBox(height: 14),
+          ],
 
           // ---- Botão Google ----
           SizedBox(

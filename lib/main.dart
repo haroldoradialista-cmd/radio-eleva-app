@@ -453,7 +453,8 @@ class _ComLogin extends StatelessWidget {
                           height: 1.5,
                           color: CoresEleva.brancoSuave)),
                   SizedBox(height: 20),
-                  LoginEleva(titulo: 'Entrar na Rádio Eleva'),
+                  // sem cabecalho: esta tela ja mostra logo e titulo
+                  LoginEleva(mostrarCabecalho: false),
                 ],
               ),
             ),
