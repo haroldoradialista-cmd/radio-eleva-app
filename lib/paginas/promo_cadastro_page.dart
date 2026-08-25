@@ -42,7 +42,6 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
     for (final c in [_nome, _zap, _insta, _cidade, _estado, _nasc]) {
       c.addListener(() => setState(() {}));
     }
-    _cidade.addListener(_buscarCidades);
   }
 
   @override
@@ -102,24 +101,7 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
     if (mounted) setState(() => _carregandoCidades = false);
   }
 
-  /// Filtra as cidades do estado conforme o ouvinte digita
-  void _buscarCidades() {
-    final termo = _semAcento(_cidade.text.trim().toLowerCase());
-    if (termo.isEmpty || _cidadesDoEstado.isEmpty) {
-      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
-      return;
-    }
-    // se ja escolheu exatamente uma cidade da lista, nao sugere mais
-    if (_cidadesDoEstado.contains(_cidade.text.trim().toUpperCase())) {
-      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
-      return;
-    }
-    final achados = _cidadesDoEstado
-        .where((c) => _semAcento(c.toLowerCase()).contains(termo))
-        .take(12)
-        .toList();
-    if (mounted) setState(() => _sugestoes = achados);
-  }
+
 
   String _semAcento(String s) {
     const com = 'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ';
@@ -667,48 +649,144 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
     );
   }
 
+  /// CIDADE: o ouvinte TOCA e escolhe numa lista (com busca).
+  /// Assim nao digita errado e o dado chega certo no painel.
   Widget _campoCidade() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _campo('CIDADE *', _cidade,
-            icone: Icons.location_city_rounded,
-            formatadores: [MaiusculasFormatter()],
-            dica: _estado.text.trim().isEmpty
-                ? 'Escolha o estado primeiro'
-                : (_carregandoCidades
-                    ? 'Carregando as cidades...'
-                    : 'Comece a digitar e escolha na lista')),
-        if (_sugestoes.isNotEmpty)
-          Container(
-            margin: EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(
-              color: CoresEleva.azulMedio,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: CoresEleva.dourado.withOpacity(0.4)),
-            ),
-            child: Column(
-              children: _sugestoes.map((nome) {
-                return ListTile(
-                  dense: true,
-                  visualDensity: VisualDensity.compact,
-                  leading: Icon(Icons.place_rounded,
-                      color: CoresEleva.dourado, size: 18),
-                  title: Text(nome,
-                      style: TextStyle(
-                          fontSize: 13.5, color: CoresEleva.branco)),
-                  onTap: () {
-                    _cidade.text = nome;
-                    setState(() => _sugestoes = []);
-                    FocusManager.instance.primaryFocus?.unfocus();
-                  },
-                );
-              }).toList(),
+    final uf = _estado.text.trim();
+    final escolhida = _cidade.text.trim();
+    final temEstado = uf.isNotEmpty;
+    final preenchida = escolhida.isNotEmpty;
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: temEstado && !_carregandoCidades ? _abrirListaCidades : null,
+        borderRadius: BorderRadius.circular(14),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: 'CIDADE *',
+            labelStyle: TextStyle(
+                color: preenchida ? CoresEleva.verde : CoresEleva.dourado,
+                fontSize: 12.5,
+                fontWeight: FontWeight.bold),
+            prefixIcon: Icon(Icons.location_city_rounded,
+                color: preenchida ? CoresEleva.verde : CoresEleva.textoFraco,
+                size: 20),
+            suffixIcon: Icon(
+                preenchida ? Icons.check_circle_rounded : Icons.arrow_drop_down,
+                color: preenchida ? CoresEleva.verde : CoresEleva.textoFraco),
+            filled: true,
+            fillColor: CoresEleva.azulProfundo,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                  color: preenchida ? CoresEleva.verde : Colors.white24),
             ),
           ),
-      ],
+          child: Text(
+            preenchida
+                ? escolhida
+                : (!temEstado
+                    ? 'Escolha o estado primeiro'
+                    : (_carregandoCidades
+                        ? 'Carregando as cidades...'
+                        : 'Escolha sua cidade')),
+            style: TextStyle(
+                fontSize: 14.5,
+                color: preenchida ? CoresEleva.branco : CoresEleva.textoFraco),
+          ),
+        ),
+      ),
     );
   }
+
+  /// Abre a lista de cidades do estado, com campo de busca no topo
+  void _abrirListaCidades() {
+    final busca = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: CoresEleva.azulProfundo,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, refazer) {
+          final termo = _semAcento(busca.text.trim().toLowerCase());
+          final lista = termo.isEmpty
+              ? _cidadesDoEstado
+              : _cidadesDoEstado
+                  .where((c) => _semAcento(c.toLowerCase()).contains(termo))
+                  .toList();
+          return Padding(
+            padding: EdgeInsets.only(
+                left: 14,
+                right: 14,
+                top: 12,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Escolha sua cidade — ${_estado.text}',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: CoresEleva.dourado)),
+                SizedBox(height: 10),
+                TextField(
+                  controller: busca,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.characters,
+                  onChanged: (_) => refazer(() {}),
+                  style: TextStyle(color: CoresEleva.branco),
+                  decoration: InputDecoration(
+                    hintText: 'Digite as primeiras letras...',
+                    hintStyle: TextStyle(color: CoresEleva.textoFraco),
+                    prefixIcon:
+                        Icon(Icons.search_rounded, color: CoresEleva.dourado),
+                    filled: true,
+                    fillColor: CoresEleva.azulMedio,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none),
+                  ),
+                ),
+                SizedBox(height: 8),
+                SizedBox(
+                  height: MediaQuery.of(ctx).size.height * 0.45,
+                  child: lista.isEmpty
+                      ? Center(
+                          child: Text('Nenhuma cidade encontrada',
+                              style: TextStyle(color: CoresEleva.textoFraco)))
+                      : ListView.builder(
+                          itemCount: lista.length,
+                          itemBuilder: (_, i) => ListTile(
+                            dense: true,
+                            leading: Icon(Icons.place_rounded,
+                                color: CoresEleva.dourado, size: 18),
+                            title: Text(lista[i],
+                                style: TextStyle(
+                                    fontSize: 14, color: CoresEleva.branco)),
+                            onTap: () {
+                              setState(() {
+                                _cidade.text = lista[i];
+                                _sugestoes = [];
+                              });
+                              Navigator.pop(ctx);
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          );
+        });
+      },
+    );
+  }
+
 }
 
 /// Escreve a data no formato DD/MM/AAAA enquanto o ouvinte digita

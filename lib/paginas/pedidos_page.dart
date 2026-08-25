@@ -273,12 +273,6 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   List<String> _sugestoes = [];
   bool _carregandoCidades = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _cidade.addListener(_filtrarCidades);
-  }
-
   /// Baixa as cidades do estado escolhido (lista oficial do IBGE)
   Future<void> _carregarCidadesDoEstado(String uf) async {
     if (uf.isEmpty) return;
@@ -316,22 +310,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
     return r;
   }
 
-  void _filtrarCidades() {
-    final termo = _semAcentoP(_cidade.text.trim().toLowerCase());
-    if (termo.isEmpty || _cidadesDoEstado.isEmpty) {
-      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
-      return;
-    }
-    if (_cidadesDoEstado.contains(_cidade.text.trim().toUpperCase())) {
-      if (_sugestoes.isNotEmpty && mounted) setState(() => _sugestoes = []);
-      return;
-    }
-    final achados = _cidadesDoEstado
-        .where((c) => _semAcentoP(c.toLowerCase()).contains(termo))
-        .take(12)
-        .toList();
-    if (mounted) setState(() => _sugestoes = achados);
-  }
+
 
   /// Lista pronta com os 27 estados
   Widget _listaEstados() {
@@ -380,36 +359,137 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
     );
   }
 
-  /// Sugestoes de cidade do estado escolhido
-  Widget _sugestoesCidade() {
-    if (_sugestoes.isEmpty) return SizedBox.shrink();
-    return Container(
-      margin: EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: CoresEleva.azulMedio,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: CoresEleva.dourado.withOpacity(0.4)),
-      ),
-      child: Column(
-        children: _sugestoes
-            .map((nome) => ListTile(
-                  dense: true,
-                  visualDensity: VisualDensity.compact,
-                  leading: Icon(Icons.place_rounded,
-                      color: CoresEleva.dourado, size: 18),
-                  title: Text(nome,
-                      style:
-                          TextStyle(fontSize: 13.5, color: CoresEleva.branco)),
-                  onTap: () {
-                    _cidade.text = nome;
-                    setState(() => _sugestoes = []);
-                    FocusManager.instance.primaryFocus?.unfocus();
-                  },
-                ))
-            .toList(),
+  /// CIDADE: o ouvinte TOCA e escolhe numa lista (com busca)
+  Widget _escolherCidade() {
+    final temEstado = _estado.text.trim().isNotEmpty;
+    final escolhida = _cidade.text.trim();
+    final ok = escolhida.isNotEmpty;
+    return Padding(
+      padding: EdgeInsets.only(bottom: 9),
+      child: InkWell(
+        onTap: temEstado && !_carregandoCidades ? _abrirListaCidades : null,
+        borderRadius: BorderRadius.circular(13),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding:
+                EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            labelText: 'SUA CIDADE',
+            labelStyle:
+                TextStyle(color: CoresEleva.textoFraco, fontSize: 13),
+            prefixIcon: Icon(Icons.location_city_rounded,
+                color: CoresEleva.dourado, size: 18),
+            prefixIconConstraints:
+                BoxConstraints(minWidth: 34, minHeight: 34),
+            suffixIcon: Icon(
+                ok ? Icons.check_circle_rounded : Icons.arrow_drop_down,
+                color: ok ? CoresEleva.verde : CoresEleva.textoFraco,
+                size: 20),
+            filled: true,
+            fillColor: CoresEleva.azulMedio,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(13),
+                borderSide: BorderSide.none),
+          ),
+          child: Text(
+            ok
+                ? escolhida
+                : (!temEstado
+                    ? 'Escolha o estado primeiro'
+                    : (_carregandoCidades
+                        ? 'Carregando as cidades...'
+                        : 'Escolha sua cidade')),
+            style: TextStyle(
+                fontSize: 14,
+                color: ok ? CoresEleva.branco : CoresEleva.textoFraco),
+          ),
+        ),
       ),
     );
   }
+
+  /// Lista de cidades do estado, com busca no topo
+  void _abrirListaCidades() {
+    final busca = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: CoresEleva.azulProfundo,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, refazer) {
+          final termo = _semAcentoP(busca.text.trim().toLowerCase());
+          final lista = termo.isEmpty
+              ? _cidadesDoEstado
+              : _cidadesDoEstado
+                  .where((c) => _semAcentoP(c.toLowerCase()).contains(termo))
+                  .toList();
+          return Padding(
+            padding: EdgeInsets.only(
+                left: 14,
+                right: 14,
+                top: 12,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Escolha sua cidade — ${_estado.text}',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: CoresEleva.dourado)),
+                SizedBox(height: 10),
+                TextField(
+                  controller: busca,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.characters,
+                  onChanged: (_) => refazer(() {}),
+                  style: TextStyle(color: CoresEleva.branco),
+                  decoration: InputDecoration(
+                    hintText: 'Digite as primeiras letras...',
+                    hintStyle: TextStyle(color: CoresEleva.textoFraco),
+                    prefixIcon:
+                        Icon(Icons.search_rounded, color: CoresEleva.dourado),
+                    filled: true,
+                    fillColor: CoresEleva.azulMedio,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none),
+                  ),
+                ),
+                SizedBox(height: 8),
+                SizedBox(
+                  height: MediaQuery.of(ctx).size.height * 0.45,
+                  child: lista.isEmpty
+                      ? Center(
+                          child: Text('Nenhuma cidade encontrada',
+                              style: TextStyle(color: CoresEleva.textoFraco)))
+                      : ListView.builder(
+                          itemCount: lista.length,
+                          itemBuilder: (_, i) => ListTile(
+                            dense: true,
+                            leading: Icon(Icons.place_rounded,
+                                color: CoresEleva.dourado, size: 18),
+                            title: Text(lista[i],
+                                style: TextStyle(
+                                    fontSize: 14, color: CoresEleva.branco)),
+                            onTap: () {
+                              setState(() => _cidade.text = lista[i]);
+                              Navigator.pop(ctx);
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          );
+        });
+      },
+    );
+  }
+
   final _whatsapp = TextEditingController();
   bool _enviando = false;
 
@@ -514,13 +594,7 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
               _campo(_musica, 'MÚSICA', Icons.music_note_rounded),
               _campo(_interprete, 'INTÉRPRETE', Icons.mic_rounded),
               _listaEstados(),
-              _campo(_cidade, 'SUA CIDADE', Icons.location_city_rounded,
-                  dica: _estado.text.trim().isEmpty
-                      ? 'Escolha o estado primeiro'
-                      : (_carregandoCidades
-                          ? 'Carregando as cidades...'
-                          : 'Comece a digitar e escolha na lista')),
-              _sugestoesCidade(),
+              _escolherCidade(),
               SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
