@@ -57,6 +57,10 @@ class _MidiaElevaState extends State<MidiaEleva> {
       RegExp(r'[?&]v=([A-Za-z0-9_-]{11})'),
       RegExp(r'youtube\.com/embed/([A-Za-z0-9_-]{11})'),
       RegExp(r'youtube\.com/shorts/([A-Za-z0-9_-]{11})'),
+      RegExp(r'youtube\.com/live/([A-Za-z0-9_-]{11})'),
+      // aceita tambem quando o usuario cola o CODIGO DE INCORPORACAO
+      // inteiro (o <iframe src="...">), pegando o id de dentro dele
+      RegExp(r'src="[^"]*?/embed/([A-Za-z0-9_-]{11})'),
     ];
     for (final p in padroes) {
       final m = p.firstMatch(v);
@@ -100,7 +104,13 @@ video{width:100%;height:100%;object-fit:cover;display:block}
     final c = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF000000))
-      ..loadHtmlString(html);
+      // IMPORTANTE: o YouTube RECUSA tocar quando a pagina nao tem um
+      // endereco de origem valido. Informando o baseUrl, ele aceita e o
+      // video roda normalmente dentro do banner.
+      ..loadHtmlString(html,
+          baseUrl: _tipo == 'youtube'
+              ? 'https://www.youtube.com'
+              : 'https://radioeleva.local');
     try {
       if (c.platform is AndroidWebViewController) {
         (c.platform as AndroidWebViewController)
