@@ -494,7 +494,16 @@ class _HomePageState extends State<HomePage> {
         return FundoEleva(
           child: SafeArea(
             child: LayoutBuilder(builder: (context, c) {
-              final alturaBanner = (c.maxHeight * 0.245).clamp(140.0, 196.0);
+              // Em telas DEITADAS (tablet, carro, TV) a altura disponivel e
+              // pequena; por isso consideramos tambem a largura, senao o
+              // banner ficaria espremido. Limite maior em telas grandes.
+              final larguraUtil = c.maxWidth;
+              final porAltura = c.maxHeight * 0.245;
+              final porLargura = larguraUtil * 0.42;
+              final tetoBanner = larguraUtil >= 600 ? 300.0 : 196.0;
+              final alturaBanner =
+                  (porAltura < porLargura ? porAltura : porLargura)
+                      .clamp(140.0, tetoBanner);
               return Column(
                 children: [
                   AnuncioBanner(),
@@ -635,8 +644,13 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(height: 8),
                           // Capa da música / foto do programa no ar
                           CapaMusica(
-                            tamanho: (c.maxHeight * 0.32)
-                                .clamp(184.0, 248.0)
+                            // a capa e QUADRADA: em tela deitada precisa
+                            // caber na altura, e em tela larga nao pode
+                            // ficar gigante — por isso olhamos os dois lados
+                            tamanho: ((c.maxHeight * 0.32) < (c.maxWidth * 0.5)
+                                    ? (c.maxHeight * 0.32)
+                                    : (c.maxWidth * 0.5))
+                                .clamp(150.0, 280.0)
                                 .toDouble(),
                               reserva: (noAr?['imagem'] ?? '').toString()),
                           SizedBox(height: 12),

@@ -23,6 +23,7 @@ import 'servicos/presenca_service.dart';
 import 'servicos/letra_service.dart';
 import 'servicos/player_service.dart';
 import 'tema.dart';
+import 'tela.dart';
 
 /// Mantém a tela do celular acesa por 1 minuto (renovável a cada toque),
 /// para o ouvinte acompanhar o app sem a tela apagar no meio.
@@ -109,6 +110,17 @@ class RadioElevaApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           theme: temaEleva(),
+          // TELAS GRANDES (tablet, multimidia de carro, TV): aumenta um
+          // pouco os textos, para continuar legivel de longe.
+          builder: (context, filho) {
+            final base = MediaQuery.of(context);
+            return MediaQuery(
+              data: base.copyWith(
+                textScaler: TextScaler.linear(Tela.escala(context)),
+              ),
+              child: filho ?? const SizedBox.shrink(),
+            );
+          },
           home: TelaPrincipal(),
         );
       },
@@ -331,13 +343,20 @@ class _TelaPrincipalState extends State<TelaPrincipal>
     // O ouvinte OUVE A RADIO e ve a PROGRAMACAO sem precisar de conta.
     // Para o resto (chat, promocoes, pedidos, TV) e preciso estar logado —
     // assim cada participacao fica ligada a uma pessoa de verdade.
+    // Em tablet, carro e TV o conteudo fica CENTRALIZADO numa largura
+    // confortavel — sem isso ele esticaria e ficaria ruim de ler.
     final paginas = [
-      HomePage(),
-      _ComLogin(child: ChatPage(), oQue: 'participar do chat'),
-      _ComLogin(child: PromocoesPage(), oQue: 'participar das promoções'),
-      _ComLogin(child: PedidosPage(), oQue: 'pedir sua música'),
+      ConteudoCentral(child: HomePage()),
+      ConteudoCentral(
+          child: _ComLogin(child: ChatPage(), oQue: 'participar do chat')),
+      ConteudoCentral(
+          child: _ComLogin(
+              child: PromocoesPage(), oQue: 'participar das promoções')),
+      ConteudoCentral(
+          child: _ComLogin(child: PedidosPage(), oQue: 'pedir sua música')),
+      // a TV ocupa a tela toda de proposito (video em tela cheia)
       _ComLogin(child: TvPage(), oQue: 'assistir à TV Eleva'),
-      MenuPage(),
+      ConteudoCentral(child: MenuPage()),
     ];
     return Scaffold(
       body: Listener(
