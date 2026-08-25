@@ -64,25 +64,50 @@ class CorrecoesService {
   }
 
   /// Todas as formas de identificar a mesma música
+  /// ATENCAO: NUNCA indexar/buscar so pelo TITULO quando o artista e
+  /// conhecido. Duas musicas diferentes podem ter o mesmo nome (um louvor
+  /// e um sertanejo, por exemplo) — foi isso que fez aparecer letra e capa
+  /// do cantor errado. O artista TEM que conferir.
   static List<String> chavesDe(String artista, String titulo) {
     final a = cru(artista);
     final t = cru(titulo);
     final lista = <String>[];
-    if (a.isNotEmpty && t.isNotEmpty) {
+    if (t.isEmpty) return lista;
+    if (a.isNotEmpty) {
       lista.add('$a|$t');
-      lista.add('$t|$a'); // invertido
+      lista.add('$t|$a'); // a transmissao as vezes inverte
+    } else {
+      // so quando NAO sabemos o artista e que aceitamos a busca por titulo
+      lista.add('|$t');
     }
-    if (t.isNotEmpty) lista.add('|$t'); // só o título
     return lista;
   }
 
   // ---------------- CARGA ----------------
   static Future<void> iniciar(String enderecoBanco) async {
     base = enderecoBanco;
+    await _limparLembrancasAntigas();
     await _lerDoAparelho(); // instantâneo, funciona offline
     await atualizar(); // busca a versão mais nova
     _relogio?.cancel();
     _relogio = Timer.periodic(const Duration(minutes: 10), (_) => atualizar());
+  }
+
+  /// FAXINA UNICA: versoes anteriores podiam ter guardado no aparelho a
+  /// letra/capa do CANTOR ERRADO (quando duas musicas tinham o mesmo nome).
+  /// Apagamos essas lembrancas uma vez, para o app buscar tudo de novo
+  /// ja com a regra correta (artista tem que conferir).
+  static Future<void> _limparLembrancasAntigas() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('faxina_lembrancas_v2') == true) return;
+      for (final k in prefs.getKeys().toList()) {
+        if (k.startsWith('lembrada_letra_') || k.startsWith('lembrada_capa_')) {
+          await prefs.remove(k);
+        }
+      }
+      await prefs.setBool('faxina_lembrancas_v2', true);
+    } catch (_) {}
   }
 
   static Future<void> _lerDoAparelho() async {
@@ -155,8 +180,9 @@ class CorrecoesService {
       if (achado != null) return achado;
     }
 
-    // 2) comparação tolerante: título tem que bater; artista ajuda
-    Map<String, dynamic>? melhor;
+    // 2) comparação tolerante — mas SEM misturar cantores:
+    //    o título precisa bater E o artista também. Se o artista não
+    //    conferir, é OUTRA música com o mesmo nome: não serve.
     for (final item in _todas) {
       final ai = (item['_artista'] ?? '').toString();
       final ti = (item['_titulo'] ?? '').toString();
@@ -164,18 +190,23 @@ class CorrecoesService {
       final tituloBate = ti == t ||
           (t.length >= 4 && (ti.contains(t) || t.contains(ti)));
       if (!tituloBate) continue;
+
+      // não sabemos o artista de um dos lados: só aceita se o título for
+      // EXATAMENTE igual (nada de "parecido"), para não errar de cantor
       if (a.isEmpty || ai.isEmpty) {
-        melhor ??= item; // guarda como possibilidade
+        if (ti == t) return item;
         continue;
       }
+
       final artistaBate = ai == a ||
           ai.contains(a) ||
           a.contains(ai) ||
           _palavraEmComum(ai, a);
-      if (artistaBate) return item; // combinação forte
-      melhor ??= item;
+      if (artistaBate) return item;
+      // artista diferente: IGNORA (antes isto virava um "talvez" e
+      // acabava devolvendo a musica de outro cantor)
     }
-    return melhor;
+    return null;
   }
 
   static bool _palavraEmComum(String a, String b) {

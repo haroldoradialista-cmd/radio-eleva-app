@@ -298,7 +298,9 @@ class LetraService {
     final combos = <(String, String)>[
       if (aL.isNotEmpty) (aL, tL),
       if (aL.isNotEmpty) (_semAcento(aL), _semAcento(tL)),
-      if (aL.isNotEmpty) (tL, aL), // stream pode vir "Título - Artista"
+      // (a inversao "Titulo - Artista" e usada SO na busca do LRCLIB, que
+      //  confere artista e titulo antes de aceitar — ver combosSeguros)
+      if (aL.isNotEmpty) (tL, aL),
       if (aL.isNotEmpty && primeirasDoArtista != aL) (primeirasDoArtista, tL),
       if (aL.isNotEmpty && artistaSemDupla != aL) (artistaSemDupla, tL),
       if (aL.isNotEmpty && tituloCurto.isNotEmpty && tituloCurto != tL)
@@ -306,6 +308,11 @@ class LetraService {
       if (aL.isNotEmpty && (artista != aL || titulo != tL)) (artista, titulo),
       if (aL.isNotEmpty) (_semAcento(primeirasDoArtista), _semAcento(tL)),
     ];
+    // Fontes que nao conferem o artista na resposta so podem receber as
+    // formas DIRETAS (artista de verdade no lugar do artista). Sem isto,
+    // a busca invertida podia trazer a musica de OUTRO cantor.
+    final combosSeguros =
+        combos.where((c) => c.$1 != tL || tL == aL).toList();
     final vistos = <String>{};
     for (final (a, t) in combos) {
       final id = '$a|$t';
@@ -355,7 +362,7 @@ class LetraService {
     }
 
     // 3) lyrics.ovh como reforço
-    for (final (a, t) in combos) {
+    for (final (a, t) in combosSeguros) {
       final letra = await _lyricsOvh(a, t);
       if (letra != null) {
         if (pular > 0) {
@@ -369,7 +376,7 @@ class LetraService {
     }
 
     // 4) lrcmux.dev — agrega vários provedores de letra
-    for (final (a, t) in combos) {
+    for (final (a, t) in combosSeguros) {
       final letra = await _lrcmux(a, t);
       if (letra != null) {
         if (pular > 0) {
@@ -383,7 +390,7 @@ class LetraService {
     }
 
     // 5) ChartLyrics — mais uma base independente
-    for (final (a, t) in combos) {
+    for (final (a, t) in combosSeguros) {
       final letra = await _chartLyrics(a, t);
       if (letra != null) {
         if (pular > 0) {
