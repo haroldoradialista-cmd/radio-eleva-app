@@ -100,13 +100,13 @@ class CorrecoesService {
   static Future<void> _limparLembrancasAntigas() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('faxina_lembrancas_v2') == true) return;
+      if (prefs.getBool('faxina_lembrancas_v3') == true) return;
       for (final k in prefs.getKeys().toList()) {
         if (k.startsWith('lembrada_letra_') || k.startsWith('lembrada_capa_')) {
           await prefs.remove(k);
         }
       }
-      await prefs.setBool('faxina_lembrancas_v2', true);
+      await prefs.setBool('faxina_lembrancas_v3', true);
     } catch (_) {}
   }
 
@@ -238,7 +238,10 @@ class CorrecoesService {
   static Future<void> lembrar(
       String musicaBruta, {String? letra, String? capa}) async {
     final chave = cru(musicaBruta);
-    if (chave.isEmpty) return;
+    // Chave curta demais (vinheta, "ID", nome vazio) NAO entra na memoria:
+    // varias coisas diferentes cairiam na mesma chave e a capa de uma
+    // apareceria na outra.
+    if (chave.length < 6 || !chave.contains(' ')) return;
     _memoria.putIfAbsent(chave, () => {});
     if (letra != null && letra.trim().length > 10) {
       _memoria[chave]!['letra'] = letra;
@@ -258,6 +261,7 @@ class CorrecoesService {
   /// Recupera o que já foi encontrado antes para esta música
   static Future<String?> lembrancaLetra(String musicaBruta) async {
     final chave = cru(musicaBruta);
+    if (chave.length < 6 || !chave.contains(' ')) return null;
     final naMemoria = _memoria[chave]?['letra'];
     if (naMemoria != null) return naMemoria;
     try {
@@ -269,6 +273,7 @@ class CorrecoesService {
 
   static Future<String?> lembrancaCapa(String musicaBruta) async {
     final chave = cru(musicaBruta);
+    if (chave.length < 6 || !chave.contains(' ')) return null;
     final naMemoria = _memoria[chave]?['capa'];
     if (naMemoria != null) return naMemoria;
     try {

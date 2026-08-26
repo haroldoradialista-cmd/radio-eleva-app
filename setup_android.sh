@@ -57,12 +57,14 @@ s = open(caminho, encoding='utf-8').read()
 # acha a tag <activity ...> que contém android:name=".MainActivity"
 def add_orient(m):
     tag = m.group(0)
-    # TELAS GRANDES: o app acompanha a orientacao do aparelho, para
-    # funcionar bem em tablet, multimidia de carro e TV (que sao deitados).
-    # A tela do DESPERTADOR continua travada em pe (definida a parte).
+    # O APP FICA SEMPRE EM PE no celular.
+    # ATENCAO: esta linha do manifesto MANDA MAIS que a trava feita no
+    # codigo — com 'fullSensor' o app girava mesmo com a trava ativa.
+    # Em tablet/TV a liberacao e feita pelo proprio app, em tempo de
+    # execucao, so quando a tela e grande.
     if 'screenOrientation' not in tag:
         tag = tag.replace('<activity',
-            '<activity android:screenOrientation="fullSensor"', 1)
+            '<activity android:screenOrientation="portrait"', 1)
     # evita o app reiniciar a cada giro/mudanca de tamanho da tela
     if 'configChanges' not in tag:
         tag = tag.replace('<activity',

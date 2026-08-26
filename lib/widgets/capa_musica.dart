@@ -45,6 +45,11 @@ class _CapaMusicaState extends State<CapaMusica> {
   Timer? _debounce;
   String _ultimaBusca = '';
   String? _capaUrl;
+  // CONTROLE DE CORRIDA: cada busca recebe um numero. Se a musica mudar
+  // enquanto a busca antiga ainda esta rodando, ela e DESCARTADA ao
+  // terminar — senao a capa da musica anterior aparecia na musica nova.
+  int _versaoBusca = 0;
+  String _musicaDaBusca = '';
   // imagem ENVIADA pelo painel, ja convertida UMA vez.
   // Sem isto, a conversao acontecia a cada redesenho da tela e a capa
   // ficava PISCANDO enquanto a musica tocava.
@@ -78,6 +83,14 @@ class _CapaMusicaState extends State<CapaMusica> {
   }
 
   Future<void> _buscar(String bruto) async {
+    final minhaVersao = ++_versaoBusca;
+    _musicaDaBusca = bruto;
+    /// Aplica a capa SO se esta busca ainda for a mais recente
+    void aplicar(String? url) {
+      if (minhaVersao != _versaoBusca) return; // a musica ja mudou: descarta
+      _aplicarCapa(url);
+    }
+
     try {
       // separa "Artista - Título"
       String artista = '', titulo = bruto.trim();
@@ -92,7 +105,7 @@ class _CapaMusicaState extends State<CapaMusica> {
       final artL = _limparNome(artista);
       final titL = _limparNome(titulo);
       if (titL.isEmpty) {
-        _aplicarCapa(null);
+        aplicar(null);
         return;
       }
 
@@ -132,7 +145,7 @@ class _CapaMusicaState extends State<CapaMusica> {
       // 0b) capa ja encontrada antes neste aparelho (nunca some)
       url ??= await CorrecoesService.lembrancaCapa(bruto);
       if (url != null) {
-        _aplicarCapa(url);
+        aplicar(url);
         return;
       }
       // fontes ja reprovadas pelos ouvintes nesta musica: pula e tenta outra
@@ -159,9 +172,9 @@ class _CapaMusicaState extends State<CapaMusica> {
       // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo.
       // Se achou, GUARDA no aparelho para nunca mais sumir.
       if (url != null) CorrecoesService.lembrar(bruto, capa: url);
-      _aplicarCapa(url);
+      aplicar(url);
     } catch (_) {
-      _aplicarCapa(null);
+      aplicar(null);
     }
   }
 

@@ -175,9 +175,10 @@ class _TelaPrincipalState extends State<TelaPrincipal>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final menorLado = MediaQuery.of(context).size.shortestSide;
-      if (menorLado < 600) {
-        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-      } else {
+      if (menorLado >= 600) {
+        // SO em tablet, carro e TV liberamos o giro. No celular o app fica
+        // em pe pelo proprio manifesto do Android (portrait), que ja e a
+        // trava mais forte — aqui nao precisamos fazer nada.
         SystemChrome.setPreferredOrientations(DeviceOrientation.values);
       }
     });
