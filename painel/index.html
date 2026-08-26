@@ -831,6 +831,15 @@
 
     <!-- VOTOS -->
     <section id="sec-seguranca" class="oculto">
+      <div class="cartao" style="border-left:3px solid #35C733">
+        <h2>🚀 Migração para o novo banco (Supabase)</h2>
+        <p class="rotulo-secao">Copia todo o conteúdo da rádio para o novo banco de dados, que não tem o limite de ouvintes do Firebase. <b>Nada é apagado</b> — o sistema atual continua funcionando exatamente igual durante e depois da cópia. Pode rodar quantas vezes quiser.</p>
+        <button class="botao" onclick="migrarParaSupabase()">🚀 Copiar tudo para o Supabase</button>
+        <button class="botao mini neutro" onclick="conferirSupabase()">🔍 Conferir o que já foi copiado</button>
+        <div id="conferenciaSupabase" style="margin-top:10px"></div>
+        <div id="logMigracao" style="margin-top:12px;display:none;max-height:300px;overflow-y:auto"></div>
+      </div>
+
       <div class="cartao">
         <h2>💾 Backup do conteúdo</h2>
         <p class="rotulo-secao">Baixa uma cópia de TUDO que está no banco (banners, notícias, promoções, correções, usuários, pedidos...) para o seu computador. Se algo for apagado por engano ou por alguém mal-intencionado, você restaura por aqui.</p>
@@ -965,6 +974,56 @@ const REPO = 'radio-eleva-app';
 const API  = `https://api.github.com/repos/${DONO}/${REPO}/contents/`;
 const RAW  = `https://raw.githubusercontent.com/${DONO}/${REPO}/main/`;
 const RTDB = 'https://radio-eleva-default-rtdb.firebaseio.com';
+
+// ============ SUPABASE (nova casa dos dados) ============
+// Esta chave e PUBLICA de proposito: quem protege os dados sao as regras
+// de seguranca do banco, nao o segredo da chave.
+const SB_URL = 'https://znpyobjkxytufpkokdsy.supabase.co';
+const SB_KEY = 'sb_publishable_NwJhyk558r8Rd31ArBbH0Q_Dx6bj0ow';
+const RADIO_ID = 'eleva';   // no futuro, cada cliente tera o seu
+
+/// Envia dados para uma tabela do Supabase
+async function sbGravar(tabela, linhas, aoConflito){
+  if(!linhas || !linhas.length) return { ok:true, n:0 };
+  let url = `${SB_URL}/rest/v1/${tabela}`;
+  if(aoConflito) url += `?on_conflict=${aoConflito}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': aoConflito ? 'resolution=merge-duplicates' : 'return=minimal'
+    },
+    body: JSON.stringify(linhas)
+  });
+  if(!r.ok){
+    const txt = await r.text();
+    return { ok:false, erro: txt.slice(0,200) };
+  }
+  return { ok:true, n: linhas.length };
+}
+
+/// Le uma tabela do Supabase (para conferir se a migracao deu certo)
+async function sbLer(tabela, filtro){
+  const url = `${SB_URL}/rest/v1/${tabela}?select=*${filtro||''}`;
+  const r = await fetch(url, {
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+  });
+  if(!r.ok) return null;
+  return await r.json();
+}
+
+/// Monta a chave da musica (mesma regra que o app usa)
+function sbChaveMusica(musica){
+  return (musica||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[\(\[\{].*?[\)\]\}]/g,' ')
+    .replace(/\b(ao vivo|acustico|playback|clipe|oficial|single)\b/g,' ')
+    .replace(/[^a-z0-9]+/g,' ')
+    .replace(/\s+/g,' ').trim();
+}
+
 const FIREKEY = 'AIzaSyCsfZI3ZxetPd_w_0NTWLLqnYg7k9C12gE';
 
 let token = localStorage.getItem('tokenEleva') || '';
@@ -3946,6 +4005,173 @@ function dataBR(valor, comHora){
     }
   }catch(_){}
   return String(valor);
+}
+
+/// ============ MIGRACAO PARA O SUPABASE ============
+/// Copia TUDO que hoje esta no GitHub (config.json) e no Firebase para o
+/// Supabase. Nada e apagado: o sistema atual continua funcionando igual.
+async function migrarParaSupabase(){
+  const log = document.getElementById('logMigracao');
+  if(!confirm('Copiar todo o conteúdo da rádio para o novo banco (Supabase)?\n\n' +
+              'NADA será apagado — o sistema atual continua funcionando.\n' +
+              'Pode levar alguns minutos.')) return;
+  log.style.display = 'block';
+  const linhas = [];
+  const anota = (txt, cor) => {
+    linhas.unshift(`<div style="font-size:12.5px;color:${cor||'#8ef58e'}">${txt}</div>`);
+    log.innerHTML = linhas.join('');
+  };
+  anota('🚀 Iniciando a cópia...', '#e8c96a');
+
+  // ---------- 1) CONFIGURACAO (banners, noticias, programacao...) ----------
+  try{
+    const r = await sbGravar('configuracoes',
+      [{ radio_id: RADIO_ID, dados: config, atualizado_em: new Date().toISOString() }],
+      'radio_id');
+    if(r.ok) anota('✅ Configuração da rádio (banners, notícias, programação, promoções)');
+    else anota('⚠️ Configuração: ' + r.erro, '#ff6b6b');
+  }catch(e){ anota('⚠️ Configuração falhou: ' + e.message, '#ff6b6b'); }
+
+  // ---------- 2) CORRECOES DE LETRAS E CAPAS ----------
+  try{
+    const r = await fetch(`${RTDB}/correcoes.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(d && !d.error){
+      const lista = Object.entries(d).map(([id, x]) => ({
+        radio_id: RADIO_ID,
+        chave: sbChaveMusica((x && x.musica) || id),
+        musica: (x && x.musica) || id,
+        letra: (x && x.letra) || null,
+        capa: (x && x.capa) || null
+      })).filter(x => x.chave.length > 2);
+      // envia em lotes de 50 (capas sao pesadas)
+      let ok = 0;
+      for(let i=0; i<lista.length; i+=50){
+        const res = await sbGravar('correcoes', lista.slice(i, i+50), 'radio_id,chave');
+        if(res.ok) ok += res.n; else anota('⚠️ Correções: ' + res.erro, '#ff6b6b');
+        anota(`⏳ Correções: ${ok} de ${lista.length}...`, '#e8c96a');
+      }
+      anota(`✅ Correções de letras e capas: ${ok}`);
+    } else anota('➖ Nenhuma correção para copiar', '#BDB8F0');
+  }catch(e){ anota('⚠️ Correções: ' + e.message, '#ff6b6b'); }
+
+  // ---------- 3) AVISOS DE LETRA/CAPA ----------
+  try{
+    const r = await fetch(`${RTDB}/letras_reportadas.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(d && !d.error){
+      const mapa = {};
+      Object.values(d).forEach(x => {
+        const chave = sbChaveMusica(x.musica||'');
+        const tipo = (x.tipo||'letra');
+        const k = chave + '|' + tipo;
+        if(!chave) return;
+        if(!mapa[k]) mapa[k] = { radio_id:RADIO_ID, chave, musica:x.musica||'', tipo, avisos:0, ultimo_em:x.quando||new Date().toISOString() };
+        mapa[k].avisos++;
+      });
+      const lista = Object.values(mapa);
+      const res = await sbGravar('letras_reportadas', lista, 'radio_id,chave,tipo');
+      anota(res.ok ? `✅ Avisos de letra/capa: ${lista.length}` : '⚠️ Avisos: ' + res.erro, res.ok?null:'#ff6b6b');
+    } else anota('➖ Nenhum aviso para copiar', '#BDB8F0');
+  }catch(e){ anota('⚠️ Avisos: ' + e.message, '#ff6b6b'); }
+
+  // ---------- 4) PEDIDOS MUSICAIS ----------
+  await _migrarSimples('pedidos_musicais', 'pedidos_musicais', anota,
+    x => ({ radio_id:RADIO_ID, nome:x.nome, musica:x.musica, interprete:x.interprete,
+            whatsapp:x.whatsapp, cidade:x.cidade, estado:x.estado, email:x.email,
+            criado_em:x.quando || new Date().toISOString() }));
+
+  // ---------- 5) PARTICIPACOES EM PROMOCOES ----------
+  await _migrarPromos(anota);
+
+  // ---------- 6) ANUNCIOS ----------
+  await _migrarSimples('anuncios', 'anuncios', anota,
+    x => ({ radio_id:RADIO_ID, nome:x.nome, empresa:x.empresa, email:x.email,
+            whatsapp:x.whatsapp, criado_em:x.quando || new Date().toISOString() }));
+
+  // ---------- 7) USUARIOS DE SETOR ----------
+  try{
+    const r = await fetch(`${RTDB}/painel_usuarios.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(d && !d.error){
+      const lista = Object.entries(d).map(([login, u]) => ({
+        radio_id: RADIO_ID, login,
+        nome: u.nome || login,
+        senha_hash: u.senha_hash || null,
+        senha_cofre: u.senha_cofre || null,
+        abas: u.abas || [],
+        ativo: u.ativo !== false
+      }));
+      const res = await sbGravar('painel_usuarios', lista, 'radio_id,login');
+      anota(res.ok ? `✅ Usuários de setor: ${lista.length}` : '⚠️ Usuários: ' + res.erro, res.ok?null:'#ff6b6b');
+    } else anota('➖ Nenhum usuário de setor', '#BDB8F0');
+  }catch(e){ anota('⚠️ Usuários: ' + e.message, '#ff6b6b'); }
+
+  anota('🎉 CÓPIA CONCLUÍDA! Confira abaixo se os números batem.', '#e8c96a');
+  conferirSupabase();
+}
+
+/// Copia um no simples do Firebase para uma tabela do Supabase
+async function _migrarSimples(noFirebase, tabela, anota, converter){
+  try{
+    const r = await fetch(`${RTDB}/${noFirebase}.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!d || d.error){ anota(`➖ Nada em ${noFirebase}`, '#BDB8F0'); return; }
+    const lista = Object.values(d).map(converter);
+    let ok = 0;
+    for(let i=0; i<lista.length; i+=100){
+      const res = await sbGravar(tabela, lista.slice(i, i+100));
+      if(res.ok) ok += res.n; else anota(`⚠️ ${tabela}: ` + res.erro, '#ff6b6b');
+    }
+    anota(`✅ ${tabela}: ${ok}`);
+  }catch(e){ anota(`⚠️ ${tabela}: ` + e.message, '#ff6b6b'); }
+}
+
+/// As participacoes ficam separadas por promocao no Firebase
+async function _migrarPromos(anota){
+  try{
+    const r = await fetch(`${RTDB}/promo_participacoes.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!d || d.error){ anota('➖ Nenhuma participação', '#BDB8F0'); return; }
+    const lista = [];
+    Object.entries(d).forEach(([promoId, participantes]) => {
+      if(!participantes || typeof participantes !== 'object') return;
+      Object.values(participantes).forEach(x => {
+        if(!x || typeof x !== 'object') return;
+        lista.push({
+          radio_id: RADIO_ID, promocao_id: promoId,
+          nome:x.nome, whatsapp:x.whatsapp, instagram:x.instagram,
+          cidade:x.cidade, estado:x.estado, nascimento:x.nascimento,
+          email:x.email, uid:x.uid,
+          criado_em: x.quando || new Date().toISOString()
+        });
+      });
+    });
+    let ok = 0;
+    for(let i=0; i<lista.length; i+=100){
+      const res = await sbGravar('promo_participacoes', lista.slice(i, i+100));
+      if(res.ok) ok += res.n;
+    }
+    anota(`✅ Participações em promoções: ${ok}`);
+  }catch(e){ anota('⚠️ Participações: ' + e.message, '#ff6b6b'); }
+}
+
+/// Mostra quantos registros existem em cada tabela do Supabase
+async function conferirSupabase(){
+  const el = document.getElementById('conferenciaSupabase');
+  if(!el) return;
+  el.innerHTML = '<p class="rotulo-secao">Conferindo...</p>';
+  const tabelas = ['configuracoes','correcoes','letras_reportadas',
+                   'pedidos_musicais','promo_participacoes','anuncios',
+                   'painel_usuarios'];
+  const linhas = [];
+  for(const tb of tabelas){
+    const d = await sbLer(tb, `&radio_id=eq.${RADIO_ID}&select=radio_id`);
+    const n = Array.isArray(d) ? d.length : '—';
+    linhas.push(`<div style="font-size:13px;padding:3px 0">
+      <b style="color:var(--ouro)">${tb}</b>: ${n} registro(s)</div>`);
+  }
+  el.innerHTML = linhas.join('');
 }
 
 /// ================= BACKUP E RESTAURACAO =================
