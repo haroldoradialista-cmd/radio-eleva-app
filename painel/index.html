@@ -982,9 +982,19 @@ const SB_URL = 'https://znpyobjkxytufpkokdsy.supabase.co';
 const SB_KEY = 'sb_publishable_NwJhyk558r8Rd31ArBbH0Q_Dx6bj0ow';
 const RADIO_ID = 'eleva';   // no futuro, cada cliente tera o seu
 
-/// Envia dados para uma tabela do Supabase
+/// Envia dados para uma tabela do Supabase.
+/// IMPORTANTE: o Supabase exige que todas as linhas do lote tenham as
+/// MESMAS colunas. Registros antigos as vezes nao tem todos os campos
+/// (ex.: pedidos sem e-mail), entao completamos com vazio antes de enviar.
 async function sbGravar(tabela, linhas, aoConflito){
   if(!linhas || !linhas.length) return { ok:true, n:0 };
+  const colunas = new Set();
+  linhas.forEach(l => Object.keys(l).forEach(k => colunas.add(k)));
+  linhas = linhas.map(l => {
+    const completa = {};
+    colunas.forEach(c => { completa[c] = (l[c] === undefined ? null : l[c]); });
+    return completa;
+  });
   let url = `${SB_URL}/rest/v1/${tabela}`;
   if(aoConflito) url += `?on_conflict=${aoConflito}`;
   const r = await fetch(url, {
@@ -4117,13 +4127,23 @@ async function _migrarSimples(noFirebase, tabela, anota, converter){
     const r = await fetch(`${RTDB}/${noFirebase}.json?t=${Date.now()}`);
     const d = await r.json();
     if(!d || d.error){ anota(`➖ Nada em ${noFirebase}`, '#BDB8F0'); return; }
-    const lista = Object.values(d).map(converter);
-    let ok = 0;
-    for(let i=0; i<lista.length; i+=100){
-      const res = await sbGravar(tabela, lista.slice(i, i+100));
-      if(res.ok) ok += res.n; else anota(`⚠️ ${tabela}: ` + res.erro, '#ff6b6b');
+    // descarta entradas estranhas (nulas ou que nao sejam registros)
+    const brutos = Object.values(d).filter(x => x && typeof x === 'object');
+    const lista = brutos.map(converter);
+    let ok = 0, falhas = 0;
+    for(let i=0; i<lista.length; i+=50){
+      const lote = lista.slice(i, i+50);
+      const res = await sbGravar(tabela, lote);
+      if(res.ok){ ok += res.n; continue; }
+      // Se o lote falhar, envia UM POR UM: assim um registro problematico
+      // nao impede a copia de todos os outros.
+      for(const item of lote){
+        const r2 = await sbGravar(tabela, [item]);
+        if(r2.ok) ok++; else falhas++;
+      }
     }
-    anota(`✅ ${tabela}: ${ok}`);
+    anota(`✅ ${tabela}: ${ok}` + (falhas ? ` (${falhas} não copiado(s))` : ''),
+          falhas ? '#e8c96a' : null);
   }catch(e){ anota(`⚠️ ${tabela}: ` + e.message, '#ff6b6b'); }
 }
 
@@ -4147,12 +4167,17 @@ async function _migrarPromos(anota){
         });
       });
     });
-    let ok = 0;
-    for(let i=0; i<lista.length; i+=100){
-      const res = await sbGravar('promo_participacoes', lista.slice(i, i+100));
-      if(res.ok) ok += res.n;
+    let ok = 0, falhas = 0;
+    for(let i=0; i<lista.length; i+=50){
+      const lote = lista.slice(i, i+50);
+      const res = await sbGravar('promo_participacoes', lote);
+      if(res.ok){ ok += res.n; continue; }
+      for(const item of lote){
+        const r2 = await sbGravar('promo_participacoes', [item]);
+        if(r2.ok) ok++; else falhas++;
+      }
     }
-    anota(`✅ Participações em promoções: ${ok}`);
+    anota(`✅ Participações em promoções: ${ok}` + (falhas ? ` (${falhas} não copiado(s))` : ''));
   }catch(e){ anota('⚠️ Participações: ' + e.message, '#ff6b6b'); }
 }
 
