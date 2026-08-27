@@ -279,10 +279,21 @@
     <div id="blocoAdmin" style="display:none">
       <hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:14px 0">
       <h2 style="font-size:15px">🔑 Acesso do administrador</h2>
-      <p class="rotulo-secao">Cole aqui o seu <b>token do GitHub</b> (a chave que dá permissão ao painel para atualizar o app). Ele fica salvo somente neste navegador.</p>
-      <label>Token do GitHub</label>
-      <input id="campoToken" type="password" placeholder="github_pat_...">
-      <button class="botao" onclick="entrarPainel()">Entrar como administrador</button>
+      <p class="rotulo-secao">Entre com o seu <b>e-mail e senha</b>.</p>
+      <label>E-mail</label>
+      <input id="admEmail" type="email" placeholder="seu@email.com" autocomplete="username">
+      <label>Senha</label>
+      <input id="admSenha" type="password" placeholder="Sua senha" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')entrarComoAdmin()">
+      <button class="botao" onclick="entrarComoAdmin()">Entrar como administrador</button>
+      <p id="erroAdmin" style="color:#ff6b6b;font-size:13px;margin-top:8px;display:none"></p>
+
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;color:#8a92c0;font-size:12px">Token do GitHub (só para publicar o app)</summary>
+        <p class="rotulo-secao" style="margin-top:8px">O token é necessário apenas enquanto o app ainda lê os dados do GitHub. Em breve deixará de ser preciso.</p>
+        <input id="campoToken" type="password" placeholder="github_pat_...">
+        <button class="botao mini neutro" onclick="entrarPainel()">Entrar com o token</button>
+      </details>
     </div>
   </div>
 </main>
@@ -982,6 +993,101 @@ const SB_URL = 'https://znpyobjkxytufpkokdsy.supabase.co';
 const SB_KEY = 'sb_publishable_NwJhyk558r8Rd31ArBbH0Q_Dx6bj0ow';
 const RADIO_ID = 'eleva';   // no futuro, cada cliente tera o seu
 
+/// ============ LOGIN DO ADMINISTRADOR (Supabase) ============
+/// Substitui o token do GitHub: o administrador entra com e-mail e senha,
+/// como em qualquer sistema. A sessao fica guardada no navegador.
+let sbSessao = null;   // { access_token, refresh_token, user }
+
+/// Cabecalhos para falar com o banco JA AUTENTICADO
+function sbCabecalhos(extra){
+  const h = {
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + (sbSessao?.access_token || SB_KEY),
+    'Content-Type': 'application/json'
+  };
+  return Object.assign(h, extra || {});
+}
+
+async function entrarComoAdmin(){
+  const email = (document.getElementById('admEmail').value||'').trim().toLowerCase();
+  const senha = document.getElementById('admSenha').value || '';
+  const erro  = document.getElementById('erroAdmin');
+  erro.style.display = 'none';
+  if(!email || !senha){
+    erro.textContent = 'Preencha o e-mail e a senha.'; erro.style.display='block'; return;
+  }
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: senha })
+    });
+    const d = await r.json();
+    if(!r.ok || !d.access_token){
+      const msg = (d.error_description || d.msg || 'Não foi possível entrar.');
+      erro.innerHTML = msg.includes('Invalid')
+        ? 'E-mail ou senha incorretos.'
+        : msg;
+      erro.style.display = 'block';
+      return;
+    }
+    sbSessao = d;
+    try{
+      localStorage.setItem('sbSessao', JSON.stringify({
+        refresh_token: d.refresh_token, email
+      }));
+      sessionStorage.setItem('painel_logado','sim');
+      sessionStorage.setItem('painel_email', email);
+    }catch(_){}
+    await abrirPainelComoAdmin(email);
+  }catch(e){
+    erro.textContent = 'Falha de conexão. Tente de novo.';
+    erro.style.display = 'block';
+  }
+}
+
+/// Reabre a sessao guardada (para nao pedir senha toda vez)
+async function sbRestaurarSessao(){
+  let guardado = null;
+  try{ guardado = JSON.parse(localStorage.getItem('sbSessao')||'null'); }catch(_){}
+  if(!guardado || !guardado.refresh_token) return false;
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: guardado.refresh_token })
+    });
+    const d = await r.json();
+    if(!r.ok || !d.access_token) return false;
+    sbSessao = d;
+    try{
+      localStorage.setItem('sbSessao', JSON.stringify({
+        refresh_token: d.refresh_token, email: guardado.email
+      }));
+    }catch(_){}
+    await abrirPainelComoAdmin(guardado.email);
+    return true;
+  }catch(_){ return false; }
+}
+
+/// Abre o painel com acesso total (administrador)
+async function abrirPainelComoAdmin(email){
+  usuarioAtual = null;                       // null = admin
+  document.getElementById('telaAcesso').classList.add('oculto');
+  document.getElementById('painel').classList.remove('oculto');
+  const btn = document.getElementById('btnSairTopo');
+  if(btn) btn.style.display = 'inline-block';
+  try{ await carregarConfig(); }catch(_){}
+  desenharBanners(); desenharCampanha(); desenharNoticias();
+  desenharProgramas(); desenharEnquetes(); desenharPromos();
+  carregarPedidosM(); preencherTextos(); preencherModeracao();
+  carregarSuspensos(); preencherSelBannerRel(); iniciarOuvintesAgora();
+  carregarChat(); carregarVotos(); desenharMedidas();
+  aplicarPerfilUsuario(); carregarUsuarios();
+  reiniciarContagemInatividade();
+  avisar('Bem-vindo, ' + (email||'administrador') + '! 🎉');
+}
+
 /// Envia dados para uma tabela do Supabase.
 /// IMPORTANTE: o Supabase exige que todas as linhas do lote tenham as
 /// MESMAS colunas. Registros antigos as vezes nao tem todos os campos
@@ -999,12 +1105,9 @@ async function sbGravar(tabela, linhas, aoConflito){
   if(aoConflito) url += `?on_conflict=${aoConflito}`;
   const r = await fetch(url, {
     method: 'POST',
-    headers: {
-      'apikey': SB_KEY,
-      'Authorization': 'Bearer ' + SB_KEY,
-      'Content-Type': 'application/json',
+    headers: sbCabecalhos({
       'Prefer': aoConflito ? 'resolution=merge-duplicates' : 'return=minimal'
-    },
+    }),
     body: JSON.stringify(linhas)
   });
   if(!r.ok){
@@ -1018,7 +1121,7 @@ async function sbGravar(tabela, linhas, aoConflito){
 async function sbLer(tabela, filtro){
   const url = `${SB_URL}/rest/v1/${tabela}?select=*${filtro||''}`;
   const r = await fetch(url, {
-    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    headers: sbCabecalhos()
   });
   if(!r.ok) return null;
   return await r.json();
@@ -3459,6 +3562,8 @@ function sairDoPainel(){
   try{ sessionStorage.removeItem('painel_aba'); }catch(_){}
   // limpar o token do GitHub — SEM isto a sessão do admin volta ao recarregar
   try{ localStorage.removeItem('tokenEleva'); }catch(_){}
+  try{ localStorage.removeItem('sbSessao'); }catch(_){}
+  sbSessao = null;
   usuarioAtual = null;
   modToken=''; modUid=''; token='';
   location.reload();
@@ -3928,11 +4033,16 @@ document.getElementById('arqTroca').addEventListener('change', async (ev)=>{
   }catch(e){ avisar('Falhou: '+e.message, true); }
 });
 
-// entra direto se já tem token salvo; se falhar, revela o bloco admin
-if(token){
-  document.getElementById('campoToken').value = token;
-  entrarPainel().catch(()=>{ mostrarAcessoAdmin(); });
-}
+// Ao abrir: primeiro tenta a sessao do administrador (e-mail e senha).
+// Se nao houver, cai no caminho antigo do token do GitHub.
+sbRestaurarSessao().then(entrou => {
+  if(entrou) return;
+  if(token){
+    const c = document.getElementById('campoToken');
+    if(c) c.value = token;
+    entrarPainel().catch(()=>{ mostrarAcessoAdmin(); });
+  }
+});
 
 /// Revela o bloco de acesso do administrador (token do GitHub)
 function mostrarAcessoAdmin(){
