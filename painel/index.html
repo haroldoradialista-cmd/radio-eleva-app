@@ -1232,23 +1232,73 @@ async function entrarPainel(silencioso){
   }
 }
 
+/// CARREGAR A CONFIGURACAO DA RADIO
+/// Quem entra com o TOKEN le do GitHub (caminho antigo).
+/// Quem entra com E-MAIL E SENHA le do Supabase (caminho novo) — foi por
+/// isso que o painel aparecia vazio: sem token, nao tinha de onde ler.
 async function carregarConfig(){
-  const d = await gh('config.json?ref=main&t=' + Date.now());
-  configSha = d.sha;
-  config = JSON.parse(b64Decodificar(d.content.replace(/\n/g,'')));
-  // preenche os seletores dos relatórios de todas as abas
+  if(token){
+    const d = await gh('config.json?ref=main&t=' + Date.now());
+    configSha = d.sha;
+    config = JSON.parse(b64Decodificar(d.content.replace(/\n/g,'')));
+  } else {
+    const linhas = await sbLer('configuracoes', `&radio_id=eq.${RADIO_ID}`);
+    if(linhas && linhas.length && linhas[0].dados){
+      config = linhas[0].dados;
+    } else {
+      // ainda nao ha copia no Supabase: busca a versao publica do GitHub
+      const r = await fetch('../config.json?t=' + Date.now());
+      if(r.ok) config = await r.json();
+    }
+  }
   try{ preencherSeletoresRel(); }catch(e){}
   try{ preencherSelResEnquete(); }catch(e){}
 }
 
+/// SALVAR A CONFIGURACAO
+/// Grava SEMPRE no Supabase. Se houver token, grava TAMBEM no GitHub —
+/// necessario enquanto o app dos ouvintes ainda le de la.
 async function salvarConfig(mensagem){
-  const corpo = {
-    message: mensagem,
-    content: b64Codificar(JSON.stringify(config, null, 2)),
-    sha: configSha, branch: 'main'
-  };
-  const d = await gh('config.json', { method:'PUT', body: JSON.stringify(corpo) });
-  configSha = d.content.sha;
+  // PROTECAO: se por algum motivo a configuracao nao carregou (ficou vazia),
+  // NAO gravamos por cima — senao o conteudo da radio seria apagado.
+  const temConteudo = config && (
+    (config.banners||[]).length || (config.noticias||[]).length ||
+    (config.programacao||[]).length || (config.promocoes||[]).length ||
+    (config.nome||'').length);
+  if(!temConteudo){
+    avisar('O painel ainda não carregou o conteúdo. Atualize a página (F5) antes de salvar.', true);
+    throw new Error('configuracao vazia — gravacao cancelada por seguranca');
+  }
+
+  // 1) Supabase (a nova casa)
+  try{
+    await fetch(`${SB_URL}/rest/v1/configuracoes?on_conflict=radio_id`, {
+      method: 'POST',
+      headers: sbCabecalhos({ 'Prefer': 'resolution=merge-duplicates' }),
+      body: JSON.stringify([{
+        radio_id: RADIO_ID,
+        dados: config,
+        atualizado_em: new Date().toISOString()
+      }])
+    });
+  }catch(_){}
+
+  // 2) GitHub (para o app dos ouvintes enxergar) — so com token
+  if(token){
+    const corpo = {
+      message: mensagem,
+      content: b64Codificar(JSON.stringify(config, null, 2)),
+      sha: configSha, branch: 'main'
+    };
+    const d = await gh('config.json', { method:'PUT', body: JSON.stringify(corpo) });
+    configSha = d.content.sha;
+  } else {
+    // avisa uma unica vez que a mudanca ainda nao chegou aos ouvintes
+    if(!window._avisouSemToken){
+      window._avisouSemToken = true;
+      avisar('Salvo no painel. Para publicar no app dos ouvintes, entre também com o token do GitHub.', true);
+    }
+  }
 }
 
 async function subirImagem(arquivo, pasta){
