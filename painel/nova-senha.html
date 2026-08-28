@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova senha — Painel Eleva</title>
+<style>
+  :root{
+    --navy:#071A33; --navy3:#04101F; --verde:#35C733; --azul:#1E9BFF;
+    --ouro:#E6B93F; --branco:#FFF; --suave:#E8EEF6; --fraco:#8a92c0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+  body{background:linear-gradient(180deg,#0A2140,var(--navy) 40%,#041020);
+       min-height:100vh;color:var(--suave);display:flex;align-items:center;
+       justify-content:center;padding:20px}
+  .caixa{width:100%;max-width:420px;background:#0D2B52;border-radius:18px;
+         padding:26px;border:1px solid rgba(230,185,63,.35);
+         box-shadow:0 10px 40px rgba(0,0,0,.4)}
+  img{width:76px;height:76px;border-radius:16px;display:block;margin:0 auto 14px}
+  h1{font-size:19px;color:var(--branco);text-align:center;margin-bottom:6px}
+  p.sub{font-size:13px;color:var(--fraco);text-align:center;margin-bottom:20px}
+  label{display:block;font-size:12.5px;font-weight:700;color:var(--ouro);
+        margin:12px 0 5px}
+  input{width:100%;padding:13px;border-radius:12px;border:1px solid rgba(255,255,255,.18);
+        background:#071A33;color:var(--branco);font-size:15px}
+  input:focus{outline:none;border-color:var(--ouro)}
+  button{width:100%;margin-top:18px;padding:14px;border:none;border-radius:26px;
+         background:linear-gradient(135deg,var(--verde),var(--azul));
+         color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  .msg{margin-top:14px;font-size:13px;padding:11px;border-radius:11px;display:none}
+  .ok{background:#1a7a4b26;border:1px solid #1a7a4b;color:#BDE8C6}
+  .erro{background:#7a1b1b26;border:1px solid #7a1b1b;color:#FFC9C9}
+  .dica{font-size:11.5px;color:var(--fraco);margin-top:6px}
+  a.voltar{display:block;text-align:center;margin-top:16px;color:var(--fraco);
+           font-size:12.5px;text-decoration:none}
+</style>
+</head>
+<body>
+  <div class="caixa">
+    <img src="../assets/logo.png" alt="" onerror="this.style.display='none'">
+    <h1>Criar uma nova senha</h1>
+    <p class="sub">Escolha a senha que você vai usar para entrar no painel.</p>
+
+    <div id="formulario">
+      <label>Nova senha</label>
+      <input id="senha1" type="password" placeholder="Mínimo 6 caracteres"
+             autocomplete="new-password">
+      <div class="dica">Use pelo menos 6 caracteres. Misturar letras e números deixa mais segura.</div>
+
+      <label>Repita a nova senha</label>
+      <input id="senha2" type="password" placeholder="Digite de novo"
+             autocomplete="new-password"
+             onkeydown="if(event.key==='Enter')salvarSenha()">
+
+      <button id="btn" onclick="salvarSenha()">Salvar nova senha</button>
+    </div>
+
+    <div id="msg" class="msg"></div>
+    <a class="voltar" href="./">← Voltar para o painel</a>
+  </div>
+
+<script>
+const SB_URL = 'https://znpyobjkxytufpkokdsy.supabase.co';
+const SB_KEY = 'sb_publishable_NwJhyk558r8Rd31ArBbH0Q_Dx6bj0ow';
+
+/// O Supabase manda o "passe de entrada" na parte final do endereço,
+/// depois do #. Pegamos ele para poder trocar a senha.
+function passeDoLink(){
+  const bruto = location.hash.startsWith('#') ? location.hash.slice(1) : '';
+  const p = new URLSearchParams(bruto);
+  return {
+    token: p.get('access_token'),
+    erro:  p.get('error_description') || p.get('error')
+  };
+}
+
+function mostrar(texto, tipo){
+  const m = document.getElementById('msg');
+  m.className = 'msg ' + (tipo || 'ok');
+  m.innerHTML = texto;
+  m.style.display = 'block';
+}
+
+const passe = passeDoLink();
+if(passe.erro){
+  document.getElementById('formulario').style.display = 'none';
+  mostrar('⚠️ Este link não é mais válido (pode ter expirado ou já ter sido usado).' +
+          '<br><br>Volte ao painel e peça um novo link em "Esqueci minha senha".', 'erro');
+} else if(!passe.token){
+  document.getElementById('formulario').style.display = 'none';
+  mostrar('Abra esta página pelo link que chegou no seu e-mail.', 'erro');
+}
+
+async function salvarSenha(){
+  const s1 = document.getElementById('senha1').value || '';
+  const s2 = document.getElementById('senha2').value || '';
+  if(s1.length < 6){ mostrar('A senha precisa ter pelo menos 6 caracteres.', 'erro'); return; }
+  if(s1 !== s2){ mostrar('As duas senhas não são iguais. Confira e tente de novo.', 'erro'); return; }
+
+  const btn = document.getElementById('btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + passe.token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password: s1 })
+    });
+    if(r.ok){
+      document.getElementById('formulario').style.display = 'none';
+      mostrar('✅ <b>Senha alterada!</b><br>Já pode entrar no painel com a senha nova.');
+      setTimeout(()=>{ location.href = './'; }, 3000);
+    } else {
+      const d = await r.json().catch(()=>({}));
+      mostrar('⚠️ ' + (d.msg || d.error_description || 'Não foi possível alterar. Peça um novo link.'), 'erro');
+      btn.disabled = false; btn.textContent = 'Salvar nova senha';
+    }
+  }catch(_){
+    mostrar('⚠️ Falha de conexão. Tente novamente.', 'erro');
+    btn.disabled = false; btn.textContent = 'Salvar nova senha';
+  }
+}
+</script>
+</body>
+</html>

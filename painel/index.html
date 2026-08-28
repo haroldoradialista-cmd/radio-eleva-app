@@ -287,6 +287,12 @@
              onkeydown="if(event.key==='Enter')entrarComoAdmin()">
       <button class="botao" onclick="entrarComoAdmin()">Entrar como administrador</button>
       <p id="erroAdmin" style="color:#ff6b6b;font-size:13px;margin-top:8px;display:none"></p>
+      <p style="margin-top:10px">
+        <a href="#" onclick="esqueciSenha();return false"
+           style="color:#8a92c0;font-size:12.5px;text-decoration:none">Esqueci minha senha</a>
+      </p>
+      <p id="avisoRecuperacao" style="display:none;font-size:12.5px;margin-top:8px;
+         background:#1a7a4b26;border:1px solid #1a7a4b;border-radius:10px;padding:10px;color:#BDE8C6"></p>
 
       <details style="margin-top:14px">
         <summary style="cursor:pointer;color:#8a92c0;font-size:12px">Token do GitHub (só para publicar o app)</summary>
@@ -1006,6 +1012,46 @@ function sbCabecalhos(extra){
     'Content-Type': 'application/json'
   };
   return Object.assign(h, extra || {});
+}
+
+/// ====== ESQUECI MINHA SENHA ======
+/// O Supabase envia um link por e-mail. A pessoa clica, define a senha
+/// nova e pronto — ninguem (nem o suporte) chega a ver a senha dela.
+async function esqueciSenha(){
+  const campo = document.getElementById('admEmail');
+  const aviso = document.getElementById('avisoRecuperacao');
+  const erro  = document.getElementById('erroAdmin');
+  erro.style.display = 'none';
+  let email = (campo.value||'').trim().toLowerCase();
+  if(!email){
+    email = (prompt('Digite o e-mail cadastrado para receber o link de recuperação:')||'').trim().toLowerCase();
+    if(!email) return;
+    campo.value = email;
+  }
+  if(!email.includes('@')){
+    erro.textContent = 'Digite um e-mail válido.'; erro.style.display='block'; return;
+  }
+  aviso.style.display = 'block';
+  aviso.textContent = 'Enviando o link...';
+  try{
+    const destino = location.origin + location.pathname + 'nova-senha.html';
+    const r = await fetch(`${SB_URL}/auth/v1/recover`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, redirect_to: destino })
+    });
+    if(r.ok){
+      aviso.innerHTML = '✅ <b>Link enviado!</b><br>' +
+        'Verifique a caixa de entrada de <b>' + email + '</b> ' +
+        '(confira também o spam). O link leva a uma página onde você cria uma senha nova.';
+    } else {
+      const d = await r.json().catch(()=>({}));
+      aviso.innerHTML = '⚠️ ' + (d.msg || d.error_description ||
+        'Não foi possível enviar agora. Fale com o suporte.');
+    }
+  }catch(_){
+    aviso.innerHTML = '⚠️ Falha de conexão. Tente novamente.';
+  }
 }
 
 async function entrarComoAdmin(){
