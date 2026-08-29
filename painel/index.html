@@ -325,6 +325,7 @@
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
     <button class="aba" data-aba="letras" onclick="trocarAba(this)">🎤 Letras/Capas</button>
     <button class="aba admin-only" data-aba="usuarios" onclick="trocarAba(this)">👥 Usuários</button>
+    <button class="aba admin-only" data-aba="financeiro" onclick="trocarAba(this)">💰 Financeiro</button>
     <button class="aba admin-only" data-aba="seguranca" onclick="trocarAba(this)">🔒 Backup</button>
   </div>
 
@@ -847,6 +848,167 @@
     </section>
 
     <!-- VOTOS -->
+    <section id="sec-financeiro" class="oculto">
+      <div class="cartao">
+        <h2>💰 Financeiro</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+          <button class="botao mini" id="fsub1" onclick="finVer('painel')" style="background:var(--verde2);border:1px solid var(--ouro)">📊 Visão geral</button>
+          <button class="botao mini" id="fsub2" onclick="finVer('clientes')" style="background:#2a2560">🏢 Anunciantes</button>
+          <button class="botao mini" id="fsub3" onclick="finVer('contratos')" style="background:#2a2560">📄 Contratos</button>
+          <button class="botao mini" id="fsub4" onclick="finVer('parcelas')" style="background:#2a2560">💳 Cobranças</button>
+        </div>
+      </div>
+
+      <!-- VISÃO GERAL -->
+      <div id="finArea-painel">
+        <div class="cartao">
+          <h2>📊 Resumo do mês</h2>
+          <div id="finResumo"></div>
+        </div>
+        <div class="cartao">
+          <h2>⚠️ Cobranças vencidas</h2>
+          <div id="finVencidas"></div>
+        </div>
+        <div class="cartao">
+          <h2>📅 A vencer nos próximos 30 dias</h2>
+          <div id="finAVencer"></div>
+        </div>
+      </div>
+
+      <!-- ANUNCIANTES -->
+      <div id="finArea-clientes" style="display:none">
+        <div class="cartao">
+          <h2>🏢 Cadastro de anunciante</h2>
+          <div id="finAvisoEdicaoCli" style="display:none;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0;font-size:12.5px"></div>
+          <div class="grade2">
+            <div><label>Razão social *</label><input id="cliRazao" placeholder="Nome da empresa no CNPJ"></div>
+            <div><label>Nome fantasia</label><input id="cliFantasia" placeholder="Como é conhecida"></div>
+          </div>
+          <div class="grade2">
+            <div><label>CNPJ ou CPF</label><input id="cliDoc" placeholder="00.000.000/0000-00"></div>
+            <div><label>Inscrição estadual/municipal</label><input id="cliInsc" placeholder="Isento, se não houver"></div>
+          </div>
+          <div class="grade2">
+            <div><label>Responsável</label><input id="cliResp" placeholder="Quem assina / negocia"></div>
+            <div><label>E-mail</label><input id="cliEmail" type="email" placeholder="contato@empresa.com.br"></div>
+          </div>
+          <div class="grade2">
+            <div><label>Telefone</label><input id="cliTel" placeholder="(00) 0000-0000"></div>
+            <div><label>WhatsApp</label><input id="cliZap" placeholder="(00) 00000-0000"></div>
+          </div>
+          <div class="grade2">
+            <div><label>CEP</label><input id="cliCep" placeholder="00000-000" onblur="finBuscarCep()"></div>
+            <div><label>Endereço</label><input id="cliEnd" placeholder="Rua / Avenida"></div>
+          </div>
+          <div class="grade2">
+            <div><label>Número</label><input id="cliNum"></div>
+            <div><label>Bairro</label><input id="cliBairro"></div>
+          </div>
+          <div class="grade2">
+            <div><label>Cidade</label><input id="cliCidade"></div>
+            <div><label>Estado (UF)</label><input id="cliUf" maxlength="2" placeholder="RJ"></div>
+          </div>
+          <label>Observações</label>
+          <textarea id="cliObs" placeholder="Anotações internas sobre este cliente"></textarea>
+          <button class="botao" id="btnSalvarCliente" onclick="finSalvarCliente()">➕ Cadastrar anunciante</button>
+          <button class="botao mini neutro" onclick="finLimparCliente()">Limpar</button>
+        </div>
+        <div class="cartao">
+          <h2>📋 Anunciantes cadastrados</h2>
+          <input id="finBuscaCli" placeholder="🔎 Buscar por nome ou documento..." oninput="finDesenharClientes()" style="margin-bottom:10px">
+          <div id="finListaClientes"></div>
+        </div>
+      </div>
+
+      <!-- CONTRATOS -->
+      <div id="finArea-contratos" style="display:none">
+        <div class="cartao">
+          <h2>📄 Novo contrato de veiculação</h2>
+          <div id="finAvisoEdicaoCon" style="display:none;background:#7a4fb52e;border:1px solid #7a4fb5;border-radius:10px;padding:9px 11px;margin:10px 0;font-size:12.5px"></div>
+          <label>Anunciante *</label>
+          <select id="conCliente"></select>
+          <div class="grade2">
+            <div><label>Tipo de veiculação *</label>
+              <select id="conTipo">
+                <option value="banner">🖼️ Banner no topo do app</option>
+                <option value="abertura">📢 Anúncio de abertura</option>
+                <option value="noticia">📰 Notícia patrocinada</option>
+                <option value="promocao">🎁 Promoção patrocinada</option>
+                <option value="spot">🎙️ Spot no ar (rádio)</option>
+                <option value="programa">📻 Patrocínio de programa</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+            <div><label>Nº do contrato</label><input id="conNumero" placeholder="Ex.: 2026/001"></div>
+          </div>
+          <label>Descrição do que foi contratado</label>
+          <textarea id="conDesc" placeholder="Ex.: banner rotativo no topo + 3 spots diários de 30 segundos"></textarea>
+          <div class="grade2">
+            <div><label>Início *</label><input type="date" id="conInicio"></div>
+            <div><label>Término</label><input type="date" id="conFim"></div>
+          </div>
+          <div class="grade2">
+            <div><label>Inserções contratadas (total)</label><input type="number" id="conIns" min="0" value="0"></div>
+            <div><label>Inserções por dia</label><input type="number" id="conInsDia" min="0" value="0"></div>
+          </div>
+          <div class="grade2">
+            <div><label>Valor total (R$) *</label><input type="number" id="conValor" step="0.01" min="0" placeholder="0,00"></div>
+            <div><label>Nº de parcelas</label><input type="number" id="conParcelas" min="1" value="1"></div>
+          </div>
+          <div class="grade2">
+            <div><label>Dia do vencimento</label><input type="number" id="conDiaVenc" min="1" max="28" value="10"></div>
+            <div><label>Forma de pagamento</label>
+              <select id="conForma">
+                <option value="pix">PIX</option>
+                <option value="boleto">Boleto</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="cartao">Cartão</option>
+                <option value="transferencia">Transferência</option>
+                <option value="permuta">Permuta</option>
+              </select>
+            </div>
+          </div>
+          <div class="grade2">
+            <div><label>Situação</label>
+              <select id="conSituacao">
+                <option value="ativo">Ativo</option>
+                <option value="encerrado">Encerrado</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+            <div><label>Nota fiscal (número)</label><input id="conNF" placeholder="Emitida no sistema da prefeitura"></div>
+          </div>
+          <label>Observações</label>
+          <textarea id="conObs"></textarea>
+          <button class="botao" id="btnSalvarContrato" onclick="finSalvarContrato()">➕ Criar contrato e gerar cobranças</button>
+          <button class="botao mini neutro" onclick="finLimparContrato()">Limpar</button>
+          <p class="rotulo-secao">Ao criar, as parcelas são geradas automaticamente conforme o número de parcelas e o dia de vencimento.</p>
+        </div>
+        <div class="cartao">
+          <h2>📋 Contratos</h2>
+          <div id="finListaContratos"></div>
+        </div>
+      </div>
+
+      <!-- COBRANÇAS -->
+      <div id="finArea-parcelas" style="display:none">
+        <div class="cartao">
+          <h2>💳 Cobranças</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <select id="finFiltroSit" onchange="finDesenharParcelas()" style="max-width:200px">
+              <option value="todas">Todas</option>
+              <option value="aberto">Em aberto</option>
+              <option value="vencidas">Vencidas</option>
+              <option value="pagas">Pagas</option>
+            </select>
+            <input id="finBuscaPar" placeholder="🔎 Buscar anunciante..." oninput="finDesenharParcelas()" style="max-width:260px">
+            <button class="botao mini neutro" onclick="finCarregarTudo()">🔄 Atualizar</button>
+          </div>
+          <div id="finListaParcelas"></div>
+        </div>
+      </div>
+    </section>
+
     <section id="sec-seguranca" class="oculto">
       <div class="cartao" style="border-left:3px solid #35C733">
         <h2>🚀 Migração para o novo banco (Supabase)</h2>
@@ -1539,11 +1701,12 @@ function trocarAba(botao){
   fecharMenu(); // no celular, fecha a gaveta ao escolher a aba
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras','seguranca'].forEach(s=>
+  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras','seguranca','financeiro'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
   try{ sessionStorage.setItem('painel_aba', botao.dataset.aba); }catch(_){}
   if(botao.dataset.aba==='usuarios'){ carregarUsuarios(); migrarSenhasParaCofre(); }
   if(botao.dataset.aba==='letras') carregarReportes();
+  if(botao.dataset.aba==='financeiro') finCarregarTudo();
 }
 
 // ================== BANNERS ==================
@@ -4221,6 +4384,484 @@ function dataBR(valor, comHora){
     }
   }catch(_){}
   return String(valor);
+}
+
+/// ==================== FINANCEIRO ====================
+let finClientes = [], finContratos = [], finParcelas = [];
+let finEditandoCli = null, finEditandoCon = null;
+
+const FIN_TIPOS = {
+  banner:'🖼️ Banner no topo', abertura:'📢 Anúncio de abertura',
+  noticia:'📰 Notícia patrocinada', promocao:'🎁 Promoção patrocinada',
+  spot:'🎙️ Spot no ar', programa:'📻 Patrocínio de programa', outro:'Outro'
+};
+
+function finDinheiro(v){
+  return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
+function finHoje(){ return new Date().toISOString().slice(0,10); }
+
+/// Troca entre as telas do financeiro
+function finVer(qual){
+  ['painel','clientes','contratos','parcelas'].forEach((x,i)=>{
+    const area = document.getElementById('finArea-'+x);
+    if(area) area.style.display = (x===qual) ? '' : 'none';
+    const btn = document.getElementById('fsub'+(i+1));
+    if(btn){
+      btn.style.background = (x===qual) ? 'var(--verde2)' : '#2a2560';
+      btn.style.border = (x===qual) ? '1px solid var(--ouro)' : 'none';
+    }
+  });
+  if(qual==='painel') finDesenharResumo();
+}
+
+/// Busca o endereço pelo CEP (ViaCEP)
+async function finBuscarCep(){
+  const cep = (document.getElementById('cliCep').value||'').replace(/\D/g,'');
+  if(cep.length !== 8) return;
+  try{
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d = await r.json();
+    if(d.erro) return;
+    document.getElementById('cliEnd').value = d.logradouro || '';
+    document.getElementById('cliBairro').value = d.bairro || '';
+    document.getElementById('cliCidade').value = d.localidade || '';
+    document.getElementById('cliUf').value = d.uf || '';
+  }catch(_){}
+}
+
+/// ---------- CARGA ----------
+async function finCarregarTudo(){
+  try{
+    finClientes  = await sbLer('fin_clientes',  `&radio_id=eq.${RADIO_ID}&order=razao_social`) || [];
+    finContratos = await sbLer('fin_contratos', `&radio_id=eq.${RADIO_ID}&order=criado_em.desc`) || [];
+    finParcelas  = await sbLer('fin_parcelas',  `&radio_id=eq.${RADIO_ID}&order=vencimento`) || [];
+  }catch(_){ finClientes=[]; finContratos=[]; finParcelas=[]; }
+  finDesenharClientes(); finDesenharContratos();
+  finDesenharParcelas(); finDesenharResumo();
+  finPreencherSelectClientes();
+}
+
+/// ---------- ANUNCIANTES ----------
+function finLimparCliente(){
+  ['cliRazao','cliFantasia','cliDoc','cliInsc','cliResp','cliEmail','cliTel',
+   'cliZap','cliCep','cliEnd','cliNum','cliBairro','cliCidade','cliUf','cliObs']
+    .forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  finEditandoCli = null;
+  document.getElementById('btnSalvarCliente').innerHTML = '➕ Cadastrar anunciante';
+  document.getElementById('finAvisoEdicaoCli').style.display = 'none';
+}
+
+async function finSalvarCliente(){
+  const v = id => (document.getElementById(id).value||'').trim();
+  if(!v('cliRazao')){ avisar('Preencha a razão social.', true); return; }
+  const dados = {
+    radio_id: RADIO_ID,
+    razao_social: v('cliRazao'), nome_fantasia: v('cliFantasia'),
+    documento: v('cliDoc'), inscricao: v('cliInsc'),
+    responsavel: v('cliResp'), email: v('cliEmail'),
+    telefone: v('cliTel'), whatsapp: v('cliZap'),
+    cep: v('cliCep'), endereco: v('cliEnd'), numero: v('cliNum'),
+    bairro: v('cliBairro'), cidade: v('cliCidade'), estado: v('cliUf').toUpperCase(),
+    observacoes: v('cliObs')
+  };
+  try{
+    if(finEditandoCli){
+      await fetch(`${SB_URL}/rest/v1/fin_clientes?id=eq.${finEditandoCli}`, {
+        method:'PATCH', headers: sbCabecalhos(), body: JSON.stringify(dados) });
+      avisar('Anunciante atualizado! ✅');
+    } else {
+      const r = await sbGravar('fin_clientes', [dados]);
+      if(!r.ok){ avisar('Falhou: '+r.erro, true); return; }
+      avisar('Anunciante cadastrado! ✅');
+    }
+    finLimparCliente(); finCarregarTudo();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+function finEditarCliente(id){
+  const c = finClientes.find(x=>x.id===id); if(!c) return;
+  const p = (campo,val)=>{ const e=document.getElementById(campo); if(e) e.value = val||''; };
+  p('cliRazao',c.razao_social); p('cliFantasia',c.nome_fantasia);
+  p('cliDoc',c.documento); p('cliInsc',c.inscricao);
+  p('cliResp',c.responsavel); p('cliEmail',c.email);
+  p('cliTel',c.telefone); p('cliZap',c.whatsapp);
+  p('cliCep',c.cep); p('cliEnd',c.endereco); p('cliNum',c.numero);
+  p('cliBairro',c.bairro); p('cliCidade',c.cidade); p('cliUf',c.estado);
+  p('cliObs',c.observacoes);
+  finEditandoCli = id;
+  document.getElementById('btnSalvarCliente').innerHTML = '💾 Salvar alterações';
+  const av = document.getElementById('finAvisoEdicaoCli');
+  av.style.display='block';
+  av.innerHTML = `✏️ Editando: <b>${(c.razao_social||'').replace(/</g,'&lt;')}</b> — <a href="#" onclick="finLimparCliente();return false" style="color:var(--ouro)">cancelar</a>`;
+  document.getElementById('cliRazao').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+async function finExcluirCliente(id){
+  const c = finClientes.find(x=>x.id===id);
+  const contratos = finContratos.filter(x=>x.cliente_id===id).length;
+  if(!confirm(`Excluir "${c?c.razao_social:''}"?` + (contratos?`\n\nATENÇÃO: ${contratos} contrato(s) e suas cobranças também serão apagados.`:''))) return;
+  try{
+    await fetch(`${SB_URL}/rest/v1/fin_clientes?id=eq.${id}`, { method:'DELETE', headers: sbCabecalhos() });
+    avisar('Anunciante excluído.'); finCarregarTudo();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+function finDesenharClientes(){
+  const el = document.getElementById('finListaClientes'); if(!el) return;
+  const busca = (document.getElementById('finBuscaCli')?.value||'').toLowerCase();
+  const lista = finClientes.filter(c=>{
+    if(!busca) return true;
+    return (c.razao_social||'').toLowerCase().includes(busca) ||
+           (c.nome_fantasia||'').toLowerCase().includes(busca) ||
+           (c.documento||'').toLowerCase().includes(busca);
+  });
+  if(!lista.length){ el.innerHTML = '<p class="rotulo-secao">Nenhum anunciante cadastrado ainda.</p>'; return; }
+  el.innerHTML = lista.map(c=>{
+    const contratos = finContratos.filter(x=>x.cliente_id===c.id);
+    const ativos = contratos.filter(x=>x.situacao==='ativo').length;
+    const total = contratos.reduce((s,x)=>s+Number(x.valor_total||0),0);
+    return `<div class="usuario-card">
+      <h4>${(c.razao_social||'').replace(/</g,'&lt;')}${c.nome_fantasia?` <span style="font-weight:400;color:#BDB8F0">(${c.nome_fantasia})</span>`:''}</h4>
+      <div class="abas-perm">
+        ${c.documento?`📄 ${c.documento} • `:''}${c.responsavel?`👤 ${c.responsavel} • `:''}${c.whatsapp||c.telefone||''}
+        ${c.cidade?`<br>📍 ${c.cidade}${c.estado?'/'+c.estado:''}`:''}
+        <br>📄 ${contratos.length} contrato(s) • ${ativos} ativo(s) • total ${finDinheiro(total)}
+      </div>
+      <div class="acoes">
+        <button class="botao mini" onclick="finEditarCliente(${c.id})">✏️ Editar</button>
+        <button class="botao mini perigo" onclick="finExcluirCliente(${c.id})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function finPreencherSelectClientes(){
+  const s = document.getElementById('conCliente'); if(!s) return;
+  const atual = s.value;
+  s.innerHTML = '<option value="">— escolha o anunciante —</option>' +
+    finClientes.map(c=>`<option value="${c.id}">${(c.razao_social||'').replace(/</g,'&lt;')}</option>`).join('');
+  if(atual) s.value = atual;
+}
+
+/// ---------- CONTRATOS ----------
+function finLimparContrato(){
+  ['conNumero','conDesc','conInicio','conFim','conNF','conObs']
+    .forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  document.getElementById('conCliente').value = '';
+  document.getElementById('conIns').value = 0;
+  document.getElementById('conInsDia').value = 0;
+  document.getElementById('conValor').value = '';
+  document.getElementById('conParcelas').value = 1;
+  document.getElementById('conDiaVenc').value = 10;
+  document.getElementById('conSituacao').value = 'ativo';
+  finEditandoCon = null;
+  document.getElementById('btnSalvarContrato').innerHTML = '➕ Criar contrato e gerar cobranças';
+  document.getElementById('finAvisoEdicaoCon').style.display = 'none';
+}
+
+async function finSalvarContrato(){
+  const v = id => (document.getElementById(id).value||'').trim();
+  const clienteId = parseInt(v('conCliente')||'0');
+  if(!clienteId){ avisar('Escolha o anunciante.', true); return; }
+  if(!v('conInicio')){ avisar('Informe a data de início.', true); return; }
+  const valor = parseFloat(v('conValor')||'0');
+  if(!(valor >= 0)){ avisar('Informe o valor.', true); return; }
+
+  const dados = {
+    radio_id: RADIO_ID, cliente_id: clienteId,
+    numero: v('conNumero'), tipo: v('conTipo'), descricao: v('conDesc'),
+    inicio: v('conInicio'), fim: v('conFim') || null,
+    insercoes: parseInt(v('conIns')||'0'), insercoes_dia: parseInt(v('conInsDia')||'0'),
+    valor_total: valor, parcelas: parseInt(v('conParcelas')||'1'),
+    dia_vencimento: parseInt(v('conDiaVenc')||'10'),
+    forma_pagamento: v('conForma'), situacao: v('conSituacao'),
+    nota_fiscal: v('conNF'), observacoes: v('conObs')
+  };
+
+  try{
+    if(finEditandoCon){
+      await fetch(`${SB_URL}/rest/v1/fin_contratos?id=eq.${finEditandoCon}`, {
+        method:'PATCH', headers: sbCabecalhos(), body: JSON.stringify(dados) });
+      avisar('Contrato atualizado! ✅ (as cobranças já geradas não foram alteradas)');
+    } else {
+      // grava e recupera o id para gerar as parcelas
+      const r = await fetch(`${SB_URL}/rest/v1/fin_contratos`, {
+        method:'POST',
+        headers: sbCabecalhos({'Prefer':'return=representation'}),
+        body: JSON.stringify([dados])
+      });
+      const criado = await r.json();
+      if(!r.ok || !criado[0]){ avisar('Falhou ao criar o contrato.', true); return; }
+      await finGerarParcelas(criado[0]);
+      avisar('Contrato criado e cobranças geradas! ✅');
+    }
+    finLimparContrato(); finCarregarTudo();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+/// Cria as parcelas conforme o numero de parcelas e o dia de vencimento
+async function finGerarParcelas(contrato){
+  const n = Math.max(1, parseInt(contrato.parcelas||1));
+  const total = Number(contrato.valor_total||0);
+  const dia = Math.min(28, Math.max(1, parseInt(contrato.dia_vencimento||10)));
+  const inicio = new Date(contrato.inicio + 'T12:00:00');
+
+  // ARREDONDAMENTO: divide igual e joga a diferenca de centavos na ULTIMA
+  // parcela, para a soma bater exatamente com o valor do contrato.
+  const parcela = Math.floor((total/n)*100)/100;
+  const sobra = Math.round((total - parcela*n)*100)/100;
+
+  // Se o dia de vencimento ja passou no mes de inicio, a primeira parcela
+  // cai no mes seguinte (nao faz sentido vencer antes do contrato comecar).
+  let mesBase = inicio.getMonth();
+  if(dia < inicio.getDate()) mesBase += 1;
+
+  const lista = [];
+  for(let i=0; i<n; i++){
+    const d = new Date(inicio.getFullYear(), mesBase+i, dia, 12);
+    lista.push({
+      radio_id: RADIO_ID, contrato_id: contrato.id, numero: i+1,
+      vencimento: d.toISOString().slice(0,10),
+      valor: (i === n-1) ? Math.round((parcela+sobra)*100)/100 : parcela,
+      forma_pagamento: contrato.forma_pagamento
+    });
+  }
+  await sbGravar('fin_parcelas', lista);
+}
+
+function finEditarContrato(id){
+  const c = finContratos.find(x=>x.id===id); if(!c) return;
+  const p=(campo,val)=>{ const e=document.getElementById(campo); if(e) e.value = (val===null||val===undefined)?'':val; };
+  p('conCliente',c.cliente_id); p('conTipo',c.tipo); p('conNumero',c.numero);
+  p('conDesc',c.descricao); p('conInicio',c.inicio); p('conFim',c.fim);
+  p('conIns',c.insercoes); p('conInsDia',c.insercoes_dia);
+  p('conValor',c.valor_total); p('conParcelas',c.parcelas);
+  p('conDiaVenc',c.dia_vencimento); p('conForma',c.forma_pagamento);
+  p('conSituacao',c.situacao); p('conNF',c.nota_fiscal); p('conObs',c.observacoes);
+  finEditandoCon = id;
+  document.getElementById('btnSalvarContrato').innerHTML = '💾 Salvar alterações';
+  const av = document.getElementById('finAvisoEdicaoCon');
+  av.style.display='block';
+  av.innerHTML = `✏️ Editando contrato — <a href="#" onclick="finLimparContrato();return false" style="color:var(--ouro)">cancelar</a>`;
+  document.getElementById('conCliente').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+async function finExcluirContrato(id){
+  if(!confirm('Excluir este contrato e todas as suas cobranças?')) return;
+  try{
+    await fetch(`${SB_URL}/rest/v1/fin_contratos?id=eq.${id}`, { method:'DELETE', headers: sbCabecalhos() });
+    avisar('Contrato excluído.'); finCarregarTudo();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+function finDesenharContratos(){
+  const el = document.getElementById('finListaContratos'); if(!el) return;
+  if(!finContratos.length){ el.innerHTML = '<p class="rotulo-secao">Nenhum contrato cadastrado.</p>'; return; }
+  el.innerHTML = finContratos.map(c=>{
+    const cli = finClientes.find(x=>x.id===c.cliente_id);
+    const par = finParcelas.filter(x=>x.contrato_id===c.id);
+    const pagas = par.filter(x=>x.pago_em).length;
+    const cor = c.situacao==='ativo' ? '#35C733' : (c.situacao==='cancelado' ? '#ff6b6b' : '#8a92c0');
+    return `<div class="usuario-card" style="border-left-color:${cor}">
+      <h4>${cli ? (cli.razao_social||'').replace(/</g,'&lt;') : 'Anunciante removido'}
+        <span style="font-weight:400;color:#BDB8F0">— ${FIN_TIPOS[c.tipo]||c.tipo}</span></h4>
+      <div class="abas-perm">
+        ${c.numero?`Contrato ${c.numero} • `:''}${dataBR(c.inicio,false)}${c.fim?' até '+dataBR(c.fim,false):''}
+        <br>💰 ${finDinheiro(c.valor_total)} em ${c.parcelas}x • vence dia ${c.dia_vencimento} • ${c.forma_pagamento||''}
+        ${c.insercoes?`<br>📊 ${c.insercoes} inserções${c.insercoes_dia?` (${c.insercoes_dia}/dia)`:''}`:''}
+        <br>💳 ${pagas} de ${par.length} cobrança(s) paga(s)
+        ${c.nota_fiscal?`<br>🧾 NF ${c.nota_fiscal}`:''}
+        <br><b style="color:${cor}">${(c.situacao||'').toUpperCase()}</b>
+      </div>
+      <div class="acoes">
+        <button class="botao mini" onclick="finEditarContrato(${c.id})">✏️ Editar</button>
+        <button class="botao mini neutro" onclick="finReciboContrato(${c.id})">🧾 Comprovante</button>
+        <button class="botao mini perigo" onclick="finExcluirContrato(${c.id})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/// ---------- COBRANÇAS ----------
+function finSituacaoParcela(p){
+  if(p.pago_em) return 'paga';
+  return (p.vencimento < finHoje()) ? 'vencida' : 'aberta';
+}
+
+async function finMarcarPaga(id){
+  const p = finParcelas.find(x=>x.id===id); if(!p) return;
+  const quando = prompt('Data do pagamento (AAAA-MM-DD):', finHoje());
+  if(!quando) return;
+  const valor = prompt('Valor recebido (R$):', p.valor);
+  if(valor === null) return;
+  try{
+    await fetch(`${SB_URL}/rest/v1/fin_parcelas?id=eq.${id}`, {
+      method:'PATCH', headers: sbCabecalhos(),
+      body: JSON.stringify({ pago_em: quando, valor_pago: parseFloat(valor)||0 })
+    });
+    avisar('Pagamento registrado! ✅'); finCarregarTudo();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+async function finDesfazerPagamento(id){
+  if(!confirm('Marcar esta cobrança como NÃO paga?')) return;
+  try{
+    await fetch(`${SB_URL}/rest/v1/fin_parcelas?id=eq.${id}`, {
+      method:'PATCH', headers: sbCabecalhos(),
+      body: JSON.stringify({ pago_em: null, valor_pago: null })
+    });
+    avisar('Pagamento desfeito.'); finCarregarTudo();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+function finDesenharParcelas(){
+  const el = document.getElementById('finListaParcelas'); if(!el) return;
+  const filtro = document.getElementById('finFiltroSit')?.value || 'todas';
+  const busca = (document.getElementById('finBuscaPar')?.value||'').toLowerCase();
+  let lista = finParcelas.slice();
+  if(filtro==='aberto')   lista = lista.filter(p=>!p.pago_em);
+  if(filtro==='vencidas') lista = lista.filter(p=>finSituacaoParcela(p)==='vencida');
+  if(filtro==='pagas')    lista = lista.filter(p=>p.pago_em);
+  if(busca){
+    lista = lista.filter(p=>{
+      const c = finContratos.find(x=>x.id===p.contrato_id);
+      const cli = c && finClientes.find(x=>x.id===c.cliente_id);
+      return cli && (cli.razao_social||'').toLowerCase().includes(busca);
+    });
+  }
+  if(!lista.length){ el.innerHTML = '<p class="rotulo-secao">Nenhuma cobrança encontrada.</p>'; return; }
+
+  const total = lista.reduce((s,p)=>s+Number(p.valor||0),0);
+  const recebido = lista.filter(p=>p.pago_em).reduce((s,p)=>s+Number(p.valor_pago||p.valor||0),0);
+
+  el.innerHTML = `<p class="rotulo-secao">${lista.length} cobrança(s) • total ${finDinheiro(total)} • recebido ${finDinheiro(recebido)}</p>` +
+    `<div class="rolagem-tabela"><table>
+      <tr><th>Anunciante</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th></th></tr>` +
+    lista.map(p=>{
+      const c = finContratos.find(x=>x.id===p.contrato_id);
+      const cli = c && finClientes.find(x=>x.id===c.cliente_id);
+      const sit = finSituacaoParcela(p);
+      const cores = { paga:'#35C733', vencida:'#ff6b6b', aberta:'#E6B93F' };
+      const rotulos = { paga:'✅ PAGA', vencida:'⚠️ VENCIDA', aberta:'⏳ EM ABERTO' };
+      return `<tr>
+        <td class="livre">${cli ? (cli.razao_social||'').replace(/</g,'&lt;') : '—'}</td>
+        <td>${p.numero}/${c?c.parcelas:'?'}</td>
+        <td>${dataBR(p.vencimento,false)}</td>
+        <td>${finDinheiro(p.valor)}</td>
+        <td style="color:${cores[sit]}"><b>${rotulos[sit]}</b>${p.pago_em?`<br><span style="font-size:11px;color:#BDB8F0">em ${dataBR(p.pago_em,false)}</span>`:''}</td>
+        <td>${p.pago_em
+          ? `<button class="botao mini neutro" onclick="finDesfazerPagamento(${p.id})">↩️</button>`
+          : `<button class="botao mini" onclick="finMarcarPaga(${p.id})">💰 Receber</button>`}</td>
+      </tr>`;
+    }).join('') + `</table></div>`;
+}
+
+/// ---------- VISÃO GERAL ----------
+function finDesenharResumo(){
+  const hoje = finHoje();
+  const mes = hoje.slice(0,7);
+  const doMes = finParcelas.filter(p => (p.vencimento||'').slice(0,7) === mes);
+  const previsto = doMes.reduce((s,p)=>s+Number(p.valor||0),0);
+  const recebido = doMes.filter(p=>p.pago_em).reduce((s,p)=>s+Number(p.valor_pago||p.valor||0),0);
+  const vencidas = finParcelas.filter(p=>finSituacaoParcela(p)==='vencida');
+  const totalVencido = vencidas.reduce((s,p)=>s+Number(p.valor||0),0);
+  const ativos = finContratos.filter(c=>c.situacao==='ativo').length;
+
+  const r = document.getElementById('finResumo');
+  if(r) r.innerHTML = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${finCartao('📈 Previsto no mês', finDinheiro(previsto), '#1E9BFF')}
+      ${finCartao('✅ Recebido no mês', finDinheiro(recebido), '#35C733')}
+      ${finCartao('⚠️ Em atraso', finDinheiro(totalVencido), '#ff6b6b')}
+      ${finCartao('📄 Contratos ativos', ativos, '#E6B93F')}
+      ${finCartao('🏢 Anunciantes', finClientes.length, '#9b8cff')}
+    </div>`;
+
+  const v = document.getElementById('finVencidas');
+  if(v) v.innerHTML = vencidas.length
+    ? finTabelaSimples(vencidas)
+    : '<p class="rotulo-secao">Nenhuma cobrança em atraso. 👏</p>';
+
+  const limite = new Date(); limite.setDate(limite.getDate()+30);
+  const aVencer = finParcelas.filter(p=>!p.pago_em && p.vencimento>=hoje &&
+                                        p.vencimento<=limite.toISOString().slice(0,10));
+  const a = document.getElementById('finAVencer');
+  if(a) a.innerHTML = aVencer.length
+    ? finTabelaSimples(aVencer)
+    : '<p class="rotulo-secao">Nada a vencer nos próximos 30 dias.</p>';
+}
+
+function finCartao(titulo, valor, cor){
+  return `<div style="flex:1;min-width:150px;background:#0D2B52;border-radius:14px;
+    padding:13px;border-left:3px solid ${cor}">
+    <div style="font-size:11.5px;color:#BDB8F0">${titulo}</div>
+    <div style="font-size:18px;font-weight:800;color:${cor};margin-top:4px">${valor}</div>
+  </div>`;
+}
+
+function finTabelaSimples(lista){
+  return `<div class="rolagem-tabela"><table>
+    <tr><th>Anunciante</th><th>Vencimento</th><th>Valor</th><th></th></tr>` +
+    lista.map(p=>{
+      const c = finContratos.find(x=>x.id===p.contrato_id);
+      const cli = c && finClientes.find(x=>x.id===c.cliente_id);
+      return `<tr>
+        <td class="livre">${cli?(cli.razao_social||'').replace(/</g,'&lt;'):'—'}</td>
+        <td>${dataBR(p.vencimento,false)}</td>
+        <td>${finDinheiro(p.valor)}</td>
+        <td><button class="botao mini" onclick="finMarcarPaga(${p.id})">💰 Receber</button></td>
+      </tr>`;
+    }).join('') + `</table></div>`;
+}
+
+/// ---------- COMPROVANTE DE VEICULAÇÃO ----------
+function finReciboContrato(id){
+  const c = finContratos.find(x=>x.id===id); if(!c) return;
+  const cli = finClientes.find(x=>x.id===c.cliente_id);
+  const par = finParcelas.filter(x=>x.contrato_id===c.id);
+  const nomeRadio = (config && config.nome) || 'Rádio';
+  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Comprovante — ${cli?cli.razao_social:''}</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:30px;color:#222;max-width:800px;margin:auto}
+      h1{font-size:20px;border-bottom:2px solid #333;padding-bottom:8px}
+      h2{font-size:15px;margin-top:22px;color:#444}
+      table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+      th,td{border:1px solid #ccc;padding:7px;text-align:left}
+      th{background:#f0f0f0}
+      .rodape{margin-top:30px;font-size:12px;color:#666;border-top:1px solid #ccc;padding-top:10px}
+    </style></head><body>
+    <h1>${nomeRadio} — Comprovante de veiculação</h1>
+    <h2>Anunciante</h2>
+    <table>
+      <tr><th>Razão social</th><td>${cli?cli.razao_social||'':''}</td></tr>
+      <tr><th>Documento</th><td>${cli?cli.documento||'':''}</td></tr>
+      <tr><th>Responsável</th><td>${cli?cli.responsavel||'':''}</td></tr>
+      <tr><th>Contato</th><td>${cli?(cli.whatsapp||cli.telefone||''):''} ${cli&&cli.email?' • '+cli.email:''}</td></tr>
+    </table>
+    <h2>Contrato</h2>
+    <table>
+      <tr><th>Número</th><td>${c.numero||'—'}</td></tr>
+      <tr><th>Tipo</th><td>${FIN_TIPOS[c.tipo]||c.tipo}</td></tr>
+      <tr><th>Descrição</th><td>${(c.descricao||'—').replace(/</g,'&lt;')}</td></tr>
+      <tr><th>Período</th><td>${dataBR(c.inicio,false)}${c.fim?' até '+dataBR(c.fim,false):''}</td></tr>
+      <tr><th>Inserções</th><td>${c.insercoes||0}${c.insercoes_dia?` (${c.insercoes_dia} por dia)`:''}</td></tr>
+      <tr><th>Valor</th><td>${finDinheiro(c.valor_total)} em ${c.parcelas}x</td></tr>
+      <tr><th>Nota fiscal</th><td>${c.nota_fiscal||'—'}</td></tr>
+    </table>
+    <h2>Cobranças</h2>
+    <table>
+      <tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Pagamento</th></tr>
+      ${par.map(p=>`<tr><td>${p.numero}</td><td>${dataBR(p.vencimento,false)}</td>
+        <td>${finDinheiro(p.valor)}</td>
+        <td>${p.pago_em?dataBR(p.pago_em,false)+' — '+finDinheiro(p.valor_pago||p.valor):'em aberto'}</td></tr>`).join('')}
+    </table>
+    <div class="rodape">Documento gerado pelo Painel Eleva em ${new Date().toLocaleString('pt-BR')}.</div>
+    </body></html>`;
+  const w = window.open('', '_blank');
+  w.document.write(doc); w.document.close();
+  setTimeout(()=>{ try{ w.print(); }catch(_){} }, 400);
 }
 
 /// ============ MIGRACAO PARA O SUPABASE ============
