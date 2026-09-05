@@ -9,6 +9,7 @@ import '../servicos/letra_service.dart';
 import '../servicos/player_service.dart';
 import '../servicos/correcoes_service.dart';
 import '../servicos/auditoria_service.dart';
+import '../servicos/historico_service.dart';
 import '../tema.dart';
 
 /// Capa quadrada da música que está tocando (busca automática pela
@@ -280,6 +281,10 @@ class _CapaMusicaState extends State<CapaMusica> {
 
   /// Define a capa atual e ja converte a imagem enviada UMA unica vez.
   void _aplicarCapa(String? url) {
+    // TOCOU NA RÁDIO: registra a música com a capa que foi encontrada
+    if (_musicaDaBusca.isNotEmpty) {
+      HistoricoService.registrar(_musicaDaBusca, capa: url);
+    }
     final bytes = (url == null) ? null : _bytesDaCapa(url);
     if (!mounted) return;
     // evita redesenhar a toa quando nada mudou (o que causava o piscar)

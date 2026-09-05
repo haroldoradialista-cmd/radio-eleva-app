@@ -16,6 +16,7 @@ import 'servicos/auth_service.dart';
 import 'servicos/config_service.dart';
 import 'servicos/correcoes_service.dart';
 import 'servicos/auditoria_service.dart';
+import 'servicos/historico_service.dart';
 import 'servicos/analytics_service.dart';
 import 'servicos/notificacoes_service.dart';
 import 'servicos/despertador_service.dart';
@@ -81,6 +82,7 @@ Future<void> main() async {
     // AUDITORIA: o app registra o que exibiu em cada musica, para a radio
     // conferir no painel — sem depender de o ouvinte reclamar.
     AuditoriaService.base = LetraService.baseRtdb;
+    HistoricoService.base = LetraService.baseRtdb;
     AuditoriaService.novaSessao();
     // MANTEM O OUVINTE CONECTADO: reabre a sessao guardada no aparelho,
     // para ele nao precisar fazer login toda vez que abre o app.

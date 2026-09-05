@@ -13,6 +13,7 @@ import '../servicos/player_service.dart';
 import '../servicos/letra_service.dart';
 import '../servicos/auth_service.dart';
 import '../tema.dart';
+import 'tocou_page.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/midia_eleva.dart';
 import '../widgets/capa_musica.dart';
@@ -603,7 +604,10 @@ class _HomePageState extends State<HomePage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(height: 8),
-                          // Botão LETRA (acima da capa)
+                          // Botões LETRA e TOCOU NA RÁDIO (acima da capa)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
                           GestureDetector(
                             onTap: () => _abrirLetra(context, cfg),
                             child: Container(
@@ -644,6 +648,42 @@ class _HomePageState extends State<HomePage> {
                                 ],
                               ),
                             ),
+                          ),
+                          SizedBox(width: 8),
+                          // Botão TOCOU NA RÁDIO
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => TocouPage()),
+                            ),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 5),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: CoresEleva.dourado
+                                        .withOpacity(0.75),
+                                    width: 1.3),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.history_rounded,
+                                      size: 14, color: CoresEleva.dourado),
+                                  SizedBox(width: 5),
+                                  Text('TOCOU',
+                                      style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.2,
+                                          color: CoresEleva.dourado)),
+                                ],
+                              ),
+                            ),
+                          ),
+                            ],
                           ),
                           SizedBox(height: 8),
                           // Capa da música / foto do programa no ar
