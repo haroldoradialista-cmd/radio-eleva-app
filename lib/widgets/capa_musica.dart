@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import '../servicos/letra_service.dart';
 import '../servicos/player_service.dart';
 import '../servicos/correcoes_service.dart';
+import '../servicos/auditoria_service.dart';
 import '../tema.dart';
 
 /// Capa quadrada da música que está tocando (busca automática pela
@@ -138,14 +139,27 @@ class _CapaMusicaState extends State<CapaMusica> {
       // 0) BASE DA RADIO: se a capa foi corrigida no painel, e ela que vale.
       //    Busca TOLERANTE (com/sem acento, "ao vivo", invertida) para a
       //    capa nao "sumir" quando a transmissao muda o nome da musica.
+      // CERTEZA: 100 = corrigida pela radio | 90 = ja conferida antes
+      //          70 = artista e titulo conferiram | 0 = nao achou
+      int certeza = 0;
+      String origem = '';
+
       String? url = CorrecoesService.capaDe(bruto);
+      if (url != null) { certeza = 100; origem = 'base da rádio'; }
       if (url == null) {
         url = await _daRadio(artL, titL);
+        if (url != null) { certeza = 100; origem = 'base da rádio'; }
       }
-      // 0b) capa ja encontrada antes neste aparelho (nunca some)
-      url ??= await CorrecoesService.lembrancaCapa(bruto);
+      // 0b) capa ja encontrada antes neste aparelho
+      if (url == null) {
+        url = await CorrecoesService.lembrancaCapa(bruto);
+        if (url != null) { certeza = 90; origem = 'memória do aparelho'; }
+      }
       if (url != null) {
         aplicar(url);
+        AuditoriaService.registrar(
+          musica: bruto, temLetra: false, temCapa: true,
+          certezaLetra: 0, certezaCapa: certeza, origemCapa: origem);
         return;
       }
       // fontes ja reprovadas pelos ouvintes nesta musica: pula e tenta outra
@@ -171,8 +185,16 @@ class _CapaMusicaState extends State<CapaMusica> {
       }
       // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo.
       // Se achou, GUARDA no aparelho para nunca mais sumir.
-      if (url != null) CorrecoesService.lembrar(bruto, capa: url);
+      if (url != null) {
+        CorrecoesService.lembrar(bruto, capa: url);
+        certeza = 70; origem = 'busca na internet';
+      }
       aplicar(url);
+      // REGISTRA para a rádio conferir depois (mesmo quando NAO achou:
+      // e justamente isso que a rádio precisa saber para corrigir)
+      AuditoriaService.registrar(
+        musica: bruto, temLetra: false, temCapa: url != null,
+        certezaLetra: 0, certezaCapa: certeza, origemCapa: origem);
     } catch (_) {
       aplicar(null);
     }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'correcoes_service.dart';
+import 'auditoria_service.dart';
 
 /// Busca a letra de uma música tentando VÁRIAS fontes em cascata.
 /// Nenhuma exige cadastro ou chave.
@@ -288,6 +289,10 @@ class LetraService {
     final daCentral = CorrecoesService.letraDe(musicaBruta);
     if (daCentral != null) {
       _cache[chave] = _limparLetra(daCentral);
+      AuditoriaService.registrar(
+          musica: musicaBruta, temLetra: true, temCapa: false,
+          certezaLetra: 100, certezaCapa: 0,
+          origemLetra: 'base da rádio');
       return _cache[chave];
     }
     final daRadio = await _daRadio(aL, tL);
@@ -339,6 +344,10 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          AuditoriaService.registrar(
+              musica: musicaBruta, temLetra: true, temCapa: false,
+              certezaLetra: 70, certezaCapa: 0,
+              origemLetra: 'busca na internet');
           return letra;
         }
       }
@@ -356,6 +365,10 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          AuditoriaService.registrar(
+              musica: musicaBruta, temLetra: true, temCapa: false,
+              certezaLetra: 70, certezaCapa: 0,
+              origemLetra: 'busca na internet');
           return letra;
         }
       }
@@ -370,6 +383,10 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          AuditoriaService.registrar(
+              musica: musicaBruta, temLetra: true, temCapa: false,
+              certezaLetra: 70, certezaCapa: 0,
+              origemLetra: 'busca na internet');
           return letra;
         }
       }
@@ -384,6 +401,10 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          AuditoriaService.registrar(
+              musica: musicaBruta, temLetra: true, temCapa: false,
+              certezaLetra: 70, certezaCapa: 0,
+              origemLetra: 'busca na internet');
           return letra;
         }
       }
@@ -398,6 +419,10 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          AuditoriaService.registrar(
+              musica: musicaBruta, temLetra: true, temCapa: false,
+              certezaLetra: 70, certezaCapa: 0,
+              origemLetra: 'busca na internet');
           return letra;
         }
       }
@@ -412,6 +437,10 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          AuditoriaService.registrar(
+              musica: musicaBruta, temLetra: true, temCapa: false,
+              certezaLetra: 70, certezaCapa: 0,
+              origemLetra: 'busca na internet');
           return letra;
         }
       }
@@ -428,12 +457,21 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          AuditoriaService.registrar(
+              musica: musicaBruta, temLetra: true, temCapa: false,
+              certezaLetra: 70, certezaCapa: 0,
+              origemLetra: 'busca na internet');
           return letra;
         }
       }
     }
 
+    // NAO ENCONTROU: registra para a radio saber que esta musica precisa
+    // de cadastro manual — sem depender de o ouvinte reclamar.
     _cache[chave] = null;
+    AuditoriaService.registrar(
+        musica: musicaBruta, temLetra: false, temCapa: false,
+        certezaLetra: 0, certezaCapa: 0, origemLetra: 'não encontrada');
     return null;
   }
 }

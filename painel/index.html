@@ -1084,10 +1084,30 @@
             style="background:var(--verde2);border:1px solid var(--ouro)">⏳ A resolver</button>
           <button class="botao mini" id="subResolvidas" onclick="verResolvidas()"
             style="background:#2a2560">✅ Resolvidas</button>
+          <button class="botao mini" id="subAuditoria" onclick="verAuditoria()"
+            style="background:#2a2560">🔍 Conferência automática</button>
         </div>
 
         <div id="areaPendentes">
           <div id="listaReportes" style="margin-top:10px"></div>
+        </div>
+
+        <div id="areaAuditoria" style="display:none">
+          <p class="rotulo-secao">O app registra <b>toda música que toca</b> e o que conseguiu exibir. Aqui aparecem as que estão <b>sem letra, sem capa ou com pouca certeza</b> — ordenadas pelas <b>mais tocadas</b>, para você corrigir primeiro o que mais aparece no ar. Não depende de o ouvinte reclamar.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+            <select id="audFiltro" onchange="desenharAuditoria()" style="max-width:230px">
+              <option value="problemas">Só as que têm problema</option>
+              <option value="semletra">Sem letra</option>
+              <option value="semcapa">Sem capa</option>
+              <option value="duvida">Pouca certeza</option>
+              <option value="todas">Todas as tocadas</option>
+            </select>
+            <input id="audBusca" placeholder="🔎 Buscar música..." oninput="desenharAuditoria()" style="max-width:240px">
+            <button class="botao mini neutro" onclick="carregarAuditoria()">🔄 Atualizar</button>
+            <button class="botao mini" style="background:#1a7a4b" onclick="roboAuditoria()">🤖 Corrigir as mais tocadas</button>
+          </div>
+          <div id="logAuditoria" style="margin:10px 0;display:none;max-height:260px;overflow-y:auto"></div>
+          <div id="listaAuditoria"></div>
         </div>
 
         <div id="areaResolvidas" style="display:none">
@@ -5253,12 +5273,172 @@ function aplicarPerfilUsuario() {
 }
 
 /// Lista os avisos de letra/capa errada enviados pelos ouvintes
+/// ============ CONFERÊNCIA AUTOMÁTICA (auditoria) ============
+/// O app registra CADA música que toca e o que conseguiu exibir.
+/// Aqui a rádio vê o que está faltando, ordenado pelas mais tocadas —
+/// sem depender de o ouvinte reclamar.
+let audLista = [];
+let audPagina = 1;
+
+function verAuditoria(){
+  document.getElementById('areaPendentes').style.display = 'none';
+  document.getElementById('areaResolvidas').style.display = 'none';
+  document.getElementById('areaAuditoria').style.display = '';
+  ['subPendentes','subResolvidas'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b){ b.style.background='#2a2560'; b.style.border='none'; }
+  });
+  const b=document.getElementById('subAuditoria');
+  if(b){ b.style.background='var(--verde2)'; b.style.border='1px solid var(--ouro)'; }
+  carregarAuditoria();
+}
+
+async function carregarAuditoria(){
+  const el = document.getElementById('listaAuditoria');
+  if(!el) return;
+  el.innerHTML = '<p class="rotulo-secao">Carregando o histórico...</p>';
+  try{
+    const [r1, r2] = await Promise.all([
+      fetch(`${RTDB}/auditoria.json?t=${Date.now()}`),
+      fetch(`${RTDB}/correcoes.json?t=${Date.now()}`)
+    ]);
+    const d = await r1.json() || {};
+    const corr = await r2.json() || {};
+    if(d && d.error){
+      el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">Libere o nó <b>auditoria</b> nas Regras do Firebase para esta tela funcionar.</p>';
+      return;
+    }
+    const temCorr = (corr && !corr.error) ? corr : {};
+    audLista = Object.entries(d).map(([chave, x])=>{
+      const id = idMusica(x.musica || chave);
+      const c = temCorr[id] || {};
+      return {
+        chave, musica: x.musica || chave,
+        execucoes: x.execucoes || 1,
+        temLetra: !!x.tem_letra || !!c.letra,
+        temCapa:  !!x.tem_capa  || !!c.capa,
+        certezaLetra: c.letra ? 100 : (x.certeza_letra || 0),
+        certezaCapa:  c.capa  ? 100 : (x.certeza_capa  || 0),
+        origemLetra: c.letra ? 'base da rádio' : (x.origem_letra||''),
+        origemCapa:  c.capa  ? 'base da rádio' : (x.origem_capa||''),
+        ultima: x.ultima_vez || ''
+      };
+    }).sort((a,b)=> b.execucoes - a.execucoes);
+    audPagina = 1;
+    desenharAuditoria();
+  }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+
+function audTemProblema(x){
+  return !x.temLetra || !x.temCapa || x.certezaLetra < 70 || x.certezaCapa < 70;
+}
+
+function desenharAuditoria(){
+  const el = document.getElementById('listaAuditoria');
+  if(!el) return;
+  const filtro = document.getElementById('audFiltro')?.value || 'problemas';
+  const busca = (document.getElementById('audBusca')?.value||'').toLowerCase();
+  let lista = audLista.slice();
+  if(filtro==='problemas') lista = lista.filter(audTemProblema);
+  if(filtro==='semletra')  lista = lista.filter(x=>!x.temLetra);
+  if(filtro==='semcapa')   lista = lista.filter(x=>!x.temCapa);
+  if(filtro==='duvida')    lista = lista.filter(x=>(x.certezaLetra>0&&x.certezaLetra<70)||(x.certezaCapa>0&&x.certezaCapa<70));
+  if(busca) lista = lista.filter(x=>(x.musica||'').toLowerCase().includes(busca));
+
+  if(!lista.length){
+    el.innerHTML = '<p class="rotulo-secao">Nada a conferir com este filtro. 👏</p>';
+    return;
+  }
+  const POR = 8;
+  const paginas = Math.ceil(lista.length/POR);
+  if(audPagina > paginas) audPagina = paginas;
+  const ini = (audPagina-1)*POR;
+  const fatia = lista.slice(ini, ini+POR);
+
+  const selo = (tem, certeza, oque) => {
+    if(!tem) return `<span style="color:#ff6b6b">✖ sem ${oque}</span>`;
+    if(certeza >= 100) return `<span style="color:#35C733">✔ ${oque} conferida</span>`;
+    if(certeza >= 70)  return `<span style="color:#E6B93F">● ${oque} da internet</span>`;
+    return `<span style="color:#ff9d3f">⚠ ${oque} incerta</span>`;
+  };
+
+  el.innerHTML =
+    `<p class="rotulo-secao">${lista.length} música(s) • mostrando ${ini+1}–${Math.min(ini+POR,lista.length)} • ordenadas pelas mais tocadas</p>` +
+    fatia.map(x=>{
+      const mus = (x.musica||'').replace(/'/g,"\\'");
+      return `<div class="usuario-card">
+        <h4>${(x.musica||'').replace(/</g,'&lt;')}
+          <span style="font-weight:400;color:#BDB8F0;font-size:12px">— tocou ${x.execucoes}x</span></h4>
+        <div class="abas-perm">
+          ${selo(x.temLetra, x.certezaLetra, 'letra')} &nbsp;•&nbsp;
+          ${selo(x.temCapa, x.certezaCapa, 'capa')}
+          ${x.ultima?`<br>última vez: ${dataBR(x.ultima)}`:''}
+        </div>
+        <div class="acoes">
+          <button class="botao mini" onclick="abrirCorrecao('${mus}')">✏️ Corrigir</button>
+        </div>
+      </div>`;
+    }).join('') +
+    (paginas>1 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center">
+      <span class="rotulo-secao" style="margin:0">Página:</span>` +
+      Array.from({length:paginas},(_,i)=>i+1).map(i=>
+        `<button class="botao mini" onclick="audPagina=${i};desenharAuditoria()"
+         style="min-width:34px;${i===audPagina?'background:var(--verde2);border:1px solid var(--ouro)':'background:#2a2560'}">${i}</button>`
+      ).join('') + `</div>` : '');
+}
+
+/// Robô que corrige as músicas mais tocadas que estão com problema
+async function roboAuditoria(){
+  const log = document.getElementById('logAuditoria');
+  const comProblema = audLista.filter(audTemProblema);
+  if(!comProblema.length){ avisar('Não há nada a corrigir. 👏'); return; }
+  const quantas = Math.min(comProblema.length, 40);
+  if(!confirm(`O robô vai tentar corrigir as ${quantas} músicas MAIS TOCADAS que estão com problema.\n\nPode levar alguns minutos. Não feche esta aba.\n\nContinuar?`)) return;
+
+  log.style.display = 'block';
+  const linhas = [];
+  const anota = (txt,cor)=>{ linhas.unshift(`<div style="font-size:12.5px;color:${cor||'#8ef58e'}">${txt}</div>`); log.innerHTML = linhas.join(''); };
+
+  let okL=0, okC=0, nada=0;
+  for(let i=0; i<quantas; i++){
+    const x = comProblema[i];
+    anota(`🤖 ${i+1}/${quantas} — ${x.musica}`, '#e8c96a');
+    const { artista, titulo } = _partes(x.musica);
+    if(!titulo) continue;
+    const id = idMusica(x.musica);
+    let jaTem = {};
+    try{
+      const rr = await fetch(`${RTDB}/correcoes/${id}.json?t=${Date.now()}`);
+      const dd = await rr.json(); if(dd && !dd.error) jaTem = dd || {};
+    }catch(_){}
+    const letra = (jaTem.letra || x.temLetra) ? '' : await _roboLetra(artista, titulo);
+    const capa  = (jaTem.capa  || x.temCapa)  ? '' : await _roboCapa(artista, titulo);
+    if(letra || capa){
+      const dados = Object.assign({}, jaTem, { musica: x.musica, quando: new Date().toISOString() });
+      if(letra){ dados.letra = letra; okL++; }
+      if(capa){ dados.capa = capa; okC++; }
+      try{
+        await fetch(`${RTDB}/correcoes/${id}.json`, { method:'PUT', body: JSON.stringify(dados) });
+        anota(`✅ ${x.musica} — ${letra?'letra ':''}${capa?'capa':''}`);
+      }catch(_){ anota(`⚠️ ${x.musica} — não salvou`, '#ff6b6b'); }
+    } else {
+      nada++;
+      anota(`➖ ${x.musica} — nada encontrado (corrija na mão)`, '#e8c96a');
+    }
+    await new Promise(s=>setTimeout(s,150));
+  }
+  anota(`🎉 Concluído! Letras: ${okL} • Capas: ${okC} • Sem resultado: ${nada}`, '#e8c96a');
+  carregarAuditoria();
+}
+
 /// ====== ARQUIVO DE RESOLVIDAS (base de correcoes da radio) ======
 let _resolvidasLista = [];
 let _resolvidasPagina = 1;
 let _resolvidasFiltro = '';
 
 function verPendentes(){
+  const aud=document.getElementById('areaAuditoria'); if(aud) aud.style.display='none';
+  const ba=document.getElementById('subAuditoria'); if(ba){ ba.style.background='#2a2560'; ba.style.border='none'; }
   document.getElementById('areaPendentes').style.display = '';
   document.getElementById('areaResolvidas').style.display = 'none';
   document.getElementById('subPendentes').style.background = 'var(--verde2)';
@@ -5268,6 +5448,8 @@ function verPendentes(){
 }
 
 function verResolvidas(){
+  const aud=document.getElementById('areaAuditoria'); if(aud) aud.style.display='none';
+  const ba=document.getElementById('subAuditoria'); if(ba){ ba.style.background='#2a2560'; ba.style.border='none'; }
   document.getElementById('areaPendentes').style.display = 'none';
   document.getElementById('areaResolvidas').style.display = '';
   document.getElementById('subResolvidas').style.background = 'var(--verde2)';
