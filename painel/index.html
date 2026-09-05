@@ -279,26 +279,28 @@
     <div id="blocoAdmin" style="display:none">
       <hr style="border:none;border-top:1px solid rgba(255,255,255,.12);margin:14px 0">
       <h2 style="font-size:15px">🔑 Acesso do administrador</h2>
-      <p class="rotulo-secao">Entre com o seu <b>e-mail e senha</b>.</p>
-      <label>E-mail</label>
-      <input id="admEmail" type="email" placeholder="seu@email.com" autocomplete="username">
-      <label>Senha</label>
-      <input id="admSenha" type="password" placeholder="Sua senha" autocomplete="current-password"
-             onkeydown="if(event.key==='Enter')entrarComoAdmin()">
-      <button class="botao" onclick="entrarComoAdmin()">Entrar como administrador</button>
-      <p id="erroAdmin" style="color:#ff6b6b;font-size:13px;margin-top:8px;display:none"></p>
-      <p style="margin-top:10px">
-        <a href="#" onclick="esqueciSenha();return false"
-           style="color:#8a92c0;font-size:12.5px;text-decoration:none">Esqueci minha senha</a>
-      </p>
-      <p id="avisoRecuperacao" style="display:none;font-size:12.5px;margin-top:8px;
-         background:#1a7a4b26;border:1px solid #1a7a4b;border-radius:10px;padding:10px;color:#BDE8C6"></p>
+      <p class="rotulo-secao">Cole aqui o seu <b>token do GitHub</b>. Ele fica salvo somente neste navegador.</p>
+      <label>Token do GitHub</label>
+      <input id="campoToken" type="password" placeholder="github_pat_..."
+             onkeydown="if(event.key==='Enter')entrarPainel()">
+      <button class="botao" onclick="entrarPainel()">Entrar como administrador</button>
+
 
       <details style="margin-top:14px">
-        <summary style="cursor:pointer;color:#8a92c0;font-size:12px">Token do GitHub (só para publicar o app)</summary>
-        <p class="rotulo-secao" style="margin-top:8px">O token é necessário apenas enquanto o app ainda lê os dados do GitHub. Em breve deixará de ser preciso.</p>
-        <input id="campoToken" type="password" placeholder="github_pat_...">
-        <button class="botao mini neutro" onclick="entrarPainel()">Entrar com o token</button>
+        <summary style="cursor:pointer;color:#8a92c0;font-size:12px">Entrar com e-mail e senha (em preparação)</summary>
+        <p class="rotulo-secao" style="margin-top:8px">Este acesso ainda está sendo preparado. Use o token acima.</p>
+        <label>E-mail</label>
+        <input id="admEmail" type="email" placeholder="seu@email.com" autocomplete="username">
+        <label>Senha</label>
+        <input id="admSenha" type="password" placeholder="Sua senha" autocomplete="current-password">
+        <button class="botao mini neutro" onclick="entrarComoAdmin()">Entrar</button>
+        <p id="erroAdmin" style="color:#ff6b6b;font-size:13px;margin-top:8px;display:none"></p>
+        <p style="margin-top:8px">
+          <a href="#" onclick="esqueciSenha();return false"
+             style="color:#8a92c0;font-size:12.5px;text-decoration:none">Esqueci minha senha</a>
+        </p>
+        <p id="avisoRecuperacao" style="display:none;font-size:12.5px;margin-top:8px;
+           background:#1a7a4b26;border:1px solid #1a7a4b;border-radius:10px;padding:10px;color:#BDE8C6"></p>
       </details>
     </div>
   </div>
@@ -1399,6 +1401,7 @@ async function entrarPainel(silencioso){
 /// Quem entra com E-MAIL E SENHA le do Supabase (caminho novo) — foi por
 /// isso que o painel aparecia vazio: sem token, nao tinha de onde ler.
 async function carregarConfig(){
+  // Caminho principal: GitHub (é de onde o app dos ouvintes lê).
   if(token){
     const d = await gh('config.json?ref=main&t=' + Date.now());
     configSha = d.sha;
@@ -1432,7 +1435,25 @@ async function salvarConfig(mensagem){
     throw new Error('configuracao vazia — gravacao cancelada por seguranca');
   }
 
-  // 1) Supabase (a nova casa)
+  // 1) GITHUB — caminho principal: e daqui que o app dos ouvintes le.
+  //    (a copia no Supabase e feita depois, e se falhar nao atrapalha)
+  if(token){
+    const corpo = {
+      message: mensagem,
+      content: b64Codificar(JSON.stringify(config, null, 2)),
+      sha: configSha, branch: 'main'
+    };
+    const d = await gh('config.json', { method:'PUT', body: JSON.stringify(corpo) });
+    configSha = d.content.sha;
+  } else {
+    if(!window._avisouSemToken){
+      window._avisouSemToken = true;
+      avisar('Para publicar no app dos ouvintes, entre com o token do GitHub.', true);
+    }
+  }
+
+  // 2) CÓPIA no Supabase (opcional). Se o banco estiver fora do ar ou
+  //    pausado, nada acontece — o painel e o app seguem normalmente.
   try{
     await fetch(`${SB_URL}/rest/v1/configuracoes?on_conflict=radio_id`, {
       method: 'POST',
@@ -1444,23 +1465,6 @@ async function salvarConfig(mensagem){
       }])
     });
   }catch(_){}
-
-  // 2) GitHub (para o app dos ouvintes enxergar) — so com token
-  if(token){
-    const corpo = {
-      message: mensagem,
-      content: b64Codificar(JSON.stringify(config, null, 2)),
-      sha: configSha, branch: 'main'
-    };
-    const d = await gh('config.json', { method:'PUT', body: JSON.stringify(corpo) });
-    configSha = d.content.sha;
-  } else {
-    // avisa uma unica vez que a mudanca ainda nao chegou aos ouvintes
-    if(!window._avisouSemToken){
-      window._avisouSemToken = true;
-      avisar('Salvo no painel. Para publicar no app dos ouvintes, entre também com o token do GitHub.', true);
-    }
-  }
 }
 
 async function subirImagem(arquivo, pasta){
@@ -4294,14 +4298,15 @@ document.getElementById('arqTroca').addEventListener('change', async (ev)=>{
 
 // Ao abrir: primeiro tenta a sessao do administrador (e-mail e senha).
 // Se nao houver, cai no caminho antigo do token do GitHub.
-sbRestaurarSessao().then(entrou => {
-  if(entrou) return;
-  if(token){
-    const c = document.getElementById('campoToken');
-    if(c) c.value = token;
-    entrarPainel().catch(()=>{ mostrarAcessoAdmin(); });
-  }
-});
+// Entra pelo TOKEN (caminho principal). O acesso por e-mail e senha
+// continua existindo, mas so e tentado se nao houver token salvo.
+if(token){
+  const c = document.getElementById('campoToken');
+  if(c) c.value = token;
+  entrarPainel().catch(()=>{ mostrarAcessoAdmin(); });
+} else {
+  sbRestaurarSessao().catch(()=>{});
+}
 
 /// Revela o bloco de acesso do administrador (token do GitHub)
 function mostrarAcessoAdmin(){
@@ -4432,11 +4437,29 @@ async function finBuscarCep(){
 
 /// ---------- CARGA ----------
 async function finCarregarTudo(){
+  let semBanco = false;
   try{
-    finClientes  = await sbLer('fin_clientes',  `&radio_id=eq.${RADIO_ID}&order=razao_social`) || [];
+    const c = await sbLer('fin_clientes', `&radio_id=eq.${RADIO_ID}&order=razao_social`);
+    if(c === null) semBanco = true;
+    finClientes  = c || [];
     finContratos = await sbLer('fin_contratos', `&radio_id=eq.${RADIO_ID}&order=criado_em.desc`) || [];
     finParcelas  = await sbLer('fin_parcelas',  `&radio_id=eq.${RADIO_ID}&order=vencimento`) || [];
-  }catch(_){ finClientes=[]; finContratos=[]; finParcelas=[]; }
+  }catch(_){ semBanco = true; finClientes=[]; finContratos=[]; finParcelas=[]; }
+
+  // O financeiro guarda os dados no Supabase. Se ele estiver fora do ar
+  // ou pausado, avisamos com clareza em vez de mostrar tudo zerado.
+  const aviso = document.getElementById('finResumo');
+  if(semBanco && aviso){
+    aviso.innerHTML = `<div class="cartao" style="border-left:3px solid #ff6b6b;margin:0">
+      <b style="color:#ff6b6b">⚠️ Banco de dados indisponível</b>
+      <p class="rotulo-secao">O financeiro guarda as informações no Supabase, que no momento
+      não está respondendo (pode estar pausado por inatividade).<br><br>
+      Entre em <b>supabase.com/dashboard</b>, abra o projeto <b>radio-eleva</b> e clique em
+      <b>Resume project</b>. Depois atualize esta página.<br><br>
+      <b>As demais abas do painel continuam funcionando normalmente.</b></p>
+    </div>`;
+    return;
+  }
   finDesenharClientes(); finDesenharContratos();
   finDesenharParcelas(); finDesenharResumo();
   finPreencherSelectClientes();
