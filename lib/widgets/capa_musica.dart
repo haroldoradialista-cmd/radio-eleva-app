@@ -51,6 +51,8 @@ class _CapaMusicaState extends State<CapaMusica> {
   // enquanto a busca antiga ainda esta rodando, ela e DESCARTADA ao
   // terminar — senao a capa da musica anterior aparecia na musica nova.
   int _versaoBusca = 0;
+  // identificador desta musica no historico "Tocou na Rádio"
+  String _idNoHistorico = '';
   String _musicaDaBusca = '';
   // imagem ENVIADA pelo painel, ja convertida UMA vez.
   // Sem isto, a conversao acontecia a cada redesenho da tela e a capa
@@ -79,6 +81,13 @@ class _CapaMusicaState extends State<CapaMusica> {
           }
         });
       }
+      // TOCOU NA RÁDIO: registra AGORA, assim que a música muda.
+      // Antes isto ficava no fim da busca da capa — e se a música trocasse
+      // antes de a busca terminar, ela NUNCA era registrada.
+      HistoricoService.registrar(titulo).then((id) {
+        if (mounted && id.isNotEmpty) _idNoHistorico = id;
+      });
+
       _debounce?.cancel();
       _debounce = Timer(Duration(milliseconds: 900), () => _buscar(titulo));
     });
@@ -281,9 +290,10 @@ class _CapaMusicaState extends State<CapaMusica> {
 
   /// Define a capa atual e ja converte a imagem enviada UMA unica vez.
   void _aplicarCapa(String? url) {
-    // TOCOU NA RÁDIO: registra a música com a capa que foi encontrada
-    if (_musicaDaBusca.isNotEmpty) {
-      HistoricoService.registrar(_musicaDaBusca, capa: url);
+    // TOCOU NA RÁDIO: a música já foi registrada quando começou a tocar.
+    // Aqui apenas ACRESCENTAMOS a capa ao registro, quando ela chega.
+    if (_idNoHistorico.isNotEmpty && url != null) {
+      HistoricoService.completarCapa(_idNoHistorico, url);
     }
     final bytes = (url == null) ? null : _bytesDaCapa(url);
     if (!mounted) return;

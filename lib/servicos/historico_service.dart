@@ -16,32 +16,48 @@ class HistoricoService {
   static String base = '';
   static String _ultimaRegistrada = '';
 
-  /// Nomes que não são música (vinheta, identificação da rádio...)
+  /// Diz se o que veio da transmissão é uma música.
+  ///
+  /// ATENÇÃO: aqui é melhor ERRAR PARA MAIS do que para menos. Se uma
+  /// vinheta escapar, o ouvinte apenas vê uma linha estranha. Mas se uma
+  /// música legítima for bloqueada, ela some do histórico — que foi o que
+  /// acontecia com as versões "AO VIVO" (muito comuns no gospel).
   static bool _ehMusica(String bruto) {
     final t = bruto.trim();
     if (t.length < 6) return false;
-    final cru = CorrecoesService.cru(t);
-    if (cru.length < 6) return false;
-    // precisa ter separação "artista - música"
-    if (!t.contains(' - ')) return false;
-    const naoSao = [
-      'vinheta', 'id da radio', 'identificacao', 'comercial', 'spot',
-      'break', 'intervalo', 'chamada', 'oferecimento', 'patrocinio',
-      'sem titulo', 'unknown', 'no title', 'radio eleva', 'ao vivo'
+    if (!t.contains(' - ')) return false; // precisa de "artista - música"
+
+    final (artista, titulo) = separar(t);
+    final aCru = CorrecoesService.cru(artista);
+    final tCru = CorrecoesService.cru(titulo);
+    if (aCru.length < 2 || tCru.length < 2) return false;
+
+    // bloqueia só quando a PARTE INTEIRA é claramente institucional
+    // Lista curta de propósito: "chamada" e "intervalo" saíram porque
+    // existem MÚSICAS com esses nomes. Na dúvida, registramos.
+    const soIsso = [
+      'id', 'ids', 'vinheta', 'vinhetas', 'spot', 'spots',
+      'comercial', 'comerciais', 'oferecimento', 'patrocinio',
+      'sem titulo', 'unknown', 'no title', 'nao identificado'
     ];
-    for (final n in naoSao) {
-      if (cru.contains(n)) return false;
+    if (soIsso.contains(tCru) || soIsso.contains(aCru)) return false;
+
+    // bloqueia quando começa com essas palavras (ex.: "VINHETA DE ABERTURA")
+    for (final n in ['vinheta', 'comercial', 'spot ', 'oferecimento']) {
+      if (tCru.startsWith(n) || aCru.startsWith(n)) return false;
     }
     return true;
   }
 
-  /// Registra a música que está tocando agora
-  static Future<void> registrar(String musicaBruta, {String? capa}) async {
-    if (base.isEmpty) return;
-    if (!_ehMusica(musicaBruta)) return;
+  /// Registra a música que está tocando agora.
+  /// Devolve o identificador do registro (para acrescentar a capa depois),
+  /// ou string vazia se não registrou.
+  static Future<String> registrar(String musicaBruta, {String? capa}) async {
+    if (base.isEmpty) return '';
+    if (!_ehMusica(musicaBruta)) return '';
 
     final chaveMusica = CorrecoesService.cru(musicaBruta);
-    if (chaveMusica == _ultimaRegistrada) return;
+    if (chaveMusica == _ultimaRegistrada) return '';
     _ultimaRegistrada = chaveMusica;
 
     final agora = DateTime.now();
@@ -63,6 +79,21 @@ class HistoricoService {
               if (capa != null && capa.startsWith('http')) 'capa': capa,
             }),
           )
+          .timeout(const Duration(seconds: 8));
+      return id;
+    } catch (_) {}
+    return '';
+  }
+
+  /// Acrescenta a capa a um registro já feito (a capa demora mais que o
+  /// registro da música, então ela chega depois).
+  static Future<void> completarCapa(String id, String? capa) async {
+    if (base.isEmpty || id.isEmpty) return;
+    if (capa == null || !capa.startsWith('http')) return;
+    try {
+      await http
+          .patch(Uri.parse('$base/tocou/$id.json'),
+              body: jsonEncode({'capa': capa}))
           .timeout(const Duration(seconds: 8));
     } catch (_) {}
   }
@@ -117,6 +148,57 @@ class HistoricoService {
       }
     } catch (_) {}
     return [];
+  }
+
+  /// ---------- CURTIDA NO HISTÓRICO ----------
+  /// O ouvinte pode curtir uma música que já passou (aquela que ele ouviu
+  /// no carro e não deu tempo). A curtida vale UMA VEZ por execução e não
+  /// pode ser desfeita — é um voto, não um favorito.
+  ///
+  /// O voto vai para o MESMO lugar das curtidas da tela inicial, então
+  /// aparece normalmente na aba Votos do painel.
+  static Future<bool> jaCurtiu(String idMomento) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('curtiu_tocou_$idMomento') == true;
+    } catch (_) {}
+    return false;
+  }
+
+  static Future<bool> curtir(String idMomento, String musica) async {
+    if (base.isEmpty || idMomento.isEmpty) return false;
+    if (await jaCurtiu(idMomento)) return false;
+    try {
+      final r = await http
+          .post(
+            Uri.parse('$base/votos.json'),
+            body: jsonEncode({
+              'tipo': 'like',
+              'musica': musica,
+              'origem': 'tocou na rádio',
+              'quando': DateTime.now().toIso8601String(),
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (r.statusCode >= 200 && r.statusCode < 300) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('curtiu_tocou_$idMomento', true);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Descobre de uma vez quais itens da lista já foram curtidos
+  static Future<Set<String>> curtidasDe(List<String> ids) async {
+    final curtidas = <String>{};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final id in ids) {
+        if (prefs.getBool('curtiu_tocou_$id') == true) curtidas.add(id);
+      }
+    } catch (_) {}
+    return curtidas;
   }
 
   /// Separa "ARTISTA - MÚSICA"

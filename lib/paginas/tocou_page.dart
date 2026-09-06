@@ -16,6 +16,10 @@ class TocouPage extends StatefulWidget {
 class _TocouPageState extends State<TocouPage> {
   List<Map<String, dynamic>> _lista = [];
   bool _carregando = true;
+  // quais itens ja foram curtidos neste aparelho
+  Set<String> _curtidas = {};
+  // evita curtir duas vezes enquanto envia
+  final Set<String> _enviando = {};
 
   @override
   void initState() {
@@ -26,11 +30,33 @@ class _TocouPageState extends State<TocouPage> {
   Future<void> _buscar() async {
     if (mounted) setState(() => _carregando = true);
     final l = await HistoricoService.ultimas(quantas: 40);
+    final ids = l.map((e) => (e['_id'] ?? '').toString()).toList();
+    final curtidas = await HistoricoService.curtidasDe(ids);
     if (mounted) {
       setState(() {
         _lista = l;
+        _curtidas = curtidas;
         _carregando = false;
       });
+    }
+  }
+
+  /// Curte uma música do histórico. Vale UMA VEZ e não desfaz.
+  Future<void> _curtir(String id, String musica) async {
+    if (_curtidas.contains(id) || _enviando.contains(id)) return;
+    setState(() => _enviando.add(id));
+    final ok = await HistoricoService.curtir(id, musica);
+    if (!mounted) return;
+    setState(() {
+      _enviando.remove(id);
+      if (ok) _curtidas.add(id);
+    });
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        duration: Duration(seconds: 2),
+        backgroundColor: CoresEleva.verde,
+        content: Text('Curtida registrada! Obrigado 💚'),
+      ));
     }
   }
 
@@ -197,17 +223,51 @@ class _TocouPageState extends State<TocouPage> {
                   ],
                 ),
               ),
-              SizedBox(width: 8),
-              // horário
-              Text(hora,
-                  style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: CoresEleva.dourado)),
+              SizedBox(width: 6),
+              // horário e curtida
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(hora,
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: CoresEleva.dourado)),
+                  SizedBox(height: 2),
+                  _coracao(item, bruto),
+                ],
+              ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  /// Coração de curtida. Uma vez curtido, fica curtido (não desfaz).
+  Widget _coracao(Map<String, dynamic> item, String musica) {
+    final id = (item['_id'] ?? '').toString();
+    final curtida = _curtidas.contains(id);
+    final enviando = _enviando.contains(id);
+    return InkWell(
+      onTap: (curtida || enviando) ? null : () => _curtir(id, musica),
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: EdgeInsets.all(4),
+        child: enviando
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: CoresEleva.dourado))
+            : Icon(
+                curtida ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                size: 21,
+                color: curtida
+                    ? const Color(0xFFFF4D6D)
+                    : CoresEleva.textoFraco,
+              ),
+      ),
     );
   }
 
