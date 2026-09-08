@@ -12,6 +12,15 @@ import 'package:just_audio/just_audio.dart';
 import '../servicos/player_service.dart';
 import '../tema.dart';
 
+/// Diz se a aba do chat está aparecendo na tela.
+/// As abas do app ficam todas montadas ao mesmo tempo (para trocar rápido),
+/// então sem este controle o chat continuaria consultando o servidor mesmo
+/// quando o ouvinte está em outra aba — gastando dados à toa.
+class ChatVisivel {
+  static bool aberto = false;
+  static bool appAtivo = true;
+}
+
 class ChatPage extends StatefulWidget {
   ChatPage({super.key});
   @override
@@ -62,6 +71,8 @@ class _TelaChat extends StatefulWidget {
 
 class _TelaChatState extends State<_TelaChat> {
   final _msg = TextEditingController();
+  // chave da última mensagem já recebida (para buscar só o que é novo)
+  String _ultimaChave = '';
   // controle de foco do campo: permite SOLTAR o teclado quando o ouvinte
   // sai da aba do chat (senao o campo continuava ativo em segundo plano)
   final _focoMsg = FocusNode();
@@ -82,7 +93,15 @@ class _TelaChatState extends State<_TelaChat> {
     super.initState();
     _verificarSuspensao();
     _buscar();
-    _timer = Timer.periodic(Duration(seconds: 5), (_) => _buscar());
+    // ECONOMIA: só consulta o servidor quando a aba do chat está VISÍVEL
+    // e o app está aberto. Antes ele consultava a cada 5 segundos mesmo
+    // com o ouvinte na tela da rádio ou com o celular no bolso.
+    _timer = Timer.periodic(Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      if (!ChatVisivel.aberto) return;      // outra aba está na frente
+      if (!ChatVisivel.appAtivo) return;    // app em segundo plano
+      _buscar();
+    });
   }
 
   Future<void> _verificarSuspensao() async {
@@ -187,25 +206,69 @@ class _TelaChatState extends State<_TelaChat> {
     super.dispose();
   }
 
+  /// Busca as mensagens do chat.
+  ///
+  /// ECONOMIA DE DADOS: na primeira vez baixa as últimas 80 mensagens;
+  /// depois busca APENAS o que chegou de novo. Antes, cada aparelho
+  /// baixava as 80 mensagens inteiras a cada 5 segundos — com muitos
+  /// ouvintes isso consumia centenas de gigabytes por mês.
   Future<void> _buscar() async {
     try {
-      final r = await http.get(Uri.parse(
-          '$_chatUrl.json?orderBy=%22%24key%22&limitToLast=80'));
-      if (r.statusCode == 200 && r.body != 'null') {
-        final dados = jsonDecode(r.body) as Map<String, dynamic>;
-        final chaves = dados.keys.toList()..sort();
+      final String endereco;
+      if (_ultimaChave.isEmpty) {
+        // primeira carga: traz o histórico recente
+        endereco = '$_chatUrl.json?orderBy=%22%24key%22&limitToLast=80';
+      } else {
+        // depois: só o que veio DEPOIS da última mensagem que já temos
+        endereco = '$_chatUrl.json?orderBy=%22%24key%22'
+            '&startAt=%22${Uri.encodeComponent(_ultimaChave)}%22'
+            '&limitToLast=40';
+      }
+      final r = await http.get(Uri.parse(endereco));
+      if (r.statusCode != 200 || r.body == 'null' || r.body.isEmpty) return;
+
+      final dados = jsonDecode(r.body) as Map<String, dynamic>;
+      if (dados.isEmpty) return;
+      final chaves = dados.keys.toList()..sort();
+
+      if (_ultimaChave.isEmpty) {
+        // carga inicial
         final lista =
             chaves.map((k) => Map<String, dynamic>.from(dados[k])).toList();
-        if (mounted && lista.length != _mensagens.length) {
+        _ultimaChave = chaves.last;
+        if (mounted) {
           setState(() => _mensagens = lista);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scroll.hasClients) {
-              _scroll.jumpTo(_scroll.position.maxScrollExtent);
+          _irParaOFim();
+        }
+      } else {
+        // só as novas (a busca devolve também a última que já temos)
+        final novas = <Map<String, dynamic>>[];
+        for (final k in chaves) {
+          if (k == _ultimaChave) continue;
+          novas.add(Map<String, dynamic>.from(dados[k]));
+        }
+        if (novas.isEmpty) return;
+        _ultimaChave = chaves.last;
+        if (mounted) {
+          setState(() {
+            _mensagens.addAll(novas);
+            // guarda no máximo 120 na tela, para não pesar o celular
+            if (_mensagens.length > 120) {
+              _mensagens = _mensagens.sublist(_mensagens.length - 120);
             }
           });
+          _irParaOFim();
         }
       }
     } catch (_) {}
+  }
+
+  void _irParaOFim() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) {
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      }
+    });
   }
 
   Future<void> _enviar() async {

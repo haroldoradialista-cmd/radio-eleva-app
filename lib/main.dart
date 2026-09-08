@@ -210,7 +210,9 @@ class _TelaPrincipalState extends State<TelaPrincipal>
     if (estado == AppLifecycleState.paused ||
         estado == AppLifecycleState.hidden) {
       _saiuEm = DateTime.now();
+      ChatVisivel.appAtivo = false;
     } else if (estado == AppLifecycleState.resumed) {
+      ChatVisivel.appAtivo = true;
       final saiu = _saiuEm;
       _saiuEm = null;
       // reagenda o proximo despertador sempre que o app volta: garante que
@@ -253,6 +255,8 @@ class _TelaPrincipalState extends State<TelaPrincipal>
   /// vídeo e retoma o rádio, se ele havia sido pausado.
   void _aoTrocarAba(int novo) {
     final anterior = _abaAtual;
+    // avisa o chat se ele esta ou nao aparecendo (economiza dados)
+    ChatVisivel.aberto = (novo == 1);
     // IMPORTANTE: solta o campo de escrita da aba que estamos deixando.
     // Sem isto, o campo do chat (ou do pedido musical) continuava ativo em
     // segundo plano: o teclado abria sozinho e o que era digitado ia parar
