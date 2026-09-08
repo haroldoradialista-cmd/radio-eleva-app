@@ -14,6 +14,7 @@ import '../servicos/letra_service.dart';
 import '../servicos/auth_service.dart';
 import '../tema.dart';
 import 'tocou_page.dart';
+import '../servicos/historico_service.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/midia_eleva.dart';
 import '../widgets/capa_musica.dart';
@@ -130,6 +131,8 @@ class _HomePageState extends State<HomePage> {
     if (_curtiu || _musicaAtual.isEmpty) return;
     setState(() => _curtiu = true);
     _musicaCurtidaMemoria = _musicaAtual;
+    // avisa o TOCOU NA RÁDIO que esta música já foi curtida
+    HistoricoService.marcarCurtida(_musicaAtual);
     PlayerService.instancia.votar(cfg.chatUrl, 'like', _musicaAtual);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -148,7 +151,10 @@ class _HomePageState extends State<HomePage> {
   ///   mais tarde na programacao, o ouvinte pode curtir de novo.
   Future<void> _conferirCurtida(String musica) async {
     if (musica.isEmpty) return;
-    final ja = musica == _musicaCurtidaMemoria;
+    // Considera as DUAS origens: o coração daqui e o do TOCOU NA RÁDIO.
+    // Assim, curtir num lugar reflete no outro.
+    final ja = musica == _musicaCurtidaMemoria ||
+        HistoricoService.estaCurtida(musica);
     if (mounted && ja != _curtiu) setState(() => _curtiu = ja);
   }
 
@@ -652,11 +658,16 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(width: 8),
                           // Botão TOCOU NA RÁDIO
                           GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => TocouPage()),
-                            ),
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => TocouPage()),
+                              );
+                              // ao voltar do TOCOU, reconfere o coração:
+                              // a música pode ter sido curtida lá
+                              _conferirCurtida(_musicaAtual);
+                            },
                             child: Container(
                               padding: EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 5),

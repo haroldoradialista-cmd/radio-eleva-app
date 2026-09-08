@@ -150,6 +150,24 @@ class HistoricoService {
     return [];
   }
 
+  /// ---------- MEMÓRIA COMPARTILHADA DA CURTIDA ----------
+  /// A mesma música pode ser curtida na TELA INICIAL ou no TOCOU NA RÁDIO.
+  /// Esta memória é comum às duas telas: se o ouvinte curte numa, o
+  /// coração aparece curtido na outra também.
+  static String musicaCurtidaAgora = '';
+
+  /// Guarda qual música acabou de ser curtida (seja de onde for)
+  static void marcarCurtida(String musica) {
+    final c = CorrecoesService.cru(musica);
+    if (c.isNotEmpty) musicaCurtidaAgora = c;
+  }
+
+  /// Diz se esta música já está curtida
+  static bool estaCurtida(String musica) {
+    final c = CorrecoesService.cru(musica);
+    return c.isNotEmpty && c == musicaCurtidaAgora;
+  }
+
   /// ---------- CURTIDA NO HISTÓRICO ----------
   /// O ouvinte pode curtir uma música que já passou (aquela que ele ouviu
   /// no carro e não deu tempo). A curtida vale UMA VEZ por execução e não
@@ -183,6 +201,9 @@ class HistoricoService {
       if (r.statusCode >= 200 && r.statusCode < 300) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('curtiu_tocou_$idMomento', true);
+        // avisa a tela inicial: se for a música tocando agora, o coração
+        // de lá também fica curtido
+        marcarCurtida(musica);
         return true;
       }
     } catch (_) {}

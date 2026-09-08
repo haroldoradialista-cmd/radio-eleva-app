@@ -247,7 +247,9 @@ class _TocouPageState extends State<TocouPage> {
   /// Coração de curtida. Uma vez curtido, fica curtido (não desfaz).
   Widget _coracao(Map<String, dynamic> item, String musica) {
     final id = (item['_id'] ?? '').toString();
-    final curtida = _curtidas.contains(id);
+    // curtida daqui OU curtida na tela inicial (é a mesma música)
+    final curtida =
+        _curtidas.contains(id) || HistoricoService.estaCurtida(musica);
     final enviando = _enviando.contains(id);
     return InkWell(
       onTap: (curtida || enviando) ? null : () => _curtir(id, musica),
