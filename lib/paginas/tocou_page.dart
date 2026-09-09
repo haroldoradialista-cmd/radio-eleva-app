@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../servicos/historico_service.dart';
+import '../servicos/correcoes_service.dart';
 import '../tema.dart';
 
 /// TOCOU NA RÁDIO
@@ -29,6 +31,9 @@ class _TocouPageState extends State<TocouPage> {
 
   Future<void> _buscar() async {
     if (mounted) setState(() => _carregando = true);
+    // Atualiza a base de correções ANTES de montar a lista: assim, uma capa
+    // corrigida no painel aparece aqui na hora, sem precisar reabrir o app.
+    await CorrecoesService.atualizar();
     final l = await HistoricoService.ultimas(quantas: 40);
     final ids = l.map((e) => (e['_id'] ?? '').toString()).toList();
     final curtidas = await HistoricoService.curtidasDe(ids);
@@ -140,7 +145,13 @@ class _TocouPageState extends State<TocouPage> {
     final (artista, titulo) = HistoricoService.separar(bruto);
     final hora = HistoricoService.hora((item['quando'] ?? '').toString());
     final dia = HistoricoService.dia((item['quando'] ?? '').toString());
-    final capa = (item['capa'] ?? '').toString();
+    // A CAPA SEMPRE VEM DA BASE DA RÁDIO QUANDO EXISTE.
+    // Assim, corrigir uma capa no painel atualiza a lista inteira na hora —
+    // inclusive nas músicas que já tocaram há horas.
+    final capaCorrigida = CorrecoesService.capaDe(bruto);
+    final capa = (capaCorrigida != null && capaCorrigida.isNotEmpty)
+        ? capaCorrigida
+        : (item['capa'] ?? '').toString();
     final agora = indice == 0;
 
     // separador de dia (HOJE / ONTEM / data)
@@ -183,11 +194,7 @@ class _TocouPageState extends State<TocouPage> {
                 child: SizedBox(
                   width: 54,
                   height: 54,
-                  child: capa.startsWith('http')
-                      ? Image.network(capa,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _capaPadrao())
-                      : _capaPadrao(),
+                  child: _imagem(capa),
                 ),
               ),
               SizedBox(width: 11),
@@ -271,6 +278,28 @@ class _TocouPageState extends State<TocouPage> {
               ),
       ),
     );
+  }
+
+  /// Mostra a capa, seja um link da internet ou uma imagem enviada
+  /// pelo painel (que fica guardada como texto).
+  Widget _imagem(String capa) {
+    if (capa.startsWith('http')) {
+      return Image.network(capa,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _capaPadrao());
+    }
+    if (capa.startsWith('data:image')) {
+      try {
+        var b64 = capa.split(',').last.replaceAll(RegExp(r'\s'), '');
+        final resto = b64.length % 4;
+        if (resto > 0) b64 = b64 + ('=' * (4 - resto));
+        return Image.memory(base64Decode(b64),
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => _capaPadrao());
+      } catch (_) {}
+    }
+    return _capaPadrao();
   }
 
   Widget _capaPadrao() => Container(
