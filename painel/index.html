@@ -189,9 +189,16 @@
      barra de rolagem VISIVEL para arrastar de lado. Os dados curtos
      (estado, telefone, data) nunca quebram em duas linhas. */
   .rolagem-tabela{width:100%;overflow-x:auto;padding-bottom:6px}
-  .rolagem-tabela table{width:100%;font-size:12.5px}
-  .rolagem-tabela th,.rolagem-tabela td{padding:6px 9px;white-space:nowrap;
+  /* Fonte um pouco menor e espacamento enxuto: assim TODAS as colunas
+     cabem na largura da pagina, sem cortar a data no fim da linha. */
+  .rolagem-tabela table{width:100%;font-size:11.5px;table-layout:auto}
+  .rolagem-tabela th,.rolagem-tabela td{padding:6px 6px;white-space:nowrap;
     overflow:visible;text-overflow:clip}
+  .rolagem-tabela th{font-size:11px;letter-spacing:.2px}
+  /* a ultima coluna nunca encosta na borda */
+  .rolagem-tabela th:last-child,.rolagem-tabela td:last-child{padding-right:12px}
+  /* colunas curtas ocupam so o necessario, sobrando espaco para as longas */
+  .rolagem-tabela td:first-child,.rolagem-tabela th:first-child{width:1%;padding-left:4px}
   /* nomes longos podem quebrar, para a tabela nao ficar gigante */
   /* NADA quebra em duas linhas: cada dado fica na sua linha, inteiro.
      Se a tabela ficar mais larga que a tela, a barra de rolagem resolve. */
