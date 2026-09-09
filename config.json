@@ -303,17 +303,17 @@
     },
     {
       "id": "c1785101484980",
-      "nome": "Supermercados Ville Fort",
+      "nome": "Supermercados Morais",
       "nivel": "cidade",
       "estado": "Minas Gerais",
       "cidade": "Cataguases",
       "tamanho": "retrato",
-      "link": "https://www.villefort.com.br/oferta/ofertas-de-hortifruti-%E2%80%93-2307-26072026-8",
+      "link": "https://www.supermercadomorais.com.br/encarte-di%C3%A1rio",
       "segundos_fechar": 10,
       "frequencia": "sempre",
       "tipo": "imagem",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785106880379_Designsemnome1.png",
-      "publicar_em": "2026-07-26T19:22"
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1788917803849_SupermercadosMorais.jpg",
+      "publicar_em": "2026-09-08T22:36"
     }
   ],
   "tv_video": ""
