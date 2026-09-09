@@ -1,0 +1,146 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'config_service.dart';
+
+/// Despertador da Rádio Eleva — versão NATIVA.
+/// O alarme é gravado no relógio do Android (setAlarmClock) e, na hora,
+/// um serviço nativo liga a rádio sozinho: sem app aberto, sem motor
+/// Flutter, sobrevivendo ao "Fechar todos os aplicativos".
+class DespertadorService {
+  static const _canal = MethodChannel('br.com.radioeleva/despertador');
+  static final _notif = FlutterLocalNotificationsPlugin();
+  static bool _pronto = false;
+
+  static Future<void> iniciar() async {
+    if (!_pronto) {
+      try {
+        await _notif.initialize(InitializationSettings(
+            android: AndroidInitializationSettings('@mipmap/ic_launcher')));
+        _pronto = true;
+      } catch (_) {}
+    }
+    // Handoff: se o despertador nativo estiver tocando quando o app abre,
+    // ele para na hora e o player principal assume — sem áudio duplo.
+    // (com prazo máximo: jamais segura a abertura do app)
+    try {
+      await _canal
+          .invokeMethod('parar')
+          .timeout(Duration(seconds: 3));
+    } catch (_) {}
+  }
+
+  static Future<void> pedirPermissoes() async {
+    try {
+      final android = _notif.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      await android?.requestNotificationsPermission();
+    } catch (_) {}
+  }
+
+  static Future<void> _gravarAlarme(DateTime quando, bool diario) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cfg = ConfigService.instancia.config.value;
+      if (cfg.streamUrl.isNotEmpty) {
+        await prefs.setString('desp_stream', cfg.streamUrl);
+      }
+    } catch (_) {}
+    await _canal.invokeMethod('agendar', {
+      'millis': quando.millisecondsSinceEpoch,
+      'diario': diario,
+    }).timeout(Duration(seconds: 5));
+  }
+
+  /// Alarme único em data e hora específicas
+  static Future<void> agendarUnico(DateTime quando) async {
+    await _gravarAlarme(quando, false);
+  }
+
+  /// Alarme diário no mesmo horário (TODO DIA)
+  static Future<void> agendarDiario(int hora, int minuto) async {
+    final agora = DateTime.now();
+    var primeiro = DateTime(agora.year, agora.month, agora.day, hora, minuto);
+    if (!primeiro.isAfter(agora)) primeiro = primeiro.add(Duration(days: 1));
+    await _gravarAlarme(primeiro, true);
+  }
+
+  /// Converte o dia da semana do Dart (seg=1..dom=7) para o padrão do
+  /// Android/Calendar (dom=1, seg=2 ... sáb=7), que é o usado no Kotlin.
+  static int paraCalendar(int diaDart) => (diaDart % 7) + 1;
+
+  /// Alarme que repete só nos dias escolhidos da semana.
+  /// [dias] é o conjunto no padrão Calendar (dom=1..sáb=7).
+  /// Agenda a próxima ocorrência; o Kotlin reagenda sozinho a cada disparo.
+  static Future<void> agendarDias(int hora, int minuto, Set<int> dias) async {
+    final agora = DateTime.now();
+    DateTime? alvo;
+    // procura, de hoje até 7 dias à frente, o próximo dia marcado que ainda não passou
+    for (int i = 0; i < 8; i++) {
+      final d = DateTime(agora.year, agora.month, agora.day, hora, minuto)
+          .add(Duration(days: i));
+      if (dias.contains(paraCalendar(d.weekday)) && d.isAfter(agora)) {
+        alvo = d;
+        break;
+      }
+    }
+    alvo ??= DateTime(agora.year, agora.month, agora.day, hora, minuto)
+        .add(Duration(days: 1));
+    await _gravarAlarme(alvo, true);
+  }
+
+  /// Estado de cada permissão que o despertador precisa
+  static Future<Map<String, bool>> statusPermissoes() async {
+    try {
+      final r = await _canal
+          .invokeMethod('statusPermissoes')
+          .timeout(Duration(seconds: 4));
+      return Map<String, bool>.from(r as Map);
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Abre direto a tela de configuração daquela permissão
+  static Future<void> abrirPermissao(String qual) async {
+    try {
+      await _canal
+          .invokeMethod('abrirPermissao', {'qual': qual})
+          .timeout(Duration(seconds: 4));
+    } catch (_) {}
+  }
+
+  /// Dispara um alarme de teste daqui a 10 segundos
+  static Future<void> testarAgora() async {
+    await _canal.invokeMethod('testarAgora').timeout(Duration(seconds: 4));
+  }
+
+  /// Android 14+: a tela cheia do alarme exige permissão especial
+  static Future<bool> podeTelaCheia() async {
+    try {
+      final r = await _canal
+          .invokeMethod('podeTelaCheia')
+          .timeout(Duration(seconds: 3));
+      return r == true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static Future<void> abrirPermissaoTelaCheia() async {
+    try {
+      await _canal
+          .invokeMethod('abrirPermissaoTelaCheia')
+          .timeout(Duration(seconds: 3));
+    } catch (_) {}
+  }
+
+  static Future<void> cancelar() async {
+    try {
+      await _canal.invokeMethod('cancelar').timeout(Duration(seconds: 3));
+    } catch (_) {}
+    try {
+      await _canal.invokeMethod('parar').timeout(Duration(seconds: 3));
+    } catch (_) {}
+  }
+}

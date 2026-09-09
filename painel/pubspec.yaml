@@ -1,0 +1,50 @@
+name: radio_eleva
+description: Aplicativo oficial da Radio Eleva
+publish_to: 'none'
+version: 3.22.1+156
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  just_audio: ^0.9.40
+  just_audio_background: ^0.0.1-beta.13
+  http: ^1.2.1
+  url_launcher: ^6.3.0
+  google_sign_in: ^6.2.1
+  shared_preferences: ^2.2.3
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.1.3
+  share_plus: ^10.0.2
+  flutter_local_notifications: ^17.2.4
+  google_mobile_ads: ^5.2.0
+  font_awesome_flutter: ^10.7.0
+  webview_flutter: ^4.10.0
+  webview_flutter_android: any
+
+dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/logo.png
+    - assets/redes/instagram.png
+    - assets/redes/facebook.png
+    - assets/redes/youtube.png
+    - assets/redes/tiktok.png
+    - assets/marca_dagua_clara.png
+    - assets/marca_dagua_escura.png
+    - assets/fundo_claro.jpg
+    - assets/fundo_escuro.jpg
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/icone_app.png
+  adaptive_icon_background: "#071A33"
+  adaptive_icon_foreground: assets/icone_adaptativo.png
