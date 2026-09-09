@@ -57,9 +57,30 @@ class HistoricoService {
     if (!_ehMusica(musicaBruta)) return '';
 
     final chaveMusica = CorrecoesService.cru(musicaBruta);
-    if (chaveMusica == _ultimaRegistrada) return '';
-    _ultimaRegistrada = chaveMusica;
 
+    // 1) memória desta sessão
+    if (chaveMusica == _ultimaRegistrada) return '';
+
+    // 2) memória GUARDADA no aparelho: sobrevive a fechar e reabrir o app.
+    //    Sem isto, reabrir o app durante a mesma música criava uma linha
+    //    repetida no histórico.
+    final guardada = await _ultimaGuardada();
+    if (guardada == chaveMusica) {
+      _ultimaRegistrada = chaveMusica;
+      return await _idGuardado();
+    }
+
+    // 3) confere no próprio histórico: se a ÚLTIMA música registrada já é
+    //    esta, não registra de novo. Isto também evita repetição quando
+    //    outro aparelho já registrou a mesma execução.
+    final ultimaNoServidor = await _ultimaDoServidor();
+    if (ultimaNoServidor.$1 == chaveMusica && chaveMusica.isNotEmpty) {
+      _ultimaRegistrada = chaveMusica;
+      await _guardarUltima(chaveMusica, ultimaNoServidor.$2);
+      return ultimaNoServidor.$2;
+    }
+
+    _ultimaRegistrada = chaveMusica;
     final agora = DateTime.now();
     // chave por MINUTO: se 150 aparelhos registrarem a mesma música no
     // mesmo minuto, todos gravam no mesmo lugar — vira um registro só.
@@ -80,9 +101,56 @@ class HistoricoService {
             }),
           )
           .timeout(const Duration(seconds: 8));
+      await _guardarUltima(chaveMusica, id);
       return id;
     } catch (_) {}
     return '';
+  }
+
+  /// ---------- MEMÓRIA DE QUAL FOI A ÚLTIMA REGISTRADA ----------
+  static Future<void> _guardarUltima(String chave, String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('tocou_ultima_musica', chave);
+      await prefs.setString('tocou_ultimo_id', id);
+    } catch (_) {}
+  }
+
+  static Future<String> _ultimaGuardada() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('tocou_ultima_musica') ?? '';
+    } catch (_) {}
+    return '';
+  }
+
+  static Future<String> _idGuardado() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('tocou_ultimo_id') ?? '';
+    } catch (_) {}
+    return '';
+  }
+
+  /// Lê a ÚLTIMA música registrada no histórico (a mais recente).
+  /// Devolve (chave da música, identificador do registro).
+  static Future<(String, String)> _ultimaDoServidor() async {
+    try {
+      final r = await http
+          .get(Uri.parse('$base/tocou.json?orderBy="\$key"&limitToLast=1'))
+          .timeout(const Duration(seconds: 8));
+      if (r.statusCode == 200 && r.body != 'null') {
+        final d = jsonDecode(utf8.decode(r.bodyBytes));
+        if (d is Map && d.isNotEmpty) {
+          final id = d.keys.first.toString();
+          final item = d[id];
+          if (item is Map) {
+            return (CorrecoesService.cru((item['musica'] ?? '').toString()), id);
+          }
+        }
+      }
+    } catch (_) {}
+    return ('', '');
   }
 
   /// Acrescenta a capa a um registro já feito (a capa demora mais que o
