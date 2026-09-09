@@ -191,10 +191,22 @@
   .rolagem-tabela{width:100%;overflow-x:auto;padding-bottom:6px}
   /* Fonte um pouco menor e espacamento enxuto: assim TODAS as colunas
      cabem na largura da pagina, sem cortar a data no fim da linha. */
-  .rolagem-tabela table{width:100%;font-size:11.5px;table-layout:auto}
-  .rolagem-tabela th,.rolagem-tabela td{padding:6px 6px;white-space:nowrap;
+  /* Fonte compacta com FOLGA: sobra espaço para nomes de ouvinte e
+     títulos de música mais longos do que os atuais. */
+  .rolagem-tabela table{width:100%;font-size:10.8px;table-layout:auto}
+  .rolagem-tabela th,.rolagem-tabela td{padding:5px 5px;white-space:nowrap;
     overflow:visible;text-overflow:clip}
-  .rolagem-tabela th{font-size:11px;letter-spacing:.2px}
+  .rolagem-tabela th{font-size:10.2px;letter-spacing:.2px}
+  /* Nome do ouvinte, intérprete e música: se forem MUITO longos, o texto
+     é cortado com "..." em vez de empurrar a tabela para fora da tela.
+     Passando o mouse por cima, aparece o texto completo. */
+  .rolagem-tabela td.livre{
+    white-space:nowrap; max-width:170px;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  .rolagem-tabela td.livre:hover{
+    overflow:visible; position:relative; z-index:2;
+  }
   /* a ultima coluna nunca encosta na borda */
   .rolagem-tabela th:last-child,.rolagem-tabela td:last-child{padding-right:12px}
   /* colunas curtas ocupam so o necessario, sobrando espaco para as longas */
