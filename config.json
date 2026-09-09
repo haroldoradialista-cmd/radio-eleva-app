@@ -314,19 +314,6 @@
       "tipo": "imagem",
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1788917803849_SupermercadosMorais.jpg",
       "publicar_em": "2026-09-08T22:36"
-    },
-    {
-      "id": "c1788917906046",
-      "nome": "Campanha",
-      "nivel": "pais",
-      "estado": "",
-      "cidade": "",
-      "tamanho": "retrato",
-      "link": "",
-      "segundos_fechar": 5,
-      "frequencia": "sempre",
-      "tipo": "imagem",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1788917904538_SupermercadosMorais1.jpg"
     }
   ],
   "tv_video": ""
