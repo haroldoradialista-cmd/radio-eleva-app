@@ -282,6 +282,12 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
     if (CadastroService.whatsapp.isNotEmpty) {
       _whatsapp.text = CadastroService.whatsapp;
     }
+    // estado e cidade também vêm do cadastro
+    if (CadastroService.estado.isNotEmpty) {
+      _estado.text = CadastroService.estado;
+      _cidade.text = CadastroService.cidade;
+      _carregarCidadesDoEstado(CadastroService.estado);
+    }
   }
 
   /// Baixa as cidades do estado escolhido (lista oficial do IBGE)

@@ -4,7 +4,9 @@ import '../servicos/auth_service.dart';
 import '../servicos/cadastro_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
-import 'pedidos_page.dart' show MaiusculasFormatter, TelefoneFormatter;
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'pedidos_page.dart' show MaiusculasFormatter, TelefoneFormatter, ESTADOS_BR;
 
 /// CADASTRO DA PRIMEIRA ENTRADA
 ///
@@ -28,6 +30,10 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
   final _email = TextEditingController();
   final _codigo = TextEditingController();
   bool _emailDoGoogle = false;   // veio do login Google: já confirmado
+  final _estado = TextEditingController();
+  final _cidade = TextEditingController();
+  List<String> _cidadesDoEstado = [];
+  bool _carregandoCidades = false;
 
   bool _salvando = false;
   bool _pedindoCodigo = false; // etapa de digitar o código
@@ -55,7 +61,10 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
         _emailDoGoogle = true;
       }
     }
-    for (final c in [_nome, _ddd, _numero, _email]) {
+    _estado.text = CadastroService.estado;
+    _cidade.text = CadastroService.cidade;
+    if (_estado.text.isNotEmpty) _carregarCidades(_estado.text);
+    for (final c in [_nome, _ddd, _numero, _email, _estado, _cidade]) {
       c.addListener(() => setState(() {}));
     }
   }
@@ -66,6 +75,8 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
     _ddd.dispose();
     _numero.dispose();
     _email.dispose();
+    _estado.dispose();
+    _cidade.dispose();
     _codigo.dispose();
     super.dispose();
   }
@@ -79,6 +90,8 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
     if (e3.isNotEmpty) return e3;
     final e4 = CadastroService.erroEmail(_email.text);
     if (e4.isNotEmpty) return e4;
+    if (_estado.text.trim().length != 2) return 'Escolha o seu ESTADO';
+    if (_cidade.text.trim().length < 2) return 'Escolha a sua CIDADE';
     return '';
   }
 
@@ -132,6 +145,8 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
       email: _email.text.trim().toLowerCase(),
       nomeCompleto: _nome.text,
       zap: _telefone,
+      uf: _estado.text,
+      municipio: _cidade.text,
       emailVerificado: _emailDoGoogle,
     );
     // E-MAIL DE BOAS-VINDAS: enviado em segundo plano, sem travar nada.
@@ -158,6 +173,8 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
       email: _email.text.trim().toLowerCase(),
       nomeCompleto: _nome.text,
       zap: _telefone,
+      uf: _estado.text,
+      municipio: _cidade.text,
       emailVerificado: _emailDoGoogle,
     );
     await CadastroService.marcarValidado(u.uid);
@@ -249,6 +266,8 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
             child: Text('✅ E-mail confirmado pelo Google',
                 style: TextStyle(fontSize: 11.5, color: CoresEleva.verde)),
           ),
+        _listaEstados(),
+        _escolherCidade(),
 
         if (_aviso.isNotEmpty || (!_completo && _falta.isNotEmpty))
           _faixaAviso(_aviso.isNotEmpty ? _aviso : _falta),
@@ -371,6 +390,221 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
               style: TextStyle(color: CoresEleva.brancoSuave, fontSize: 13)),
         ),
       ],
+    );
+  }
+
+  /// Baixa as cidades do estado escolhido (lista oficial do IBGE)
+  Future<void> _carregarCidades(String uf) async {
+    if (uf.isEmpty) return;
+    setState(() {
+      _carregandoCidades = true;
+      _cidadesDoEstado = [];
+    });
+    try {
+      final r = await http
+          .get(Uri.parse(
+              'https://servicodados.ibge.gov.br/api/v1/localidades/estados/$uf/municipios'))
+          .timeout(const Duration(seconds: 12));
+      if (r.statusCode == 200) {
+        final lista = jsonDecode(utf8.decode(r.bodyBytes)) as List;
+        final nomes = lista
+            .map((m) => (m['nome'] ?? '').toString().toUpperCase())
+            .where((n) => n.isNotEmpty)
+            .toList()
+          ..sort();
+        if (mounted) setState(() => _cidadesDoEstado = nomes);
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _carregandoCidades = false);
+  }
+
+  String _semAcento(String s) {
+    const com = 'áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ';
+    const sem = 'aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC';
+    var r = s;
+    for (int i = 0; i < com.length; i++) {
+      r = r.replaceAll(com[i], sem[i]);
+    }
+    return r;
+  }
+
+  /// ESTADO: lista com os 27 estados
+  Widget _listaEstados() {
+    final uf = _estado.text.trim().toUpperCase();
+    final ok = uf.length == 2;
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: ok ? uf : null,
+        isExpanded: true,
+        dropdownColor: CoresEleva.azulMedio,
+        style: TextStyle(color: CoresEleva.branco, fontSize: 14.5),
+        decoration: InputDecoration(
+          labelText: 'ESTADO *',
+          labelStyle: TextStyle(
+              color: ok ? CoresEleva.verde : CoresEleva.dourado,
+              fontSize: 12.5,
+              fontWeight: FontWeight.bold),
+          prefixIcon: Icon(Icons.map_rounded,
+              color: ok ? CoresEleva.verde : CoresEleva.textoFraco, size: 20),
+          filled: true,
+          fillColor: CoresEleva.azulProfundo,
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide:
+                BorderSide(color: ok ? CoresEleva.verde : Colors.white24),
+          ),
+        ),
+        hint: Text('Escolha o seu estado',
+            style: TextStyle(color: CoresEleva.textoFraco, fontSize: 13.5)),
+        items: ESTADOS_BR
+            .map((e) => DropdownMenuItem(
+                value: e[0],
+                child:
+                    Text('${e[0]} — ${e[1]}', style: TextStyle(fontSize: 14))))
+            .toList(),
+        onChanged: (v) {
+          if (v == null) return;
+          setState(() {
+            _estado.text = v;
+            _cidade.clear();
+          });
+          _carregarCidades(v);
+        },
+      ),
+    );
+  }
+
+  /// CIDADE: toca e escolhe numa lista com busca
+  Widget _escolherCidade() {
+    final temEstado = _estado.text.trim().isNotEmpty;
+    final escolhida = _cidade.text.trim();
+    final ok = escolhida.isNotEmpty;
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: temEstado && !_carregandoCidades ? _abrirListaCidades : null,
+        borderRadius: BorderRadius.circular(14),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: 'CIDADE *',
+            labelStyle: TextStyle(
+                color: ok ? CoresEleva.verde : CoresEleva.dourado,
+                fontSize: 12.5,
+                fontWeight: FontWeight.bold),
+            prefixIcon: Icon(Icons.location_city_rounded,
+                color: ok ? CoresEleva.verde : CoresEleva.textoFraco,
+                size: 20),
+            suffixIcon: Icon(
+                ok ? Icons.check_circle_rounded : Icons.arrow_drop_down,
+                color: ok ? CoresEleva.verde : CoresEleva.textoFraco),
+            filled: true,
+            fillColor: CoresEleva.azulProfundo,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:
+                  BorderSide(color: ok ? CoresEleva.verde : Colors.white24),
+            ),
+          ),
+          child: Text(
+            ok
+                ? escolhida
+                : (!temEstado
+                    ? 'Escolha o estado primeiro'
+                    : (_carregandoCidades
+                        ? 'Carregando as cidades...'
+                        : 'Escolha sua cidade')),
+            style: TextStyle(
+                fontSize: 14.5,
+                color: ok ? CoresEleva.branco : CoresEleva.textoFraco),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _abrirListaCidades() {
+    final busca = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: CoresEleva.azulProfundo,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, refazer) {
+        final termo = _semAcento(busca.text.trim().toLowerCase());
+        final lista = termo.isEmpty
+            ? _cidadesDoEstado
+            : _cidadesDoEstado
+                .where((c) => _semAcento(c.toLowerCase()).contains(termo))
+                .toList();
+        return Padding(
+          padding: EdgeInsets.only(
+              left: 14,
+              right: 14,
+              top: 12,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Escolha sua cidade — ${_estado.text}',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: CoresEleva.dourado)),
+              SizedBox(height: 10),
+              TextField(
+                controller: busca,
+                autofocus: true,
+                textCapitalization: TextCapitalization.characters,
+                onChanged: (_) => refazer(() {}),
+                style: TextStyle(color: CoresEleva.branco),
+                decoration: InputDecoration(
+                  hintText: 'Digite as primeiras letras...',
+                  hintStyle: TextStyle(color: CoresEleva.textoFraco),
+                  prefixIcon:
+                      Icon(Icons.search_rounded, color: CoresEleva.dourado),
+                  filled: true,
+                  fillColor: CoresEleva.azulMedio,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none),
+                ),
+              ),
+              SizedBox(height: 8),
+              SizedBox(
+                height: MediaQuery.of(ctx).size.height * 0.45,
+                child: lista.isEmpty
+                    ? Center(
+                        child: Text('Nenhuma cidade encontrada',
+                            style: TextStyle(color: CoresEleva.textoFraco)))
+                    : ListView.builder(
+                        itemCount: lista.length,
+                        itemBuilder: (_, i) => ListTile(
+                          dense: true,
+                          leading: Icon(Icons.place_rounded,
+                              color: CoresEleva.dourado, size: 18),
+                          title: Text(lista[i],
+                              style: TextStyle(
+                                  fontSize: 14, color: CoresEleva.branco)),
+                          onTap: () {
+                            setState(() => _cidade.text = lista[i]);
+                            Navigator.pop(ctx);
+                          },
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 

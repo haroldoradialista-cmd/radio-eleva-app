@@ -17,6 +17,8 @@ class CadastroService {
   // ---------- dados guardados no aparelho ----------
   static String nome = '';
   static String whatsapp = '';
+  static String estado = '';
+  static String cidade = '';
   static bool validado = false;
 
   /// Carrega o cadastro do ouvinte (do aparelho e do banco)
@@ -25,6 +27,8 @@ class CadastroService {
       final prefs = await SharedPreferences.getInstance();
       nome = prefs.getString('cad_nome_$uid') ?? '';
       whatsapp = prefs.getString('cad_zap_$uid') ?? '';
+      estado = prefs.getString('cad_uf_$uid') ?? '';
+      cidade = prefs.getString('cad_cidade_$uid') ?? '';
       validado = prefs.getBool('cad_validado_$uid') == true;
     } catch (_) {}
 
@@ -39,6 +43,8 @@ class CadastroService {
         if (d is Map) {
           nome = (d['nome'] ?? nome).toString();
           whatsapp = (d['whatsapp'] ?? whatsapp).toString();
+          estado = (d['estado'] ?? estado).toString();
+          cidade = (d['cidade'] ?? cidade).toString();
           validado = d['validado'] == true || validado;
           await _guardarNoAparelho(uid);
         }
@@ -51,13 +57,18 @@ class CadastroService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('cad_nome_$uid', nome);
       await prefs.setString('cad_zap_$uid', whatsapp);
+      await prefs.setString('cad_uf_$uid', estado);
+      await prefs.setString('cad_cidade_$uid', cidade);
       await prefs.setBool('cad_validado_$uid', validado);
     } catch (_) {}
   }
 
   /// Diz se o ouvinte já completou o cadastro
   static bool get completo =>
-      nome.trim().length >= 5 && _soNumeros(whatsapp).length >= 10;
+      nome.trim().length >= 5 &&
+      _soNumeros(whatsapp).length >= 10 &&
+      estado.trim().length == 2 &&
+      cidade.trim().length >= 2;
 
   /// Salva o cadastro (aparelho + banco)
   static Future<bool> salvar({
@@ -65,10 +76,14 @@ class CadastroService {
     required String email,
     required String nomeCompleto,
     required String zap,
+    String uf = '',
+    String municipio = '',
     bool emailVerificado = false,
   }) async {
     nome = nomeCompleto.trim().toUpperCase();
     whatsapp = zap.trim();
+    if (uf.isNotEmpty) estado = uf.trim().toUpperCase();
+    if (municipio.isNotEmpty) cidade = municipio.trim().toUpperCase();
     await _guardarNoAparelho(uid);
     if (base.isEmpty || uid.isEmpty) return true;
     try {
@@ -78,6 +93,8 @@ class CadastroService {
             body: jsonEncode({
               'nome': nome,
               'whatsapp': whatsapp,
+              'estado': estado,
+              'cidade': cidade,
               'email': email,
               'email_verificado': emailVerificado,
               'validado': validado,

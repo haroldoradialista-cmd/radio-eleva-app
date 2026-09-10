@@ -45,6 +45,11 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
     if (CadastroService.whatsapp.isNotEmpty) {
       _zap.text = CadastroService.whatsapp;
     }
+    if (CadastroService.estado.isNotEmpty) {
+      _estado.text = CadastroService.estado;
+      _cidade.text = CadastroService.cidade;
+      _carregarCidadesDoEstado(CadastroService.estado);
+    }
     for (final c in [_nome, _zap, _insta, _cidade, _estado, _nasc]) {
       c.addListener(() => setState(() {}));
     }

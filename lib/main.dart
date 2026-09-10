@@ -85,6 +85,9 @@ Future<void> main() async {
     // conferir no painel — sem depender de o ouvinte reclamar.
     AuditoriaService.base = LetraService.baseRtdb;
     HistoricoService.base = LetraService.baseRtdb;
+    // reabre a curtida guardada: se a mesma música ainda estiver no ar,
+    // o coração continua marcado mesmo depois de fechar o app
+    HistoricoService.carregarCurtidaGuardada();
     CadastroService.base = LetraService.baseRtdb;
     AuditoriaService.novaSessao();
     // MANTEM O OUVINTE CONECTADO: reabre a sessao guardada no aparelho,
