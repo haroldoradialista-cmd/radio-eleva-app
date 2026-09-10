@@ -30,6 +30,51 @@ class AuthService {
   final ValueNotifier<Usuario?> usuario = ValueNotifier(null);
   static const _base = 'https://identitytoolkit.googleapis.com/v1';
 
+  /// E-MAIL DE BOAS-VINDAS (com confirmação embutida)
+  ///
+  /// O Firebase envia este e-mail de graça. O TEXTO é personalizado no
+  /// console do Firebase (Authentication → Templates), então ele pode ser
+  /// uma mensagem de boas-vindas da rádio, com o link de confirmação
+  /// dentro. O ouvinte NÃO fica travado esperando: ele entra na hora.
+  /// Se clicar no link, o e-mail passa a constar como confirmado.
+  Future<bool> enviarBoasVindas() async {
+    final u = usuario.value;
+    if (u == null || u.idToken.isEmpty) return false;
+    try {
+      final r = await http.post(
+        Uri.parse('$_base/accounts:sendOobCode?key=$kFirebaseApiKey'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'requestType': 'VERIFY_EMAIL',
+          'idToken': u.idToken,
+        }),
+      ).timeout(const Duration(seconds: 15));
+      return r.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
+
+  /// Diz se o e-mail da conta já foi confirmado
+  Future<bool> emailConfirmado() async {
+    final u = usuario.value;
+    if (u == null || u.idToken.isEmpty) return false;
+    try {
+      final r = await http.post(
+        Uri.parse('$_base/accounts:lookup?key=$kFirebaseApiKey'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': u.idToken}),
+      ).timeout(const Duration(seconds: 12));
+      if (r.statusCode == 200) {
+        final d = jsonDecode(r.body);
+        final lista = d['users'];
+        if (lista is List && lista.isNotEmpty) {
+          return lista[0]['emailVerified'] == true;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
   // ---------- SESSÃO ----------
   Future<void> restaurarSessao() async {
     if (usuario.value != null) return;

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../servicos/auth_service.dart';
+import '../servicos/cadastro_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
 import '../widgets/anuncio_banner.dart';
@@ -264,6 +265,17 @@ class PedidoMusicaPage extends StatefulWidget {
 }
 
 class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Traz o nome e o WhatsApp do cadastro: o ouvinte não digita de novo.
+    if (CadastroService.nome.isNotEmpty) _nome.text = CadastroService.nome;
+    if (CadastroService.whatsapp.isNotEmpty) {
+      _whatsapp.text = CadastroService.whatsapp;
+    }
+    _cidade.addListener(_filtrarCidades);
+  }
+
   final _nome = TextEditingController();
   final _musica = TextEditingController();
   final _interprete = TextEditingController();

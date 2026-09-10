@@ -17,6 +17,11 @@ class AppConfig {
   final int chatSuspensaoMinutos;
   final int chatBanirApos; // banir após X suspensões (0 = nunca)
   final String tvVideo;    // link ou ID do vídeo/live do YouTube
+  // ---- validação do cadastro do ouvinte por código (SMS/WhatsApp) ----
+  final bool exigirCodigo;         // liga/desliga pelo painel
+  final String envioCodigoUrl;     // endereço do serviço de envio
+  final String envioCodigoChave;   // chave/token do serviço
+  final String envioCodigoFormato; // corpo do envio (vazio = método GET)
   final List<String> chatPalavras;
   final String linkCompartilhar;
   final bool anunciosAtivos;
@@ -41,6 +46,10 @@ class AppConfig {
     required this.chatSuspensaoMinutos,
     required this.chatBanirApos,
     required this.tvVideo,
+    this.exigirCodigo = false,
+    this.envioCodigoUrl = '',
+    this.envioCodigoChave = '',
+    this.envioCodigoFormato = '',
     required this.chatPalavras,
     required this.linkCompartilhar,
     required this.anunciosAtivos,
@@ -66,6 +75,10 @@ class AppConfig {
         chatSuspensaoMinutos: int.tryParse((j['chat_suspensao_minutos'] ?? '0').toString()) ?? 0,
         chatBanirApos: int.tryParse((j['chat_banir_apos'] ?? '0').toString()) ?? 0,
         tvVideo: (j['tv_video'] ?? '').toString(),
+        exigirCodigo: (j['exigir_codigo'] ?? 'nao').toString() == 'sim',
+        envioCodigoUrl: (j['envio_codigo_url'] ?? '').toString(),
+        envioCodigoChave: (j['envio_codigo_chave'] ?? '').toString(),
+        envioCodigoFormato: (j['envio_codigo_formato'] ?? '').toString(),
         chatPalavras: List<String>.from(j['chat_palavras'] ?? []),
         linkCompartilhar: j['link_compartilhar'] ?? '',
         anunciosAtivos: (j['anuncios'] ?? 'sim').toString() != 'nao',

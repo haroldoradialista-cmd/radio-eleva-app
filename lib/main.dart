@@ -13,6 +13,8 @@ import 'paginas/menu_page.dart';
 import 'widgets/campanha_popup.dart';
 import 'widgets/login_widget.dart';
 import 'servicos/auth_service.dart';
+import 'paginas/cadastro_inicial_page.dart';
+import 'servicos/cadastro_service.dart';
 import 'servicos/config_service.dart';
 import 'servicos/correcoes_service.dart';
 import 'servicos/auditoria_service.dart';
@@ -83,6 +85,7 @@ Future<void> main() async {
     // conferir no painel — sem depender de o ouvinte reclamar.
     AuditoriaService.base = LetraService.baseRtdb;
     HistoricoService.base = LetraService.baseRtdb;
+    CadastroService.base = LetraService.baseRtdb;
     AuditoriaService.novaSessao();
     // MANTEM O OUVINTE CONECTADO: reabre a sessao guardada no aparelho,
     // para ele nao precisar fazer login toda vez que abre o app.
@@ -473,7 +476,11 @@ class _ComLogin extends StatelessWidget {
     return ValueListenableBuilder<Usuario?>(
       valueListenable: AuthService.instancia.usuario,
       builder: (context, usuario, _) {
-        if (usuario != null) return child;
+        if (usuario != null) {
+          // Já entrou: falta completar o cadastro (nome e WhatsApp)?
+          // Isto acontece UMA VEZ; depois os dados vêm preenchidos sozinhos.
+          return _ComCadastro(child: child);
+        }
         return Container(
           decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
           child: SafeArea(
@@ -508,6 +515,60 @@ class _ComLogin extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Exige o cadastro completo (nome e WhatsApp) na primeira entrada.
+/// Depois disso, o ouvinte nunca mais digita esses dados.
+class _ComCadastro extends StatefulWidget {
+  final Widget child;
+  const _ComCadastro({required this.child});
+
+  @override
+  State<_ComCadastro> createState() => _ComCadastroState();
+}
+
+class _ComCadastroState extends State<_ComCadastro> {
+  bool _conferindo = true;
+  bool _precisa = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _conferir();
+  }
+
+  Future<void> _conferir() async {
+    final u = AuthService.instancia.usuario.value;
+    if (u == null) {
+      if (mounted) setState(() { _conferindo = false; _precisa = false; });
+      return;
+    }
+    await CadastroService.carregar(u.uid);
+    if (!mounted) return;
+    setState(() {
+      _conferindo = false;
+      _precisa = !CadastroService.completo;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_conferindo) {
+      return Container(
+        decoration: BoxDecoration(gradient: CoresEleva.fundoApp),
+        child: Center(
+            child: CircularProgressIndicator(color: CoresEleva.dourado)),
+      );
+    }
+    if (!_precisa) return widget.child;
+    return ValueListenableBuilder<AppConfig>(
+      valueListenable: ConfigService.instancia.config,
+      builder: (context, cfg, _) => CadastroInicialPage(
+        cfg: cfg,
+        aoConcluir: () => setState(() => _precisa = false),
+      ),
     );
   }
 }

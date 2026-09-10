@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../servicos/auth_service.dart';
+import '../servicos/cadastro_service.dart';
 import '../servicos/config_service.dart';
 import '../tema.dart';
 import '../widgets/midia_eleva.dart';
@@ -39,6 +40,11 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
   @override
   void initState() {
     super.initState();
+    // Nome e WhatsApp já vêm do cadastro que o ouvinte fez ao entrar.
+    if (CadastroService.nome.isNotEmpty) _nome.text = CadastroService.nome;
+    if (CadastroService.whatsapp.isNotEmpty) {
+      _zap.text = CadastroService.whatsapp;
+    }
     for (final c in [_nome, _zap, _insta, _cidade, _estado, _nasc]) {
       c.addListener(() => setState(() {}));
     }

@@ -765,6 +765,28 @@
     <!-- TEXTOS/REDES -->
     <section id="sec-textos" class="oculto">
       <div class="cartao">
+        <h2>📲 Cadastro do ouvinte</h2>
+        <p class="rotulo-secao">Ao entrar pela primeira vez, o ouvinte informa <b>nome completo e WhatsApp</b>. Depois disso, esses dados vêm preenchidos sozinhos nas promoções, pedidos e anúncios.</p>
+        <div class="grade2">
+          <div><label>Exigir código de confirmação?</label>
+            <select id="cfExigirCodigo">
+              <option value="nao">Não (só nome e WhatsApp)</option>
+              <option value="sim">Sim (envia código para o número)</option>
+            </select>
+          </div>
+        </div>
+        <p class="rotulo-secao" style="margin-top:10px">⚠️ O envio de código exige um serviço contratado (SMS ou WhatsApp). Preencha abaixo os dados que o fornecedor informar. Enquanto estiver vazio, o cadastro é concluído sem código.</p>
+        <label>Endereço do serviço de envio</label>
+        <input id="cfEnvioUrl" placeholder="https://api.fornecedor.com.br/enviar">
+        <label>Chave de acesso (token)</label>
+        <input id="cfEnvioChave" type="password" placeholder="a chave que o fornecedor forneceu">
+        <label>Formato do envio (deixe vazio se for por link)</label>
+        <textarea id="cfEnvioFormato" placeholder='Ex.: {"numero":"{numero55}","mensagem":"{mensagem}"}'></textarea>
+        <p class="rotulo-secao">Use as marcações: <b>{numero}</b> (só números), <b>{numero55}</b> (com 55 na frente), <b>{mensagem}</b> (o texto pronto), <b>{codigo}</b> (só o código) e <b>{chave}</b>.</p>
+        <button class="botao" onclick="salvarCadastroOuvinte()">💾 Salvar</button>
+      </div>
+
+      <div class="cartao">
         <h2>📐 Medidas das imagens</h2>
         <p class="rotulo-secao">Toda imagem enviada é ajustada automaticamente para estas medidas (recortada pelo centro, sem deformar). Se alguma ficar cortada demais no app, mude aqui e teste — não precisa mexer no código.</p>
         <div id="listaMedidas"></div>
@@ -1635,6 +1657,26 @@ function desenharMedidas(){
       <span class="rotulo-secao" style="margin:0;font-size:11.5px">proporção ${prop}:1</span>
     </div>`;
   }).join('');
+}
+
+async function salvarCadastroOuvinte(){
+  config.exigir_codigo = document.getElementById('cfExigirCodigo').value;
+  config.envio_codigo_url = (document.getElementById('cfEnvioUrl').value||'').trim();
+  config.envio_codigo_chave = (document.getElementById('cfEnvioChave').value||'').trim();
+  config.envio_codigo_formato = (document.getElementById('cfEnvioFormato').value||'').trim();
+  try{
+    await salvarConfig('Painel: cadastro do ouvinte');
+    avisar('Configuração salva! ✅');
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+function preencherCadastroOuvinte(){
+  const p=(id,v)=>{ const e=document.getElementById(id); if(e) e.value = v||''; };
+  const s=document.getElementById('cfExigirCodigo');
+  if(s) s.value = config.exigir_codigo || 'nao';
+  p('cfEnvioUrl', config.envio_codigo_url);
+  p('cfEnvioChave', config.envio_codigo_chave);
+  p('cfEnvioFormato', config.envio_codigo_formato);
 }
 
 async function salvarMedidas(){
@@ -3928,7 +3970,7 @@ async function restaurarSessao(){
         if(abas.includes('enquetes'))    desenharEnquetes();
         if(abas.includes('promos'))      desenharPromos();
         if(abas.includes('pedidosm'))    carregarPedidosM();
-        if(abas.includes('textos'))      preencherTextos(); desenharMedidas();
+        if(abas.includes('textos'))      preencherTextos(); desenharMedidas(); preencherCadastroOuvinte();
         if(abas.includes('chat'))        carregarChat();
         if(abas.includes('votos'))       carregarVotos();
         if(abas.includes('stats'))       iniciarOuvintesAgora();
