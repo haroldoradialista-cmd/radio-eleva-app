@@ -356,6 +356,7 @@
     <button class="aba" data-aba="votos" onclick="trocarAba(this)">👍 Votos</button>
     <button class="aba" data-aba="letras" onclick="trocarAba(this)">🎤 Letras/Capas</button>
     <button class="aba admin-only" data-aba="usuarios" onclick="trocarAba(this)">👥 Usuários</button>
+    <button class="aba admin-only" data-aba="ouvintes" onclick="trocarAba(this)">👥 Ouvintes</button>
     <button class="aba admin-only" data-aba="financeiro" onclick="trocarAba(this)">💰 Financeiro</button>
     <button class="aba admin-only" data-aba="seguranca" onclick="trocarAba(this)">🔒 Backup</button>
   </div>
@@ -901,6 +902,38 @@
     </section>
 
     <!-- VOTOS -->
+    <section id="sec-ouvintes" class="oculto">
+      <div class="cartao">
+        <h2>👥 Ouvintes cadastrados</h2>
+        <p class="rotulo-secao">Quem entrou no app e completou o cadastro. Esta lista é <b>protegida</b>: para vê-la é preciso entrar com o e-mail e senha de administrador do Firebase (o mesmo da moderação do chat).</p>
+
+        <div id="ouvLogin">
+          <div class="grade2">
+            <div><label>E-mail</label><input id="ouvEmail" type="email" placeholder="seu@email.com"></div>
+            <div><label>Senha</label><input id="ouvSenha" type="password" placeholder="Sua senha"
+                   onkeydown="if(event.key==='Enter')entrarOuvintes()"></div>
+          </div>
+          <button class="botao" onclick="entrarOuvintes()">🔓 Acessar a lista</button>
+          <p id="ouvErro" style="color:#ff6b6b;font-size:13px;margin-top:8px;display:none"></p>
+        </div>
+
+        <div id="ouvConteudo" style="display:none">
+          <div id="ouvResumo" style="margin-bottom:12px"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <input id="ouvBusca" placeholder="🔎 Buscar por nome, cidade ou WhatsApp..." oninput="desenharOuvintes()" style="max-width:300px">
+            <select id="ouvFiltro" onchange="desenharOuvintes()" style="max-width:190px">
+              <option value="todos">Todos</option>
+              <option value="confirmados">E-mail confirmado</option>
+              <option value="pendentes">E-mail não confirmado</option>
+            </select>
+            <button class="botao mini neutro" onclick="carregarOuvintes()">🔄 Atualizar</button>
+            <button class="botao mini" style="background:#1a7a4b" onclick="exportarOuvintes()">📊 Baixar Excel</button>
+          </div>
+          <div id="ouvLista"></div>
+        </div>
+      </div>
+    </section>
+
     <section id="sec-financeiro" class="oculto">
       <div class="cartao">
         <h2>💰 Financeiro</h2>
@@ -1796,12 +1829,22 @@ function trocarAba(botao){
   fecharMenu(); // no celular, fecha a gaveta ao escolher a aba
   document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
   botao.classList.add('ativa');
-  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras','seguranca','financeiro'].forEach(s=>
+  ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras','seguranca','financeiro','ouvintes'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
   try{ sessionStorage.setItem('painel_aba', botao.dataset.aba); }catch(_){}
   if(botao.dataset.aba==='usuarios'){ carregarUsuarios(); migrarSenhasParaCofre(); }
   if(botao.dataset.aba==='letras') carregarReportes();
   if(botao.dataset.aba==='financeiro') finCarregarTudo();
+  if(botao.dataset.aba==='ouvintes'){
+    // se já entrou nesta sessão, vai direto para a lista
+    const guardado = sessionStorage.getItem('ouvToken');
+    if(guardado){
+      ouvToken = guardado;
+      document.getElementById('ouvLogin').style.display='none';
+      document.getElementById('ouvConteudo').style.display='';
+      carregarOuvintes();
+    }
+  }
 }
 
 // ================== BANNERS ==================
@@ -3168,6 +3211,154 @@ async function salvarTextos(){
   ];
   try{ await salvarConfig('Painel: dados da rádio'); avisar('Alterações salvas! ✅'); }
   catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+// ================== OUVINTES CADASTRADOS ==================
+/// A lista de ouvintes é PROTEGIDA: só pode ser lida por quem entra com
+/// o e-mail e senha de administrador. Assim, nem quem descobrir o
+/// endereço do banco consegue baixar a base de contatos da rádio.
+let ouvToken = '';
+let ouvLista = [];
+let ouvPagina = 1;
+
+async function entrarOuvintes(){
+  const email = (document.getElementById('ouvEmail').value||'').trim();
+  const senha = document.getElementById('ouvSenha').value || '';
+  const erro = document.getElementById('ouvErro');
+  erro.style.display = 'none';
+  if(!email || !senha){
+    erro.textContent = 'Preencha o e-mail e a senha.'; erro.style.display='block'; return;
+  }
+  try{
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREKEY}`,{
+      method:'POST',
+      body: JSON.stringify({ email, password: senha, returnSecureToken: true })
+    });
+    const d = await r.json();
+    if(!r.ok || !d.idToken){
+      erro.textContent = 'E-mail ou senha incorretos.'; erro.style.display='block'; return;
+    }
+    ouvToken = d.idToken;
+    // aproveita para a moderação do chat também
+    if(!modToken){ modToken = d.idToken; modUid = d.localId; }
+    sessionStorage.setItem('ouvToken', ouvToken);
+    document.getElementById('ouvLogin').style.display = 'none';
+    document.getElementById('ouvConteudo').style.display = '';
+    carregarOuvintes();
+  }catch(e){
+    erro.textContent = 'Falha de conexão. Tente de novo.'; erro.style.display='block';
+  }
+}
+
+async function carregarOuvintes(){
+  const el = document.getElementById('ouvLista');
+  if(!el) return;
+  el.innerHTML = '<p class="rotulo-secao">Carregando...</p>';
+  try{
+    const r = await fetch(`${RTDB}/ouvintes.json?auth=${ouvToken}&t=${Date.now()}`);
+    const d = await r.json();
+    if(!r.ok || (d && d.error)){
+      el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">Não foi possível ler a lista. Entre de novo com o e-mail e senha.</p>';
+      document.getElementById('ouvLogin').style.display = '';
+      document.getElementById('ouvConteudo').style.display = 'none';
+      return;
+    }
+    ouvLista = Object.entries(d||{}).map(([uid, x])=>({
+      uid,
+      nome: (x&&x.nome)||'',
+      whatsapp: (x&&x.whatsapp)||'',
+      email: (x&&x.email)||'',
+      cidade: (x&&x.cidade)||'',
+      estado: (x&&x.estado)||'',
+      confirmado: !!(x&&x.email_verificado),
+      quando: (x&&x.quando)||''
+    })).sort((a,b)=> (b.quando||'').localeCompare(a.quando||''));
+    ouvPagina = 1;
+    desenharOuvintes();
+  }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+
+function ouvFiltrada(){
+  const busca = (document.getElementById('ouvBusca')?.value||'').toLowerCase();
+  const filtro = document.getElementById('ouvFiltro')?.value || 'todos';
+  return ouvLista.filter(o=>{
+    if(filtro==='confirmados' && !o.confirmado) return false;
+    if(filtro==='pendentes' && o.confirmado) return false;
+    if(!busca) return true;
+    return (o.nome+' '+o.cidade+' '+o.whatsapp+' '+o.email).toLowerCase().includes(busca);
+  });
+}
+
+function desenharOuvintes(){
+  const el = document.getElementById('ouvLista');
+  const res = document.getElementById('ouvResumo');
+  if(!el) return;
+
+  // resumo: total, confirmados e as cidades que mais aparecem
+  const cidades = {};
+  ouvLista.forEach(o=>{
+    const c = (o.cidade||'').trim();
+    if(c) cidades[c] = (cidades[c]||0)+1;
+  });
+  const top = Object.entries(cidades).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const confirmados = ouvLista.filter(o=>o.confirmado).length;
+  if(res) res.innerHTML = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${finCartao ? finCartao('👥 Cadastrados', ouvLista.length, '#1E9BFF') : ''}
+      ${finCartao ? finCartao('✅ E-mail confirmado', confirmados, '#35C733') : ''}
+      ${finCartao ? finCartao('📍 Cidades', Object.keys(cidades).length, '#E6B93F') : ''}
+    </div>
+    ${top.length ? `<p class="rotulo-secao" style="margin-top:8px">Onde estão: ${top.map(([c,n])=>`<b>${c}</b> (${n})`).join(' • ')}</p>` : ''}`;
+
+  const lista = ouvFiltrada();
+  if(!lista.length){
+    el.innerHTML = '<p class="rotulo-secao">Nenhum ouvinte encontrado.</p>';
+    return;
+  }
+  const POR = 20;
+  const paginas = Math.ceil(lista.length/POR);
+  if(ouvPagina > paginas) ouvPagina = paginas;
+  const ini = (ouvPagina-1)*POR;
+  const fatia = lista.slice(ini, ini+POR);
+
+  el.innerHTML =
+    `<p class="rotulo-secao">${lista.length} ouvinte(s) • mostrando ${ini+1}–${Math.min(ini+POR,lista.length)}</p>` +
+    `<div class="rolagem-tabela"><table>
+      <tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>E-mail</th><th>Cidade</th><th>UF</th><th>Cadastro</th></tr>` +
+    fatia.map((o,i)=>`<tr>
+      <td>${ini+i+1}</td>
+      <td class="livre">${(o.nome||'').replace(/</g,'&lt;')}</td>
+      <td>${o.whatsapp||'-'}</td>
+      <td class="livre">${(o.email||'-').replace(/</g,'&lt;')} ${o.confirmado?'<span style="color:#35C733">✓</span>':''}</td>
+      <td class="livre">${o.cidade||'-'}</td>
+      <td>${o.estado||'-'}</td>
+      <td>${o.quando?dataCurta(o.quando):'-'}</td>
+    </tr>`).join('') + `</table></div>` +
+    (paginas>1 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center">
+      <span class="rotulo-secao" style="margin:0">Página:</span>` +
+      Array.from({length:paginas},(_,i)=>i+1).map(i=>
+        `<button class="botao mini" onclick="ouvPagina=${i};desenharOuvintes()"
+         style="min-width:34px;${i===ouvPagina?'background:var(--verde2);border:1px solid var(--ouro)':'background:#2a2560'}">${i}</button>`
+      ).join('') + `</div>` : '');
+}
+
+/// Baixa a lista em planilha (para usar fora do painel)
+function exportarOuvintes(){
+  const lista = ouvFiltrada();
+  if(!lista.length){ avisar('Nada para exportar.', true); return; }
+  const linhas = [['Nome','WhatsApp','E-mail','E-mail confirmado','Cidade','Estado','Cadastro']];
+  lista.forEach(o=>linhas.push([
+    o.nome, o.whatsapp, o.email, o.confirmado?'Sim':'Não',
+    o.cidade, o.estado, o.quando?dataBR(o.quando):''
+  ]));
+  const csv = linhas.map(l=>l.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ouvintes_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  avisar('Planilha baixada! ✅');
 }
 
 // ================== CHAT (moderação) ==================
