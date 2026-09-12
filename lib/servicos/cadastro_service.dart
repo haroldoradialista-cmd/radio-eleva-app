@@ -19,6 +19,7 @@ class CadastroService {
   static String whatsapp = '';
   static String estado = '';
   static String cidade = '';
+  static String nascimento = '';
   static bool validado = false;
 
   /// Carrega o cadastro do ouvinte (do aparelho e do banco)
@@ -29,6 +30,7 @@ class CadastroService {
       whatsapp = prefs.getString('cad_zap_$uid') ?? '';
       estado = prefs.getString('cad_uf_$uid') ?? '';
       cidade = prefs.getString('cad_cidade_$uid') ?? '';
+      nascimento = prefs.getString('cad_nasc_$uid') ?? '';
       validado = prefs.getBool('cad_validado_$uid') == true;
     } catch (_) {}
 
@@ -45,6 +47,7 @@ class CadastroService {
           whatsapp = (d['whatsapp'] ?? whatsapp).toString();
           estado = (d['estado'] ?? estado).toString();
           cidade = (d['cidade'] ?? cidade).toString();
+          nascimento = (d['nascimento'] ?? nascimento).toString();
           validado = d['validado'] == true || validado;
           await _guardarNoAparelho(uid);
         }
@@ -59,6 +62,7 @@ class CadastroService {
       await prefs.setString('cad_zap_$uid', whatsapp);
       await prefs.setString('cad_uf_$uid', estado);
       await prefs.setString('cad_cidade_$uid', cidade);
+      await prefs.setString('cad_nasc_$uid', nascimento);
       await prefs.setBool('cad_validado_$uid', validado);
     } catch (_) {}
   }
@@ -68,7 +72,8 @@ class CadastroService {
       nome.trim().length >= 5 &&
       _soNumeros(whatsapp).length >= 10 &&
       estado.trim().length == 2 &&
-      cidade.trim().length >= 2;
+      cidade.trim().length >= 2 &&
+      nascimento.replaceAll(RegExp(r'\D'), '').length == 8;
 
   /// Salva o cadastro (aparelho + banco)
   static Future<bool> salvar({
@@ -78,12 +83,14 @@ class CadastroService {
     required String zap,
     String uf = '',
     String municipio = '',
+    String dataNascimento = '',
     bool emailVerificado = false,
   }) async {
     nome = nomeCompleto.trim().toUpperCase();
     whatsapp = zap.trim();
     if (uf.isNotEmpty) estado = uf.trim().toUpperCase();
     if (municipio.isNotEmpty) cidade = municipio.trim().toUpperCase();
+    if (dataNascimento.isNotEmpty) nascimento = dataNascimento.trim();
     await _guardarNoAparelho(uid);
     if (base.isEmpty || uid.isEmpty) return true;
     try {
@@ -95,6 +102,7 @@ class CadastroService {
               'whatsapp': whatsapp,
               'estado': estado,
               'cidade': cidade,
+              'nascimento': nascimento,
               'email': email,
               'email_verificado': emailVerificado,
               'validado': validado,
@@ -177,6 +185,40 @@ class CadastroService {
   }
 
   static String _soNumeros(String s) => s.replaceAll(RegExp(r'\D'), '');
+
+  /// Confere a data de nascimento (DD/MM/AAAA)
+  static String erroNascimento(String texto) {
+    final so = _soNumeros(texto);
+    if (so.length < 8) return 'Escreva sua DATA DE NASCIMENTO (DD/MM/AAAA)';
+    final dia = int.tryParse(so.substring(0, 2)) ?? 0;
+    final mes = int.tryParse(so.substring(2, 4)) ?? 0;
+    final ano = int.tryParse(so.substring(4, 8)) ?? 0;
+    if (mes < 1 || mes > 12) return '❌ MÊS INCORRETO — vai de 01 a 12';
+    if (dia < 1 || dia > 31) return '❌ DIA INCORRETO — vai de 01 a 31';
+    final agora = DateTime.now();
+    if (ano < agora.year - 110 || ano > agora.year) {
+      return '❌ ANO INCORRETO — confira o ano de nascimento';
+    }
+    final d = DateTime(ano, mes, dia);
+    if (d.day != dia || d.month != mes || d.year != ano) {
+      return '❌ Esta data não existe';
+    }
+    if (d.isAfter(agora)) return '❌ A data não pode ser no futuro';
+    return '';
+  }
+
+  /// Idade em anos completos a partir da data guardada
+  static int get idade {
+    final so = _soNumeros(nascimento);
+    if (so.length < 8) return 0;
+    final dia = int.tryParse(so.substring(0, 2)) ?? 0;
+    final mes = int.tryParse(so.substring(2, 4)) ?? 0;
+    final ano = int.tryParse(so.substring(4, 8)) ?? 0;
+    final hoje = DateTime.now();
+    var i = hoje.year - ano;
+    if (hoje.month < mes || (hoje.month == mes && hoje.day < dia)) i--;
+    return i;
+  }
 
   /// Confere o DDD (11 a 99, e só os que existem no Brasil)
   static String erroDDD(String texto) {

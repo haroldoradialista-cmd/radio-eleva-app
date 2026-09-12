@@ -32,6 +32,7 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
   bool _emailDoGoogle = false;   // veio do login Google: já confirmado
   final _estado = TextEditingController();
   final _cidade = TextEditingController();
+  final _nascimento = TextEditingController();
   List<String> _cidadesDoEstado = [];
   bool _carregandoCidades = false;
 
@@ -63,8 +64,9 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
     }
     _estado.text = CadastroService.estado;
     _cidade.text = CadastroService.cidade;
+    _nascimento.text = CadastroService.nascimento;
     if (_estado.text.isNotEmpty) _carregarCidades(_estado.text);
-    for (final c in [_nome, _ddd, _numero, _email, _estado, _cidade]) {
+    for (final c in [_nome, _ddd, _numero, _email, _estado, _cidade, _nascimento]) {
       c.addListener(() => setState(() {}));
     }
   }
@@ -77,6 +79,7 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
     _email.dispose();
     _estado.dispose();
     _cidade.dispose();
+    _nascimento.dispose();
     _codigo.dispose();
     super.dispose();
   }
@@ -92,6 +95,8 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
     if (e4.isNotEmpty) return e4;
     if (_estado.text.trim().length != 2) return 'Escolha o seu ESTADO';
     if (_cidade.text.trim().length < 2) return 'Escolha a sua CIDADE';
+    final e5 = CadastroService.erroNascimento(_nascimento.text);
+    if (e5.isNotEmpty) return e5;
     return '';
   }
 
@@ -147,6 +152,7 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
       zap: _telefone,
       uf: _estado.text,
       municipio: _cidade.text,
+      dataNascimento: _nascimento.text,
       emailVerificado: _emailDoGoogle,
     );
     // E-MAIL DE BOAS-VINDAS: enviado em segundo plano, sem travar nada.
@@ -175,6 +181,7 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
       zap: _telefone,
       uf: _estado.text,
       municipio: _cidade.text,
+      dataNascimento: _nascimento.text,
       emailVerificado: _emailDoGoogle,
     );
     await CadastroService.marcarValidado(u.uid);
@@ -268,6 +275,11 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
           ),
         _listaEstados(),
         _escolherCidade(),
+        _campo('DATA DE NASCIMENTO *', _nascimento,
+            icone: Icons.cake_rounded,
+            teclado: TextInputType.number,
+            formatadores: [_DataFormatter()],
+            dica: 'DD/MM/AAAA'),
 
         if (_aviso.isNotEmpty || (!_completo && _falta.isNotEmpty))
           _faixaAviso(_aviso.isNotEmpty ? _aviso : _falta),
@@ -652,6 +664,8 @@ class _CadastroInicialPageState extends State<CadastroInicialPage> {
       ok = CadastroService.erroNumero(ctrl.text).isEmpty;
     } else if (ctrl == _email) {
       ok = CadastroService.erroEmail(ctrl.text).isEmpty;
+    } else if (ctrl == _nascimento) {
+      ok = CadastroService.erroNascimento(ctrl.text).isEmpty;
     } else {
       ok = ctrl.text.trim().length >= 2;
     }
@@ -734,6 +748,25 @@ class _MinusculasFormatter extends TextInputFormatter {
     return TextEditingValue(
       text: novo.text.toLowerCase().replaceAll(' ', ''),
       selection: novo.selection,
+    );
+  }
+}
+
+/// Escreve a data no formato DD/MM/AAAA enquanto digita
+class _DataFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue antigo, TextEditingValue novo) {
+    final so = novo.text.replaceAll(RegExp(r'\D'), '');
+    final b = StringBuffer();
+    for (int i = 0; i < so.length && i < 8; i++) {
+      if (i == 2 || i == 4) b.write('/');
+      b.write(so[i]);
+    }
+    final txt = b.toString();
+    return TextEditingValue(
+      text: txt,
+      selection: TextSelection.collapsed(offset: txt.length),
     );
   }
 }

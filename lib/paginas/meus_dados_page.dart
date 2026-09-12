@@ -244,6 +244,31 @@ class _MeusDadosPageState extends State<MeusDadosPage> {
                       color: Colors.red.shade100)),
             ),
 
+          // dados de localização e nascimento (informados no cadastro)
+          Container(
+            margin: EdgeInsets.only(top: 12),
+            padding: EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: CoresEleva.azulProfundo,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _linhaInfo(Icons.location_city_rounded, 'Cidade',
+                    '${CadastroService.cidade}${CadastroService.estado.isNotEmpty ? ' — ' + CadastroService.estado : ''}'),
+                SizedBox(height: 8),
+                _linhaInfo(Icons.cake_rounded, 'Nascimento',
+                    CadastroService.nascimento),
+                SizedBox(height: 6),
+                Text('Para alterar estes dados, fale com a rádio pelo chat.',
+                    style: TextStyle(
+                        fontSize: 11, color: CoresEleva.textoFraco)),
+              ],
+            ),
+          ),
+
           SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
@@ -269,6 +294,21 @@ class _MeusDadosPageState extends State<MeusDadosPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _linhaInfo(IconData icone, String rotulo, String valor) {
+    return Row(
+      children: [
+        Icon(icone, size: 18, color: CoresEleva.textoFraco),
+        SizedBox(width: 9),
+        Text('$rotulo: ',
+            style: TextStyle(fontSize: 12.5, color: CoresEleva.textoFraco)),
+        Expanded(
+          child: Text(valor.isEmpty ? '—' : valor,
+              style: TextStyle(fontSize: 13.5, color: CoresEleva.branco)),
+        ),
+      ],
     );
   }
 
