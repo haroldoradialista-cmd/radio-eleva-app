@@ -3270,12 +3270,25 @@ async function carregarOuvintes(){
       email: (x&&x.email)||'',
       cidade: (x&&x.cidade)||'',
       estado: (x&&x.estado)||'',
+      nascimento: (x&&x.nascimento)||'',
       confirmado: !!(x&&x.email_verificado),
       quando: (x&&x.quando)||''
     })).sort((a,b)=> (b.quando||'').localeCompare(a.quando||''));
     ouvPagina = 1;
     desenharOuvintes();
   }catch(e){ el.innerHTML = '<p class="rotulo-secao">Erro ao carregar.</p>'; }
+}
+
+/// Calcula a idade a partir da data de nascimento (DD/MM/AAAA)
+function idadeDe(nasc){
+  const so = (nasc||'').replace(/\D/g,'');
+  if(so.length < 8) return '-';
+  const d = parseInt(so.slice(0,2)), m = parseInt(so.slice(2,4)), a = parseInt(so.slice(4,8));
+  const hoje = new Date();
+  let i = hoje.getFullYear() - a;
+  const mesAtual = hoje.getMonth()+1;
+  if(mesAtual < m || (mesAtual === m && hoje.getDate() < d)) i--;
+  return (i >= 0 && i < 120) ? i : '-';
 }
 
 function ouvFiltrada(){
@@ -3285,7 +3298,8 @@ function ouvFiltrada(){
     if(filtro==='confirmados' && !o.confirmado) return false;
     if(filtro==='pendentes' && o.confirmado) return false;
     if(!busca) return true;
-    return (o.nome+' '+o.cidade+' '+o.whatsapp+' '+o.email).toLowerCase().includes(busca);
+    return (o.nome+' '+o.cidade+' '+o.estado+' '+o.whatsapp+' '+o.email+' '+o.nascimento)
+      .toLowerCase().includes(busca);
   });
 }
 
@@ -3324,7 +3338,7 @@ function desenharOuvintes(){
   el.innerHTML =
     `<p class="rotulo-secao">${lista.length} ouvinte(s) • mostrando ${ini+1}–${Math.min(ini+POR,lista.length)}</p>` +
     `<div class="rolagem-tabela"><table>
-      <tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>E-mail</th><th>Cidade</th><th>UF</th><th>Cadastro</th></tr>` +
+      <tr><th>#</th><th>Nome</th><th>WhatsApp</th><th>E-mail</th><th>Cidade</th><th>UF</th><th>Nascimento</th><th>Idade</th><th>Cadastro</th></tr>` +
     fatia.map((o,i)=>`<tr>
       <td>${ini+i+1}</td>
       <td class="livre">${(o.nome||'').replace(/</g,'&lt;')}</td>
@@ -3332,6 +3346,8 @@ function desenharOuvintes(){
       <td class="livre">${(o.email||'-').replace(/</g,'&lt;')} ${o.confirmado?'<span style="color:#35C733">✓</span>':''}</td>
       <td class="livre">${o.cidade||'-'}</td>
       <td>${o.estado||'-'}</td>
+      <td>${o.nascimento||'-'}</td>
+      <td>${idadeDe(o.nascimento)}</td>
       <td>${o.quando?dataCurta(o.quando):'-'}</td>
     </tr>`).join('') + `</table></div>` +
     (paginas>1 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center">
@@ -3346,10 +3362,11 @@ function desenharOuvintes(){
 function exportarOuvintes(){
   const lista = ouvFiltrada();
   if(!lista.length){ avisar('Nada para exportar.', true); return; }
-  const linhas = [['Nome','WhatsApp','E-mail','E-mail confirmado','Cidade','Estado','Cadastro']];
+  const linhas = [['Nome','WhatsApp','E-mail','E-mail confirmado','Cidade','Estado','Nascimento','Idade','Cadastro']];
   lista.forEach(o=>linhas.push([
     o.nome, o.whatsapp, o.email, o.confirmado?'Sim':'Não',
-    o.cidade, o.estado, o.quando?dataBR(o.quando):''
+    o.cidade, o.estado, o.nascimento, idadeDe(o.nascimento),
+    o.quando?dataBR(o.quando):''
   ]));
   const csv = linhas.map(l=>l.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(';')).join('\n');
   const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});

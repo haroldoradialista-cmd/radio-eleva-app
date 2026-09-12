@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -18,6 +19,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///  3. se ainda assim não bater, faz uma comparação tolerante (sem acento,
 ///     sem pontuação, ignorando "ao vivo", inversão de artista/música).
 class CorrecoesService {
+  /// AVISADOR: sempre que a base de correções recebe algo novo, este
+  /// contador muda — e as telas que estão ouvindo se redesenham sozinhas.
+  /// É assim que a capa e a letra aparecem DURANTE a música, sem o
+  /// ouvinte precisar fazer nada nem esperar a próxima execução.
+  static final ValueNotifier<int> mudou = ValueNotifier(0);
+  static void _avisarMudanca() => mudou.value++;
+
   static String base = '';
   static Map<String, Map<String, dynamic>> _indice = {};
   static List<Map<String, dynamic>> _todas = [];
@@ -132,6 +140,7 @@ class CorrecoesService {
         if (d is Map && d['error'] == null) {
           _montarIndice(d);
           _pronto = true;
+          _avisarMudanca();
           try {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('correcoes_guardadas', jsonEncode(d));
@@ -235,6 +244,95 @@ class CorrecoesService {
   // ---------------- MEMÓRIA PERMANENTE ----------------
   /// Guarda no aparelho o que já deu certo, para NUNCA MAIS sumir —
   /// mesmo que a internet falhe ou o site de busca saia do ar.
+  /// ============ PREENCHIMENTO AUTOMÁTICO DA BASE ============
+  ///
+  /// Quando QUALQUER ouvinte encontra a capa ou a letra na internet, o
+  /// resultado é gravado na base da rádio. A partir daí:
+  ///   • todos os outros ouvintes recebem pronto, sem procurar de novo;
+  ///   • aparece no painel, em Letras/Capas, sem ninguém ter feito nada;
+  ///   • se a busca falhar amanhã (site fora do ar), já está guardado.
+  ///
+  /// É o trabalho de centenas de aparelhos alimentando uma base só.
+  static Future<void> enviarParaBase(String musicaBruta,
+      {String? letra, String? capa}) async {
+    if (base.isEmpty) return;
+    final (art, tit) = separar(musicaBruta);
+    // sem artista não gravamos: o risco de misturar cantores é alto
+    if (art.trim().isEmpty || tit.trim().isEmpty) return;
+    final id = _idParaBase(art, tit);
+    if (id.length < 6) return;
+
+    try {
+      // confere o que já existe: NUNCA sobrescreve o que a rádio corrigiu
+      final r = await http
+          .get(Uri.parse('$base/correcoes/$id.json'))
+          .timeout(const Duration(seconds: 8));
+      Map<String, dynamic> atual = {};
+      if (r.statusCode == 200 && r.body != 'null') {
+        final d = jsonDecode(utf8.decode(r.bodyBytes));
+        if (d is Map) atual = Map<String, dynamic>.from(d);
+      }
+
+      final novos = <String, dynamic>{};
+      final temLetra = (atual['letra'] ?? '').toString().trim().length > 10;
+      final temCapa = (atual['capa'] ?? '').toString().isNotEmpty;
+
+      if (letra != null && letra.trim().length > 20 && !temLetra) {
+        novos['letra'] = letra;
+      }
+      if (capa != null && capa.startsWith('http') && !temCapa) {
+        novos['capa'] = capa;
+      }
+      if (novos.isEmpty) return; // nada novo a acrescentar
+
+      novos['musica'] = musicaBruta.trim();
+      novos['origem'] = 'automático';
+      novos['quando'] = DateTime.now().toIso8601String();
+
+      await http
+          .patch(Uri.parse('$base/correcoes/$id.json'),
+              body: jsonEncode(novos))
+          .timeout(const Duration(seconds: 12));
+      // guarda no índice local e avisa as telas na hora
+      _guardarLocalmente(id, musicaBruta, novos);
+      _avisarMudanca();
+    } catch (_) {}
+  }
+
+  /// Acrescenta o que acabou de ser descoberto ao índice que está na
+  /// memória, para valer IMEDIATAMENTE, sem esperar a próxima atualização.
+  static void _guardarLocalmente(
+      String id, String musicaBruta, Map<String, dynamic> novos) {
+    try {
+      final (art, tit) = separar(musicaBruta);
+      final item = <String, dynamic>{
+        'musica': musicaBruta,
+        '_artista': cru(art),
+        '_titulo': cru(tit),
+      };
+      // mantém o que já existia para esta música
+      final existente = procurar(musicaBruta);
+      if (existente != null) item.addAll(Map<String, dynamic>.from(existente));
+      item.addAll(novos);
+      for (final k in chavesDe(art, tit)) {
+        _indice[k] = item;
+      }
+      _todas.removeWhere((x) =>
+          (x['_artista'] ?? '') == item['_artista'] &&
+          (x['_titulo'] ?? '') == item['_titulo']);
+      _todas.add(item);
+    } catch (_) {}
+  }
+
+  /// Monta o identificador do jeito que o painel usa
+  static String _idParaBase(String artista, String titulo) {
+    final s = '${artista}_$titulo'
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_');
+    return s.replaceAll(RegExp(r'^_|_$'), '');
+  }
+
   static Future<void> lembrar(
       String musicaBruta, {String? letra, String? capa}) async {
     final chave = cru(musicaBruta);

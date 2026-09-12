@@ -186,6 +186,38 @@ class LetraService {
   }
 
   // ---------- lyrics.ovh ----------
+  /// VAGALUME — acervo brasileiro, forte em gospel nacional.
+  /// É onde estão muitas letras que as bases internacionais não têm.
+  static Future<String?> _vagalume(String artista, String titulo) async {
+    if (artista.isEmpty || titulo.isEmpty) return null;
+    try {
+      final url = Uri.parse('https://api.vagalume.com.br/search.php'
+          '?art=${Uri.encodeComponent(artista)}'
+          '&mus=${Uri.encodeComponent(titulo)}');
+      final r = await http.get(url).timeout(const Duration(seconds: 12));
+      if (r.statusCode != 200) return null;
+      final d = jsonDecode(utf8.decode(r.bodyBytes));
+      if (d is! Map) return null;
+      if (d['type'] == 'notfound' || d['type'] == 'notfasked') return null;
+
+      final art = (d['art'] is Map) ? d['art']['name']?.toString() ?? '' : '';
+      final musicas = d['mus'];
+      if (musicas is! List || musicas.isEmpty) return null;
+      for (final m in musicas) {
+        if (m is! Map) continue;
+        final nome = (m['name'] ?? '').toString();
+        final texto = (m['text'] ?? '').toString();
+        if (texto.trim().length < 20) continue;
+        // confere artista E título antes de aceitar
+        if (_combina(nome, titulo) &&
+            (art.isEmpty || _combina(art, artista))) {
+          return _limparLetra(texto);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static Future<String?> _lyricsOvh(String artista, String titulo) async {
     if (titulo.isEmpty || artista.isEmpty) return null;
     try {
@@ -344,6 +376,9 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          // ALIMENTA A BASE DA RÁDIO: o que este aparelho achou passa a
+          // valer para todos os outros ouvintes, e aparece no painel.
+          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
           AuditoriaService.registrar(
               musica: musicaBruta, temLetra: true, temCapa: false,
               certezaLetra: 70, certezaCapa: 0,
@@ -365,6 +400,9 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          // ALIMENTA A BASE DA RÁDIO: o que este aparelho achou passa a
+          // valer para todos os outros ouvintes, e aparece no painel.
+          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
           AuditoriaService.registrar(
               musica: musicaBruta, temLetra: true, temCapa: false,
               certezaLetra: 70, certezaCapa: 0,
@@ -383,6 +421,9 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          // ALIMENTA A BASE DA RÁDIO: o que este aparelho achou passa a
+          // valer para todos os outros ouvintes, e aparece no painel.
+          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
           AuditoriaService.registrar(
               musica: musicaBruta, temLetra: true, temCapa: false,
               certezaLetra: 70, certezaCapa: 0,
@@ -401,6 +442,9 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          // ALIMENTA A BASE DA RÁDIO: o que este aparelho achou passa a
+          // valer para todos os outros ouvintes, e aparece no painel.
+          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
           AuditoriaService.registrar(
               musica: musicaBruta, temLetra: true, temCapa: false,
               certezaLetra: 70, certezaCapa: 0,
@@ -419,10 +463,33 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          // ALIMENTA A BASE DA RÁDIO: o que este aparelho achou passa a
+          // valer para todos os outros ouvintes, e aparece no painel.
+          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
           AuditoriaService.registrar(
               musica: musicaBruta, temLetra: true, temCapa: false,
               certezaLetra: 70, certezaCapa: 0,
               origemLetra: 'busca na internet');
+          return letra;
+        }
+      }
+    }
+
+    // 4b) VAGALUME — acervo brasileiro (entra antes das internacionais
+    //     porque tem muito mais gospel nacional)
+    for (final (a, t) in combosSeguros) {
+      final letra = await _vagalume(a, t);
+      if (letra != null) {
+        if (pular > 0) {
+          pular--;
+        } else {
+          _cache[chave] = letra;
+          CorrecoesService.lembrar(musicaBruta, letra: letra);
+          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
+          AuditoriaService.registrar(
+              musica: musicaBruta, temLetra: true, temCapa: false,
+              certezaLetra: 70, certezaCapa: 0,
+              origemLetra: 'Vagalume');
           return letra;
         }
       }
@@ -437,6 +504,9 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          // ALIMENTA A BASE DA RÁDIO: o que este aparelho achou passa a
+          // valer para todos os outros ouvintes, e aparece no painel.
+          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
           AuditoriaService.registrar(
               musica: musicaBruta, temLetra: true, temCapa: false,
               certezaLetra: 70, certezaCapa: 0,
@@ -457,6 +527,9 @@ class LetraService {
         } else {
           _cache[chave] = letra;
           CorrecoesService.lembrar(musicaBruta, letra: letra);
+          // ALIMENTA A BASE DA RÁDIO: o que este aparelho achou passa a
+          // valer para todos os outros ouvintes, e aparece no painel.
+          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
           AuditoriaService.registrar(
               musica: musicaBruta, temLetra: true, temCapa: false,
               certezaLetra: 70, certezaCapa: 0,
