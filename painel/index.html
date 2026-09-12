@@ -365,6 +365,20 @@
 
     <!-- USUÁRIOS (só admin) -->
     <section id="sec-usuarios" class="oculto">
+      <div class="cartao" style="border-left:3px solid #7a1b1b;margin-bottom:18px">
+        <h3 style="margin:0 0 8px;color:var(--ouro)">🔐 Senha para apagar dados</h3>
+        <p class="rotulo-secao">Apagar dados de ouvintes (votos, pedidos, promoções, avisos) é <b>irreversível</b>. Crie aqui uma senha numérica: ela será pedida toda vez que alguém tentar apagar algo, em qualquer aba.</p>
+        <div class="grade2">
+          <div><label>Senha numérica (4 a 8 números)</label>
+            <input id="senhaApagar" type="password" inputmode="numeric" placeholder="Ex.: 4728" maxlength="8"></div>
+          <div><label>Repita a senha</label>
+            <input id="senhaApagar2" type="password" inputmode="numeric" placeholder="Digite de novo" maxlength="8"></div>
+        </div>
+        <button class="botao" onclick="salvarSenhaApagar()">💾 Salvar senha</button>
+        <button class="botao mini neutro" onclick="removerSenhaApagar()">Remover proteção</button>
+        <p id="statusSenhaApagar" class="rotulo-secao" style="margin-top:8px"></p>
+      </div>
+
       <h2>👥 Gerenciar usuários do painel</h2>
       <p class="rotulo-secao">Crie logins para cada setor da emissora e defina quais abas cada um pode acessar. Você é o único que vê esta tela.</p>
 
@@ -605,7 +619,7 @@
     <!-- PEDIDO MUSICAL -->
     <section id="sec-pedidosm" class="oculto">
       <div class="cartao">
-        <h2>Pedidos musicais dos ouvintes <button class="botao mini neutro" onclick="carregarPedidosM()">🔄 Atualizar</button></h2>
+        <h2>Pedidos musicais dos ouvintes <button class="botao mini neutro" onclick="carregarPedidosM()">🔄 Atualizar</button> <button class="botao mini" style="background:#1a5a7a" onclick="backupPedidos()" title="Baixar cópia antes de apagar">💾 Backup</button> <button class="botao mini perigo" onclick="apagarPedidos()" title="Apagar todos — pede senha">🗑️ Apagar tudo</button></h2>
         <p class="rotulo-secao">Pedidos enviados pelo formulário PEÇA SUA MÚSICA do app, do mais recente para o mais antigo.</p>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           <button class="botao mini" style="background:#444" onclick="exportarPedidosM('imprimir')">🖨️ Imprimir</button>
@@ -620,7 +634,7 @@
     <!-- PROMOCOES -->
     <section id="sec-promos" class="oculto">
       <div class="cartao">
-        <h2>Promoções</h2>
+        <h2>Promoções <button class="botao mini" style="background:#1a5a7a" onclick="backupPromos()" title="Baixar cópia antes de apagar">💾 Backup</button> <button class="botao mini perigo" onclick="apagarPromos()" title="Apagar participações — pede senha">🗑️ Apagar participações</button></h2>
         <p class="rotulo-secao">A promoção ativa aparece na aba <b>Promoções</b> do app. O ouvinte participa com nome, WhatsApp, Instagram e a resposta da pergunta.</p>
         <div id="listaPromos"></div>
       </div>
@@ -928,6 +942,7 @@
             </select>
             <button class="botao mini neutro" onclick="carregarOuvintes()">🔄 Atualizar</button>
             <button class="botao mini" style="background:#1a7a4b" onclick="exportarOuvintes()">📊 Baixar Excel</button>
+            <button class="botao mini" style="background:#1a5a7a" onclick="backupOuvintes()" title="Baixar cópia antes de apagar">💾 Backup</button> <button class="botao mini perigo" onclick="apagarOuvintes()" title="Apagar todos — pede senha">🗑️ Apagar tudo</button>
           </div>
           <div id="ouvLista"></div>
         </div>
@@ -1115,7 +1130,8 @@
       <div class="cartao">
         <h2>♻️ Restaurar backup</h2>
         <p class="rotulo-secao">Envia de volta um arquivo de backup salvo antes. <b>Atenção:</b> o conteúdo atual dos itens restaurados será substituído.</p>
-        <label for="arqBackup" class="botao mini" style="cursor:pointer;background:#7a5b1b">📁 Escolher arquivo de backup</label>
+        <label for="arqBackup" class="botao mini" style="cursor:pointer;background:#7a5b1b">📁 Restaurar backup COMPLETO</label>
+        <button class="botao mini" style="background:#1a5a7a" onclick="restaurarBackupDe()">📂 Restaurar backup de UMA aba</button>
         <input id="arqBackup" type="file" accept="application/json,.json" style="display:none" onchange="restaurarBackup(this)">
         <div id="statusRestaura" style="margin-top:10px"></div>
       </div>
@@ -1189,6 +1205,7 @@
             <input id="audBusca" placeholder="🔎 Buscar música..." oninput="desenharAuditoria()" style="max-width:240px">
             <button class="botao mini neutro" onclick="carregarAuditoria()">🔄 Atualizar</button>
             <button class="botao mini" style="background:#1a7a4b" onclick="roboAuditoria()">🤖 Corrigir as mais tocadas</button>
+            <button class="botao mini" style="background:#1a5a7a" onclick="backupAuditoria()" title="Baixar cópia antes de apagar">💾 Backup</button> <button class="botao mini perigo" onclick="apagarAuditoria()" title="Apagar todos — pede senha">🗑️ Apagar tudo</button>
           </div>
           <div id="logAuditoria" style="margin:10px 0;display:none;max-height:260px;overflow-y:auto"></div>
           <div id="listaAuditoria"></div>
@@ -1223,7 +1240,7 @@
         <div id="listaPedidosRel"><p class="rotulo-secao">Escolha o período e clique em Gerar relatório.</p></div>
       </div>
       <div class="cartao">
-        <h2>Ranking de votação das músicas</h2>
+        <h2>Ranking de votação das músicas <button class="botao mini" style="background:#1a5a7a" onclick="backupVotos()" title="Baixar cópia antes de apagar">💾 Backup</button> <button class="botao mini perigo" onclick="apagarVotos()" title="Apagar todos os votos — pede senha">🗑️ Apagar tudo</button></h2>
         <p class="rotulo-secao">Escolha o período no calendário e gere o ranking real com base nas curtidas 👍 dos ouvintes no player.</p>
         <div class="grade2">
           <div><label>📅 De (data e hora)</label><input type="datetime-local" id="vtDe"></div>
@@ -1832,7 +1849,7 @@ function trocarAba(botao){
   ['banners','campanha','noticias','enquetes','pedidosm','promos','programacao','textos','chat','votos','stats','notif','usuarios','letras','seguranca','financeiro','ouvintes'].forEach(s=>
     document.getElementById('sec-'+s).classList.toggle('oculto', s!==botao.dataset.aba));
   try{ sessionStorage.setItem('painel_aba', botao.dataset.aba); }catch(_){}
-  if(botao.dataset.aba==='usuarios'){ carregarUsuarios(); migrarSenhasParaCofre(); }
+  if(botao.dataset.aba==='usuarios'){ carregarUsuarios(); migrarSenhasParaCofre(); mostrarStatusSenhaApagar(); }
   if(botao.dataset.aba==='letras') carregarReportes();
   if(botao.dataset.aba==='financeiro') finCarregarTudo();
   if(botao.dataset.aba==='ouvintes'){
@@ -6386,6 +6403,200 @@ async function migrarSenhasParaCofre(){
     avisar(pendentes.length + ' senha(s) protegidas no cofre. 🔒');
     carregarUsuarios();
   }catch(_){}
+}
+
+/// ============ BACKUP ANTES DE APAGAR ============
+/// Baixa os dados de UM nó para o computador, em dois formatos:
+///   • .json  → serve para RESTAURAR depois no painel
+///   • .csv   → abre no Excel, para consultar e imprimir
+/// Guarde os dois: o JSON é a cópia de segurança, o CSV é a leitura.
+async function baixarBackupDe(no, rotulo, autenticado){
+  try{
+    avisar('Preparando o backup...');
+    const url = autenticado
+      ? `${RTDB}/${no}.json?auth=${ouvToken}&t=${Date.now()}`
+      : `${RTDB}/${no}.json?t=${Date.now()}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if(!r.ok || (d && d.error)){ avisar('Não consegui ler os dados.', true); return false; }
+    if(!d || (typeof d === 'object' && !Object.keys(d).length)){
+      avisar('Não há nada para salvar aqui.', true); return false;
+    }
+
+    const hoje = new Date().toISOString().slice(0,10);
+    const nomeArq = `${no}_${hoje}`;
+
+    // 1) JSON — é este que serve para RESTAURAR
+    const pacote = {
+      no: no,
+      rotulo: rotulo,
+      gerado_em: new Date().toISOString(),
+      dados: d
+    };
+    _baixarArquivo(JSON.stringify(pacote, null, 2),
+                   `${nomeArq}.json`, 'application/json');
+
+    // 2) CSV — para abrir no Excel
+    const linhas = Object.values(d).filter(x => x && typeof x === 'object');
+    if(linhas.length){
+      const colunas = [...new Set(linhas.flatMap(l => Object.keys(l)))];
+      const csv = [colunas.join(';')].concat(
+        linhas.map(l => colunas.map(c => {
+          let v = l[c];
+          if(v === null || v === undefined) v = '';
+          if(typeof v === 'object') v = JSON.stringify(v);
+          v = String(v).slice(0, 400);   // evita colunas gigantes
+          return `"${v.replace(/"/g,'""')}"`;
+        }).join(';'))
+      ).join('\n');
+      setTimeout(()=>_baixarArquivo('\ufeff'+csv, `${nomeArq}.csv`,
+                                    'text/csv;charset=utf-8'), 600);
+    }
+    avisar(`Backup de ${rotulo} baixado! ✅`);
+    return true;
+  }catch(e){ avisar('Falhou: '+e.message, true); return false; }
+}
+
+function _baixarArquivo(conteudo, nome, tipo){
+  const blob = new Blob([conteudo], { type: tipo });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nome;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+
+/// Atalhos por aba
+const backupVotos     = () => baixarBackupDe('votos', 'votos');
+const backupPedidos   = () => baixarBackupDe('pedidos_musicais', 'pedidos musicais');
+const backupPromos    = () => baixarBackupDe('promo_participacoes', 'participações em promoções');
+const backupOuvintes  = () => baixarBackupDe('ouvintes', 'ouvintes cadastrados', true);
+const backupAuditoria = () => baixarBackupDe('auditoria', 'conferência automática');
+const backupTocou     = () => baixarBackupDe('tocou', 'histórico de músicas');
+
+/// ---------- RESTAURAR UM BACKUP ----------
+/// Envia de volta um arquivo .json salvo antes.
+function restaurarBackupDe(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+  input.onchange = async () => {
+    const arq = input.files && input.files[0];
+    if(!arq) return;
+    const leitor = new FileReader();
+    leitor.onload = async e => {
+      let pacote;
+      try{ pacote = JSON.parse(e.target.result); }
+      catch(_){ avisar('Arquivo inválido.', true); return; }
+      if(!pacote || !pacote.no || !pacote.dados){
+        avisar('Este arquivo não é um backup do Painel Eleva.', true); return;
+      }
+      const quando = pacote.gerado_em
+        ? new Date(pacote.gerado_em).toLocaleString('pt-BR') : '?';
+      const quantos = Object.keys(pacote.dados).length;
+      if(!confirm(`Restaurar ${pacote.rotulo || pacote.no}?\n\n` +
+                  `Backup de ${quando}\n${quantos} registro(s)\n\n` +
+                  `O conteúdo atual será SUBSTITUÍDO.`)) return;
+      try{
+        const autenticado = pacote.no === 'ouvintes';
+        const url = autenticado
+          ? `${RTDB}/${pacote.no}.json?auth=${ouvToken}`
+          : `${RTDB}/${pacote.no}.json`;
+        const r = await fetch(url, { method:'PUT', body: JSON.stringify(pacote.dados) });
+        if(!r.ok){ avisar('O Firebase recusou a restauração.', true); return; }
+        avisar(`${quantos} registro(s) restaurado(s)! Atualize a página. ✅`);
+      }catch(err){ avisar('Falhou: '+err.message, true); }
+    };
+    leitor.readAsText(arq);
+  };
+  input.click();
+}
+
+/// ============ APAGAR DADOS DE OUVINTES ============
+/// Cada botão abaixo zera um tipo de dado. Todos passam pela senha.
+async function apagarNo(no, rotulo, aoTerminar){
+  if(!await autorizarExclusao(rotulo)) return;
+  try{
+    const r = await fetch(`${RTDB}/${no}.json`, { method:'DELETE' });
+    if(!r.ok){ avisar('O Firebase recusou a exclusão.', true); return; }
+    avisar(`${rotulo} apagado(s). ✅`);
+    if(aoTerminar) aoTerminar();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+const apagarVotos    = () => apagarNo('votos', 'TODOS os votos', carregarVotos);
+const apagarPedidos  = () => apagarNo('pedidos_musicais', 'TODOS os pedidos musicais', carregarPedidosM);
+const apagarPromos   = () => apagarNo('promo_participacoes', 'TODAS as participações em promoções', ()=>desenharPromos());
+const apagarAnuncios = () => apagarNo('anuncios', 'TODOS os pedidos de anúncio');
+const apagarTocou    = () => apagarNo('tocou', 'TODO o histórico de músicas tocadas');
+const apagarAuditoria= () => apagarNo('auditoria', 'TODA a conferência automática', carregarAuditoria);
+const apagarAcessos  = () => apagarNo('acessos', 'TODOS os registros de acesso');
+
+/// Ouvintes cadastrados: exige a senha e usa o acesso autenticado
+async function apagarOuvintes(){
+  if(!await autorizarExclusao('TODOS os ouvintes cadastrados')) return;
+  try{
+    const r = await fetch(`${RTDB}/ouvintes.json?auth=${ouvToken}`, { method:'DELETE' });
+    if(!r.ok){ avisar('O Firebase recusou. Entre de novo com e-mail e senha.', true); return; }
+    avisar('Ouvintes apagados. ✅');
+    carregarOuvintes();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+/// ============ SENHA PARA APAGAR DADOS ============
+/// Apagar dados de ouvintes é irreversível. Esta senha numérica é pedida
+/// em TODAS as abas antes de qualquer exclusão, para evitar acidente.
+async function salvarSenhaApagar(){
+  const s1 = (document.getElementById('senhaApagar').value||'').trim();
+  const s2 = (document.getElementById('senhaApagar2').value||'').trim();
+  if(!/^\d{4,8}$/.test(s1)){
+    avisar('A senha deve ter de 4 a 8 NÚMEROS.', true); return;
+  }
+  if(s1 !== s2){ avisar('As duas senhas não são iguais.', true); return; }
+  config.senha_apagar = await sha256(s1);
+  try{
+    await salvarConfig('Painel: senha de exclusao');
+    document.getElementById('senhaApagar').value = '';
+    document.getElementById('senhaApagar2').value = '';
+    avisar('Senha salva! Será pedida antes de qualquer exclusão. 🔐');
+    mostrarStatusSenhaApagar();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+async function removerSenhaApagar(){
+  if(!confirm('Remover a proteção?\n\nQualquer pessoa com acesso ao painel poderá apagar dados sem senha.')) return;
+  config.senha_apagar = '';
+  try{
+    await salvarConfig('Painel: protecao removida');
+    avisar('Proteção removida.');
+    mostrarStatusSenhaApagar();
+  }catch(e){ avisar('Falhou: '+e.message, true); }
+}
+
+function mostrarStatusSenhaApagar(){
+  const el = document.getElementById('statusSenhaApagar');
+  if(!el) return;
+  el.innerHTML = (config && config.senha_apagar)
+    ? '🔐 <b style="color:#8ef58e">Proteção ativa</b> — a senha é pedida antes de apagar.'
+    : '⚠️ <b style="color:#e8c96a">Sem proteção</b> — qualquer um pode apagar dados.';
+}
+
+/// Pede e confere a senha. Devolve true quando pode prosseguir.
+/// O acerto vale por 5 minutos, para não pedir a cada exclusão seguida.
+let _senhaApagarOk = 0;
+async function autorizarExclusao(oQue){
+  const texto = `Apagar ${oQue}?\n\nIsto NÃO pode ser desfeito.`;
+  if(!config || !config.senha_apagar) return confirm(texto);
+  if(Date.now() < _senhaApagarOk) return confirm(texto);
+  const digitada = prompt(`🔐 Digite a senha numérica para apagar ${oQue}.\n\nATENÇÃO: isto NÃO pode ser desfeito.`);
+  if(digitada === null) return false;
+  const hash = await sha256((digitada||'').trim());
+  if(hash !== config.senha_apagar){
+    avisar('Senha incorreta. Nada foi apagado.', true);
+    return false;
+  }
+  _senhaApagarOk = Date.now() + 5*60*1000;
+  return true;
 }
 
 async function carregarUsuarios() {
