@@ -91,26 +91,6 @@ class LetraService {
     return s.replaceAll(RegExp(r'^_|_$'), '');
   }
 
-  // ---------- VAGALUME (acervo brasileiro, inclui gospel) ----------
-  static Future<String?> _vagalume(String artista, String titulo) async {
-    if (artista.isEmpty || titulo.isEmpty) return null;
-    try {
-      final url = Uri.parse(
-          'https://api.vagalume.com.br/search.php?art=${Uri.encodeComponent(artista)}&mus=${Uri.encodeComponent(titulo)}');
-      final r = await http.get(url).timeout(const Duration(seconds: 9));
-      if (r.statusCode != 200) return null;
-      final j = jsonDecode(utf8.decode(r.bodyBytes));
-      if (j is! Map) return null;
-      if ((j['type'] ?? '').toString() == 'notfound') return null;
-      final mus = j['mus'];
-      if (mus is List && mus.isNotEmpty) {
-        final letra = (mus.first['text'] ?? '').toString();
-        if (letra.trim().length > 10) return _limparLetra(letra);
-      }
-    } catch (_) {}
-    return null;
-  }
-
   // ---------- LRCLIB: get exato ----------
   static Future<String?> _lrclibGet(String artista, String titulo) async {
     if (titulo.isEmpty) return null;
@@ -412,8 +392,10 @@ class LetraService {
       }
     }
 
-    // 2b) VAGALUME — acervo brasileiro, melhor chance para gospel nacional
-    for (final (a, t) in combos) {
+    // 2b) VAGALUME — acervo brasileiro, melhor chance para gospel nacional.
+    //     Só as formas DIRETAS (sem inverter artista/título), para não
+    //     trazer letra de outra música.
+    for (final (a, t) in combosSeguros) {
       final letra = await _vagalume(a, t);
       if (letra != null) {
         if (pular > 0) {
@@ -470,26 +452,6 @@ class LetraService {
               musica: musicaBruta, temLetra: true, temCapa: false,
               certezaLetra: 70, certezaCapa: 0,
               origemLetra: 'busca na internet');
-          return letra;
-        }
-      }
-    }
-
-    // 4b) VAGALUME — acervo brasileiro (entra antes das internacionais
-    //     porque tem muito mais gospel nacional)
-    for (final (a, t) in combosSeguros) {
-      final letra = await _vagalume(a, t);
-      if (letra != null) {
-        if (pular > 0) {
-          pular--;
-        } else {
-          _cache[chave] = letra;
-          CorrecoesService.lembrar(musicaBruta, letra: letra);
-          CorrecoesService.enviarParaBase(musicaBruta, letra: letra);
-          AuditoriaService.registrar(
-              musica: musicaBruta, temLetra: true, temCapa: false,
-              certezaLetra: 70, certezaCapa: 0,
-              origemLetra: 'Vagalume');
           return letra;
         }
       }
