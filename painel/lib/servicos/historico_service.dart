@@ -224,10 +224,26 @@ class HistoricoService {
   /// coração aparece curtido na outra também.
   static String musicaCurtidaAgora = '';
 
-  /// Guarda qual música acabou de ser curtida (seja de onde for)
-  static void marcarCurtida(String musica) {
+  /// Guarda qual música foi curtida.
+  /// FICA GRAVADO NO APARELHO: antes isto vivia só na memória, então ao
+  /// fechar e reabrir o app o coração voltava a aparecer vazio, mesmo com
+  /// a mesma música ainda tocando.
+  static Future<void> marcarCurtida(String musica) async {
     final c = CorrecoesService.cru(musica);
-    if (c.isNotEmpty) musicaCurtidaAgora = c;
+    if (c.isEmpty) return;
+    musicaCurtidaAgora = c;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('curtida_atual', c);
+    } catch (_) {}
+  }
+
+  /// Reabre a curtida guardada (chamado quando o app inicia)
+  static Future<void> carregarCurtidaGuardada() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      musicaCurtidaAgora = prefs.getString('curtida_atual') ?? '';
+    } catch (_) {}
   }
 
   /// Diz se esta música já está curtida

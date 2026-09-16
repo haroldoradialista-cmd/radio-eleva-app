@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../app_config.dart';
 
 /// Representa o conteúdo gerenciável do app (vem do config.json no GitHub)
@@ -132,17 +133,65 @@ class ConfigService {
     _autoTimer = Timer.periodic(Duration(seconds: 30), (_) => carregar());
   }
 
+  /// Endereço do banco (o mesmo do chat, votos e notificações)
+  static const String _baseRtdb =
+      'https://radio-eleva-default-rtdb.firebaseio.com';
+
+  /// Carrega a configuração da rádio (banners, notícias, programação...).
+  ///
+  /// ORDEM DE TENTATIVA — a rádio NUNCA fica sem configuração:
+  ///   1) FIREBASE — a casa nova. Muda no painel, chega na hora.
+  ///   2) GITHUB   — o caminho antigo, usado se o Firebase falhar.
+  ///   3) CÓPIA no aparelho — funciona até sem internet.
   Future<void> carregar() async {
+    // ---------- 1) FIREBASE ----------
+    try {
+      final r = await http
+          .get(Uri.parse(
+              '$_baseRtdb/config.json?v=${DateTime.now().millisecondsSinceEpoch}'))
+          .timeout(const Duration(seconds: 10));
+      if (r.statusCode == 200 && r.body != 'null' && r.body.isNotEmpty) {
+        final d = jsonDecode(utf8.decode(r.bodyBytes));
+        // SÓ ACEITA se vier com o essencial: sem isto, uma configuração
+        // incompleta deixaria a rádio muda.
+        if (d is Map &&
+            (d['stream_url'] ?? '').toString().startsWith('http')) {
+          config.value = AppConfig.fromJson(Map<String, dynamic>.from(d));
+          await _guardarCopia(utf8.decode(r.bodyBytes));
+          return;
+        }
+      }
+    } catch (_) {}
+
+    // ---------- 2) GITHUB (caminho antigo) ----------
     try {
       final r = await http
           .get(Uri.parse('$kConfigUrl?v=${DateTime.now().millisecondsSinceEpoch}'))
           .timeout(const Duration(seconds: 10));
       if (r.statusCode == 200) {
-        config.value = AppConfig.fromJson(jsonDecode(utf8.decode(r.bodyBytes)));
+        final texto = utf8.decode(r.bodyBytes);
+        config.value = AppConfig.fromJson(jsonDecode(texto));
+        await _guardarCopia(texto);
+        return;
       }
-    } catch (_) {
-      // mantém configuração padrão de emergência
-    }
+    } catch (_) {}
+
+    // ---------- 3) CÓPIA GUARDADA NO APARELHO ----------
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final texto = prefs.getString('config_guardada');
+      if (texto != null && texto.isNotEmpty) {
+        config.value = AppConfig.fromJson(jsonDecode(texto));
+      }
+    } catch (_) {}
+  }
+
+  /// Guarda a última configuração boa, para o app abrir mesmo sem internet
+  Future<void> _guardarCopia(String texto) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('config_guardada', texto);
+    } catch (_) {}
   }
 }
 

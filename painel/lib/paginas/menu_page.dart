@@ -5,6 +5,7 @@ import '../servicos/auth_service.dart';
 import '../servicos/config_service.dart';
 import '../servicos/player_service.dart';
 import '../tema.dart';
+import 'meus_dados_page.dart';
 import '../widgets/anuncio_banner.dart';
 import '../widgets/enquete_card.dart';
 import '../widgets/login_widget.dart';
@@ -285,6 +286,12 @@ class MenuPage extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
 
+                // MEUS DADOS: só aparece para quem já entrou com a conta
+                if (AuthService.instancia.usuario.value != null)
+                  _itemMenu(context, Icons.badge_rounded, 'Meus dados',
+                      'Confira seu nome, WhatsApp e e-mail',
+                      () => _abrirPagina(
+                          context, 'Meus dados', MeusDadosPage())),
                 _itemMenu(context, Icons.calendar_month_rounded,
                     'Programação',
                     'Veja a grade completa da rádio',

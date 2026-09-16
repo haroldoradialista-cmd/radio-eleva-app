@@ -64,6 +64,10 @@ class _CapaMusicaState extends State<CapaMusica> {
   @override
   void initState() {
     super.initState();
+    // ATUALIZADOR OCULTO: quando a base de correções recebe a capa desta
+    // música (descoberta por este ou por outro aparelho), a tela se
+    // atualiza NA HORA, ainda durante a música — sem o ouvinte fazer nada.
+    CorrecoesService.mudou.addListener(_conferirBase);
     _sub = PlayerService.instancia.player.icyMetadataStream.listen((icy) {
       final titulo = icy?.info?.title?.trim() ?? '';
       if (titulo.isEmpty || titulo == _ultimaBusca) return;
@@ -193,10 +197,25 @@ class _CapaMusicaState extends State<CapaMusica> {
           }
         }
       }
+      // MusicBrainz: última tentativa, boa para gravadoras pequenas
+      if (url == null && artL.isNotEmpty) {
+        url = await _tentarMusicBrainz(artL, titL);
+      }
+
+      // NÃO ACHOU NADA? Fica de olho na base por um tempo: outro aparelho
+      // pode encontrar a capa daqui a alguns segundos, e aí ela aparece
+      // sozinha, ainda durante esta música.
+      if (url == null) {
+        _vigiarBase(bruto, minhaVersao);
+      }
+
       // se nada validou, NÃO usa capa aleatória — deixa a reserva/logo.
       // Se achou, GUARDA no aparelho para nunca mais sumir.
       if (url != null) {
         CorrecoesService.lembrar(bruto, capa: url);
+        // ALIMENTA A BASE DA RÁDIO: a capa achada aqui passa a valer
+        // para todos os ouvintes e aparece no painel automaticamente.
+        CorrecoesService.enviarParaBase(bruto, capa: url);
         certeza = 70; origem = 'busca na internet';
       }
       aplicar(url);
@@ -358,6 +377,110 @@ class _CapaMusicaState extends State<CapaMusica> {
     return null;
   }
 
+  /// Consulta a base algumas vezes enquanto a música toca.
+  /// Assim, se outro aparelho descobrir a capa, este também recebe —
+  /// sem esperar a próxima execução da música.
+  Future<void> _vigiarBase(String bruto, int versao) async {
+    for (final espera in [8, 20, 45, 90]) {
+      await Future.delayed(Duration(seconds: espera));
+      if (!mounted || versao != _versaoBusca) return; // música mudou
+      if (_capaUrl != null) return;                   // já apareceu
+      await CorrecoesService.atualizar();
+      final daBase = CorrecoesService.capaDe(bruto);
+      if (daBase != null && daBase.isNotEmpty) {
+        if (versao == _versaoBusca && mounted) _aplicarCapa(daBase);
+        return;
+      }
+    }
+  }
+
+  /// Reconfere a base: se a capa desta música apareceu agora, mostra.
+  void _conferirBase() {
+    if (!mounted || _ultimaBusca.isEmpty) return;
+    final daBase = CorrecoesService.capaDe(_ultimaBusca);
+    if (daBase != null && daBase.isNotEmpty && daBase != _capaUrl) {
+      _aplicarCapa(daBase);
+    }
+  }
+
+  /// Compara dois nomes ignorando acentos, pontuação e extras
+  /// ("ao vivo", "playback"). Exige semelhança forte, para não trazer
+  /// capa de outra música com nome parecido.
+  bool _combina(String a, String b) {
+    String n(String s) => _semAcentoLocal(s.toLowerCase())
+        .replaceAll(
+            RegExp(r'\b(ao vivo|acustico|playback|clipe|oficial|live|remix)\b'),
+            ' ')
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final x = n(a), y = n(b);
+    if (x.isEmpty || y.isEmpty) return false;
+    if (x == y) return true;
+    final menor = x.length <= y.length ? x : y;
+    final maior = x.length <= y.length ? y : x;
+    if (menor.length < 6) return false;
+    if (!maior.contains(menor)) return false;
+    return menor.length >= maior.length * 0.7;
+  }
+
+  String _semAcentoLocal(String s) {
+    const com = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
+    const sem = 'aaaaaeeeeiiiiooooouuuucn';
+    var r = s;
+    for (int i = 0; i < com.length; i++) {
+      r = r.replaceAll(com[i], sem[i]);
+    }
+    return r;
+  }
+
+  /// COVER ART ARCHIVE (via MusicBrainz) — acervo colaborativo e aberto.
+  /// Entra quando iTunes e Deezer não têm o disco: é comum ter capas de
+  /// gravadoras pequenas e independentes, caso de muito gospel nacional.
+  Future<String?> _tentarMusicBrainz(String artista, String titulo) async {
+    if (artista.isEmpty || titulo.isEmpty) return null;
+    try {
+      final consulta = 'recording:"$titulo" AND artist:"$artista"';
+      final url = Uri.parse('https://musicbrainz.org/ws/2/recording'
+          '?query=${Uri.encodeComponent(consulta)}&fmt=json&limit=5');
+      final r = await http.get(url, headers: {
+        'User-Agent': 'RadioEleva/1.0 ( contato@radioeleva.com.br )'
+      }).timeout(const Duration(seconds: 12));
+      if (r.statusCode != 200) return null;
+      final d = jsonDecode(utf8.decode(r.bodyBytes));
+      final gravacoes = d['recordings'];
+      if (gravacoes is! List) return null;
+
+      for (final g in gravacoes) {
+        if (g is! Map) continue;
+        // confere artista e título antes de aceitar
+        final nomeArt = (g['artist-credit'] is List &&
+                (g['artist-credit'] as List).isNotEmpty)
+            ? ((g['artist-credit'][0]['name'] ?? '').toString())
+            : '';
+        final nomeTit = (g['title'] ?? '').toString();
+        if (!_combina(nomeTit, titulo)) continue;
+        if (nomeArt.isNotEmpty && !_combina(nomeArt, artista)) continue;
+
+        final lancamentos = g['releases'];
+        if (lancamentos is! List) continue;
+        for (final l in lancamentos) {
+          final id = (l is Map) ? (l['id'] ?? '').toString() : '';
+          if (id.isEmpty) continue;
+          // a capa fica no Cover Art Archive, pelo mesmo identificador
+          final capa = 'https://coverartarchive.org/release/$id/front-500';
+          final teste = await http
+              .head(Uri.parse(capa))
+              .timeout(const Duration(seconds: 8));
+          if (teste.statusCode == 200 || teste.statusCode == 307) {
+            return capa;
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Busca a capa no Deezer (API pública, sem chave). Boa cobertura,
   /// inclusive de gospel brasileiro que às vezes falta no iTunes.
   Future<String?> _tentarDeezer(String termo, String artL, String titL,
@@ -405,6 +528,7 @@ class _CapaMusicaState extends State<CapaMusica> {
 
   @override
   void dispose() {
+    CorrecoesService.mudou.removeListener(_conferirBase);
     _sub?.cancel();
     _debounce?.cancel();
     super.dispose();

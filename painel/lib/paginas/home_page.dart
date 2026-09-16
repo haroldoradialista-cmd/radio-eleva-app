@@ -11,6 +11,7 @@ import '../servicos/analytics_service.dart';
 import '../servicos/config_service.dart';
 import '../servicos/player_service.dart';
 import '../servicos/letra_service.dart';
+import '../servicos/correcoes_service.dart';
 import '../servicos/auth_service.dart';
 import '../tema.dart';
 import 'tocou_page.dart';
@@ -366,7 +367,14 @@ class _HomePageState extends State<HomePage> {
                     child: musica.isEmpty
                         ? _letraMensagem(
                             '🎵 Aguarde uma música começar a tocar para ver a letra aqui.')
-                        : FutureBuilder<String?>(
+                        // ATUALIZADOR OCULTO: se a letra desta música
+                        // chegar na base enquanto o painel está aberto,
+                        // ela aparece NA HORA, sem fechar e abrir.
+                        : ValueListenableBuilder<int>(
+                            valueListenable: CorrecoesService.mudou,
+                            builder: (_, versao, __) =>
+                                FutureBuilder<String?>(
+                            key: ValueKey('$musica|$versao'),
                             future: LetraService.buscar(musica),
                             builder: (ctx, snap) {
                               if (snap.connectionState ==
@@ -450,7 +458,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               );
                             },
-                          ),
+                          )),
                   ),
                 ],
               ),

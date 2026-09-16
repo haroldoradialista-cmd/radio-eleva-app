@@ -265,17 +265,6 @@ class PedidoMusicaPage extends StatefulWidget {
 }
 
 class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
-  @override
-  void initState() {
-    super.initState();
-    // Traz o nome e o WhatsApp do cadastro: o ouvinte não digita de novo.
-    if (CadastroService.nome.isNotEmpty) _nome.text = CadastroService.nome;
-    if (CadastroService.whatsapp.isNotEmpty) {
-      _whatsapp.text = CadastroService.whatsapp;
-    }
-    _cidade.addListener(_filtrarCidades);
-  }
-
   final _nome = TextEditingController();
   final _musica = TextEditingController();
   final _interprete = TextEditingController();
@@ -284,6 +273,22 @@ class _PedidoMusicaPageState extends State<PedidoMusicaPage> {
   List<String> _cidadesDoEstado = [];
   List<String> _sugestoes = [];
   bool _carregandoCidades = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Traz o nome e o WhatsApp do cadastro: o ouvinte não digita de novo.
+    if (CadastroService.nome.isNotEmpty) _nome.text = CadastroService.nome;
+    if (CadastroService.whatsapp.isNotEmpty) {
+      _whatsapp.text = CadastroService.whatsapp;
+    }
+    // estado e cidade também vêm do cadastro
+    if (CadastroService.estado.isNotEmpty) {
+      _estado.text = CadastroService.estado;
+      _cidade.text = CadastroService.cidade;
+      _carregarCidadesDoEstado(CadastroService.estado);
+    }
+  }
 
   /// Baixa as cidades do estado escolhido (lista oficial do IBGE)
   Future<void> _carregarCidadesDoEstado(String uf) async {

@@ -45,6 +45,17 @@ class _PromoCadastroPageState extends State<PromoCadastroPage> {
     if (CadastroService.whatsapp.isNotEmpty) {
       _zap.text = CadastroService.whatsapp;
     }
+    if (CadastroService.estado.isNotEmpty) {
+      _estado.text = CadastroService.estado;
+      _cidade.text = CadastroService.cidade;
+      _carregarCidadesDoEstado(CadastroService.estado);
+    }
+    // data de nascimento vem do cadastro; a idade é calculada sozinha,
+    // então a pergunta "é maior de 18?" já vem respondida
+    if (CadastroService.nascimento.isNotEmpty) {
+      _nasc.text = CadastroService.nascimento;
+      if (CadastroService.idade >= 18) _maiorIdade = true;
+    }
     for (final c in [_nome, _zap, _insta, _cidade, _estado, _nasc]) {
       c.addListener(() => setState(() {}));
     }
