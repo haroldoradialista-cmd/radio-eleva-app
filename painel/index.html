@@ -1120,6 +1120,15 @@
         <div id="logMigracao" style="margin-top:12px;display:none;max-height:300px;overflow-y:auto"></div>
       </div>
 
+      <div class="cartao" style="border-left:3px solid #35C733">
+        <h2>🚀 Enviar a configuração para o Firebase</h2>
+        <p class="rotulo-secao">A partir de agora o app dos ouvintes lê a configuração do <b>Firebase</b>, não mais do GitHub. Clique abaixo <b>uma vez</b> para enviar o que já existe. Depois disso, tudo que você salvar vai automaticamente para lá.</p>
+        <p class="rotulo-secao">O GitHub continua como <b>reserva</b>: se o Firebase falhar, o app ainda funciona.</p>
+        <button class="botao" onclick="enviarConfigParaFirebase()">🚀 Enviar configuração agora</button>
+        <button class="botao mini neutro" onclick="conferirConfigFirebase()">🔍 Conferir o que está lá</button>
+        <div id="statusConfigFB" style="margin-top:10px"></div>
+      </div>
+
       <div class="cartao">
         <h2>💾 Backup do conteúdo</h2>
         <p class="rotulo-secao">Baixa uma cópia de TUDO que está no banco (banners, notícias, promoções, correções, usuários, pedidos...) para o seu computador. Se algo for apagado por engano ou por alguém mal-intencionado, você restaura por aqui.</p>
@@ -1522,7 +1531,29 @@ async function entrarPainel(silencioso){
 /// Quem entra com E-MAIL E SENHA le do Supabase (caminho novo) — foi por
 /// isso que o painel aparecia vazio: sem token, nao tinha de onde ler.
 async function carregarConfig(){
-  // Caminho principal: GitHub (é de onde o app dos ouvintes lê).
+  // 1) FIREBASE — a casa nova, de onde o app lê
+  try{
+    const r = await fetch(`${RTDB}/config.json?t=${Date.now()}`);
+    if(r.ok){
+      const d = await r.json();
+      if(d && !d.error && (d.stream_url||'').startsWith('http')){
+        config = d;
+        // com token, guarda também a identificação do GitHub, para o
+        // caminho de reserva continuar funcionando
+        if(token){
+          try{
+            const g = await gh('config.json?ref=main&t=' + Date.now());
+            configSha = g.sha;
+          }catch(_){}
+        }
+        try{ preencherSeletoresRel(); }catch(e){}
+        try{ preencherSelResEnquete(); }catch(e){}
+        return;
+      }
+    }
+  }catch(_){}
+
+  // 2) GITHUB — reserva
   if(token){
     const d = await gh('config.json?ref=main&t=' + Date.now());
     configSha = d.sha;
@@ -1556,8 +1587,20 @@ async function salvarConfig(mensagem){
     throw new Error('configuracao vazia — gravacao cancelada por seguranca');
   }
 
-  // 1) GITHUB — caminho principal: e daqui que o app dos ouvintes le.
-  //    (a copia no Supabase e feita depois, e se falhar nao atrapalha)
+  // 1) FIREBASE — a partir de agora é DAQUI que o app dos ouvintes lê.
+  //    Chega na hora, sem esperar publicação, e sem depender do GitHub.
+  let salvouNoFirebase = false;
+  try{
+    const r = await fetch(`${RTDB}/config.json`, {
+      method: 'PUT',
+      body: JSON.stringify(config)
+    });
+    salvouNoFirebase = r.ok;
+    if(!r.ok) console.warn('Firebase recusou a configuração');
+  }catch(e){ console.warn('Firebase indisponível:', e.message); }
+
+  // 2) GITHUB — mantido como RESERVA enquanto a transição não termina.
+  //    Se o Firebase estiver fora do ar, o app ainda lê daqui.
   if(token){
     const corpo = {
       message: mensagem,
@@ -1566,26 +1609,13 @@ async function salvarConfig(mensagem){
     };
     const d = await gh('config.json', { method:'PUT', body: JSON.stringify(corpo) });
     configSha = d.content.sha;
-  } else {
-    if(!window._avisouSemToken){
-      window._avisouSemToken = true;
-      avisar('Para publicar no app dos ouvintes, entre com o token do GitHub.', true);
-    }
+  } else if(!salvouNoFirebase){
+    // sem token E sem Firebase: nada foi salvo, precisa avisar
+    avisar('NÃO foi possível salvar. Confira sua internet e tente de novo.', true);
+    throw new Error('nao salvou em nenhum lugar');
   }
 
-  // 2) CÓPIA no Supabase (opcional). Se o banco estiver fora do ar ou
-  //    pausado, nada acontece — o painel e o app seguem normalmente.
-  try{
-    await fetch(`${SB_URL}/rest/v1/configuracoes?on_conflict=radio_id`, {
-      method: 'POST',
-      headers: sbCabecalhos({ 'Prefer': 'resolution=merge-duplicates' }),
-      body: JSON.stringify([{
-        radio_id: RADIO_ID,
-        dados: config,
-        atualizado_em: new Date().toISOString()
-      }])
-    });
-  }catch(_){}
+
 }
 
 async function subirImagem(arquivo, pasta){
@@ -6403,6 +6433,64 @@ async function migrarSenhasParaCofre(){
     avisar(pendentes.length + ' senha(s) protegidas no cofre. 🔒');
     carregarUsuarios();
   }catch(_){}
+}
+
+/// ============ CONFIGURAÇÃO NO FIREBASE ============
+/// Copia a configuração atual (banners, notícias, programação, promoções)
+/// para o Firebase, que passa a ser a fonte que o app dos ouvintes lê.
+async function enviarConfigParaFirebase(){
+  const el = document.getElementById('statusConfigFB');
+  const temConteudo = config && (config.stream_url||'').startsWith('http');
+  if(!temConteudo){
+    avisar('A configuração não está carregada. Atualize a página (F5).', true);
+    return;
+  }
+  if(!confirm('Enviar a configuração da rádio para o Firebase?\n\n' +
+              'O GitHub continua intacto, como reserva.')) return;
+  el.innerHTML = '<p class="rotulo-secao">Enviando...</p>';
+  try{
+    const r = await fetch(`${RTDB}/config.json`, {
+      method:'PUT', body: JSON.stringify(config)
+    });
+    if(!r.ok){
+      el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">O Firebase recusou. Confira as Regras (o nó <b>config</b> precisa estar liberado).</p>';
+      return;
+    }
+    el.innerHTML = '<p class="rotulo-secao" style="color:#8ef58e">✅ Enviado! O app dos ouvintes já lê daqui.</p>';
+    avisar('Configuração enviada ao Firebase! ✅');
+    conferirConfigFirebase();
+  }catch(e){
+    el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">Falhou: '+e.message+'</p>';
+  }
+}
+
+/// Mostra o que está guardado no Firebase, para conferência
+async function conferirConfigFirebase(){
+  const el = document.getElementById('statusConfigFB');
+  if(!el) return;
+  el.innerHTML = '<p class="rotulo-secao">Conferindo...</p>';
+  try{
+    const r = await fetch(`${RTDB}/config.json?t=${Date.now()}`);
+    const d = await r.json();
+    if(!r.ok || !d || d.error){
+      el.innerHTML = '<p class="rotulo-secao" style="color:#e8c96a">Ainda não há nada no Firebase. Clique em "Enviar configuração agora".</p>';
+      return;
+    }
+    const conta = c => Array.isArray(d[c]) ? d[c].length : (d[c] ? 1 : 0);
+    el.innerHTML = `<div style="font-size:12.5px;line-height:1.7">
+      <b style="color:#8ef58e">✅ Configuração no Firebase</b><br>
+      Rádio: <b>${d.nome||'—'}</b><br>
+      Banners: <b>${conta('banners')}</b> •
+      Notícias: <b>${conta('noticias')}</b> •
+      Programas: <b>${conta('programacao')}</b><br>
+      Promoções: <b>${conta('promocoes')}</b> •
+      Enquetes: <b>${conta('enquetes')}</b> •
+      Campanhas: <b>${conta('campanhas')}</b><br>
+      Transmissão: ${(d.stream_url||'').startsWith('http')?'<b style="color:#8ef58e">ok</b>':'<b style="color:#ff6b6b">faltando</b>'}
+    </div>`;
+  }catch(e){
+    el.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">Erro ao conferir.</p>';
+  }
 }
 
 /// ============ BACKUP ANTES DE APAGAR ============
