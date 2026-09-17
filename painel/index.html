@@ -1120,6 +1120,15 @@
         <div id="logMigracao" style="margin-top:12px;display:none;max-height:300px;overflow-y:auto"></div>
       </div>
 
+      <div class="cartao" style="border-left:3px solid #1E9BFF">
+        <h2>🖼️ Mudar as imagens de lugar</h2>
+        <p class="rotulo-secao">As imagens da rádio (banners, notícias, promoções) ficam hoje no <b>mesmo repositório do código</b>. Para o código poder ficar privado, elas precisam mudar para um repositório só delas.</p>
+        <p class="rotulo-secao"><b>Antes de clicar:</b> crie no GitHub um repositório <b>público</b> chamado <b>radio-eleva-imagens</b>. Depois volte aqui.</p>
+        <button class="botao" onclick="migrarImagens()">🖼️ Mudar as imagens agora</button>
+        <button class="botao mini neutro" onclick="conferirRepoImagens()">🔍 Conferir o repositório</button>
+        <div id="logImagens" style="margin-top:12px;display:none;max-height:300px;overflow-y:auto"></div>
+      </div>
+
       <div class="cartao" style="border-left:3px solid #35C733">
         <h2>🚀 Enviar a configuração para o Firebase</h2>
         <p class="rotulo-secao">A partir de agora o app dos ouvintes lê a configuração do <b>Firebase</b>, não mais do GitHub. Clique abaixo <b>uma vez</b> para enviar o que já existe. Depois disso, tudo que você salvar vai automaticamente para lá.</p>
@@ -1282,8 +1291,13 @@
 // ================== CONFIGURAÇÕES ==================
 const DONO = 'haroldoradialista-cmd';
 const REPO = 'radio-eleva-app';
+// REPOSITÓRIO DAS IMAGENS — separado do código.
+// O código pode ficar privado (protegendo o produto) enquanto as imagens
+// continuam públicas, porque o app precisa baixá-las.
+const REPO_IMAGENS = 'radio-eleva-imagens';
 const API  = `https://api.github.com/repos/${DONO}/${REPO}/contents/`;
 const RAW  = `https://raw.githubusercontent.com/${DONO}/${REPO}/main/`;
+const RAW_IMAGENS = `https://raw.githubusercontent.com/${DONO}/${REPO_IMAGENS}/main/`;
 const RTDB = 'https://radio-eleva-default-rtdb.firebaseio.com';
 
 // ============ SUPABASE (nova casa dos dados) ============
@@ -1626,8 +1640,26 @@ async function subirImagem(arquivo, pasta){
     fr.onerror = rej;
     fr.readAsDataURL(arquivo);
   });
-  await gh(nome, { method:'PUT', body: JSON.stringify({ message:'Painel: nova mídia', content: base64, branch:'main' }) });
-  return RAW + nome;
+  // vai para o REPOSITÓRIO DAS IMAGENS (público), não para o do código
+  await ghImagens(nome, { method:'PUT', body: JSON.stringify({
+    message:'Painel: nova mídia', content: base64, branch:'main' }) });
+  return RAW_IMAGENS + nome;
+}
+
+/// Fala com o repositório das IMAGENS (mesmo token, outro repositório)
+async function ghImagens(caminho, opcoes){
+  const url = `https://api.github.com/repos/${DONO}/${REPO_IMAGENS}/contents/${caminho}`;
+  const r = await fetch(url, Object.assign({
+    headers: {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github+json'
+    }
+  }, opcoes || {}));
+  if(!r.ok){
+    const txt = await r.text();
+    throw new Error(`GitHub (imagens) ${r.status}: ${txt.slice(0,150)}`);
+  }
+  return await r.json();
 }
 
 // ============ MÍDIA REUTILIZÁVEL (imagem / vídeo MP4 / YouTube + som) ============
@@ -6433,6 +6465,124 @@ async function migrarSenhasParaCofre(){
     avisar(pendentes.length + ' senha(s) protegidas no cofre. 🔒');
     carregarUsuarios();
   }catch(_){}
+}
+
+/// ============ MUDAR AS IMAGENS DE REPOSITÓRIO ============
+/// Copia TODAS as imagens para o repositório novo e atualiza os endereços
+/// na configuração. Assim o repositório do código pode ficar privado sem
+/// que as imagens parem de aparecer no app.
+async function conferirRepoImagens(){
+  const log = document.getElementById('logImagens');
+  log.style.display = 'block';
+  log.innerHTML = '<p class="rotulo-secao">Conferindo...</p>';
+  try{
+    const r = await fetch(`https://api.github.com/repos/${DONO}/${REPO_IMAGENS}`, {
+      headers: { 'Authorization': 'token ' + token }
+    });
+    if(r.status === 404){
+      log.innerHTML = `<p class="rotulo-secao" style="color:#e8c96a">
+        ⚠️ O repositório <b>${REPO_IMAGENS}</b> ainda não existe.<br><br>
+        Crie em <b>github.com/new</b>:<br>
+        • Nome: <b>${REPO_IMAGENS}</b><br>
+        • Marque <b>Public</b><br>
+        • Marque <b>Add a README file</b><br>
+        • Clique em <b>Create repository</b></p>`;
+      return false;
+    }
+    if(!r.ok){
+      log.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">Não consegui conferir. O token tem permissão?</p>';
+      return false;
+    }
+    const d = await r.json();
+    const publico = d.private === false;
+    log.innerHTML = `<p class="rotulo-secao">
+      ✅ Repositório <b>${REPO_IMAGENS}</b> encontrado.<br>
+      Visibilidade: <b style="color:${publico?'#8ef58e':'#ff6b6b'}">${publico?'público (correto)':'PRIVADO — precisa ser público!'}</b></p>`;
+    return publico;
+  }catch(e){
+    log.innerHTML = '<p class="rotulo-secao" style="color:#ff6b6b">Erro: '+e.message+'</p>';
+    return false;
+  }
+}
+
+async function migrarImagens(){
+  if(!token){ avisar('Entre com o token do GitHub para fazer isto.', true); return; }
+  const log = document.getElementById('logImagens');
+  log.style.display = 'block';
+  const linhas = [];
+  const anota = (txt, cor) => {
+    linhas.unshift(`<div style="font-size:12.5px;color:${cor||'#8ef58e'}">${txt}</div>`);
+    log.innerHTML = linhas.join('');
+  };
+
+  // 1) confere se o repositório existe e é público
+  anota('🔍 Conferindo o repositório de destino...', '#e8c96a');
+  const ok = await conferirRepoImagens();
+  if(!ok){ return; }
+  log.innerHTML = '';
+  linhas.length = 0;
+
+  if(!confirm('Copiar TODAS as imagens para o repositório novo?\n\n' +
+              'As originais NÃO são apagadas — ficam como reserva.\n' +
+              'Pode levar alguns minutos.')) return;
+
+  // 2) lista as imagens do repositório atual
+  anota('📂 Listando as imagens...', '#e8c96a');
+  let lista = [];
+  try{
+    const r = await gh('imagens?ref=main');
+    lista = Array.isArray(r) ? r.filter(x => x.type === 'file') : [];
+  }catch(e){
+    anota('⚠️ Não consegui listar: ' + e.message, '#ff6b6b'); return;
+  }
+  if(!lista.length){ anota('Nenhuma imagem encontrada.', '#BDB8F0'); return; }
+  anota(`📂 ${lista.length} imagem(ns) encontrada(s)`, '#e8c96a');
+
+  // 3) copia uma a uma
+  let copiadas = 0, jaEstavam = 0, falhas = 0;
+  for(let i = 0; i < lista.length; i++){
+    const arq = lista[i];
+    const destino = 'imagens/' + arq.name;
+    anota(`⏳ ${i+1}/${lista.length} — ${arq.name}`, '#e8c96a');
+    try{
+      // já está lá?
+      const conf = await fetch(
+        `https://api.github.com/repos/${DONO}/${REPO_IMAGENS}/contents/${destino}`,
+        { headers: { 'Authorization': 'token ' + token } });
+      if(conf.ok){ jaEstavam++; continue; }
+
+      // baixa o conteúdo do repositório atual
+      const orig = await gh(`imagens/${arq.name}?ref=main`);
+      const base64 = (orig.content || '').replace(/\n/g, '');
+      if(!base64){ falhas++; continue; }
+
+      // grava no repositório novo
+      await ghImagens(destino, { method:'PUT', body: JSON.stringify({
+        message: 'Mudança de repositório', content: base64, branch: 'main' }) });
+      copiadas++;
+    }catch(e){
+      falhas++;
+      anota(`⚠️ ${arq.name}: ${e.message}`, '#ff6b6b');
+    }
+    await new Promise(s => setTimeout(s, 250));  // respeita o limite do GitHub
+  }
+  anota(`✅ Copiadas: ${copiadas} • Já estavam: ${jaEstavam} • Falhas: ${falhas}`);
+
+  // 4) atualiza os endereços na configuração
+  anota('🔗 Atualizando os endereços na configuração...', '#e8c96a');
+  const de = `https://raw.githubusercontent.com/${DONO}/${REPO}/main/imagens/`;
+  const para = `https://raw.githubusercontent.com/${DONO}/${REPO_IMAGENS}/main/imagens/`;
+  let texto = JSON.stringify(config);
+  const antes = (texto.match(new RegExp(de.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g'))||[]).length;
+  texto = texto.split(de).join(para);
+  config = JSON.parse(texto);
+  try{
+    await salvarConfig('Painel: imagens em repositorio proprio');
+    anota(`✅ ${antes} endereço(s) atualizado(s). Pronto! 🎉`, '#e8c96a');
+    avisar('Imagens mudadas de lugar com sucesso! ✅');
+  }catch(e){
+    anota('⚠️ As imagens foram copiadas, mas a configuração não salvou: ' + e.message, '#ff6b6b');
+  }
 }
 
 /// ============ CONFIGURAÇÃO NO FIREBASE ============
