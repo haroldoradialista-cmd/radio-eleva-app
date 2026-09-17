@@ -6551,10 +6551,40 @@ async function migrarImagens(){
         { headers: { 'Authorization': 'token ' + token } });
       if(conf.ok){ jaEstavam++; continue; }
 
-      // baixa o conteúdo do repositório atual
-      const orig = await gh(`imagens/${arq.name}?ref=main`);
-      const base64 = (orig.content || '').replace(/\n/g, '');
-      if(!base64){ falhas++; continue; }
+      // baixa o conteúdo do repositório atual.
+      // ATENÇÃO: para arquivos acima de 1 MB o GitHub NÃO devolve o
+      // conteúdo por este caminho — é preciso baixar pelo endereço
+      // público e converter. Era isto que fazia as imagens grandes
+      // falharem em silêncio.
+      let base64 = '';
+      try{
+        const orig = await gh(`imagens/${arq.name}?ref=main`);
+        base64 = (orig.content || '').replace(/\n/g, '');
+      }catch(_){}
+
+      if(!base64){
+        anota(`   ↳ arquivo grande, baixando de outro jeito...`, '#BDB8F0');
+        try{
+          const resp = await fetch(RAW + 'imagens/' + encodeURIComponent(arq.name));
+          if(!resp.ok) throw new Error('não consegui baixar');
+          const blob = await resp.blob();
+          base64 = await new Promise((res, rej) => {
+            const fr = new FileReader();
+            fr.onload = () => res(String(fr.result).split(',')[1] || '');
+            fr.onerror = rej;
+            fr.readAsDataURL(blob);
+          });
+        }catch(e2){
+          falhas++;
+          anota(`⚠️ ${arq.name}: não consegui ler o arquivo (${e2.message})`, '#ff6b6b');
+          continue;
+        }
+      }
+      if(!base64){
+        falhas++;
+        anota(`⚠️ ${arq.name}: arquivo vazio`, '#ff6b6b');
+        continue;
+      }
 
       // grava no repositório novo
       await ghImagens(destino, { method:'PUT', body: JSON.stringify({
