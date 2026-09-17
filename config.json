@@ -1,147 +1,92 @@
 {
-  "nome": "Rádio Eleva",
-  "slogan": "Adore • Viva • Eleve",
-  "stream_url": "https://sv16.hdradios.net:8516/stream",
-  "logo_url": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/assets/logo.png",
-  "whatsapp": "5521978994649",
-  "mensagem_pedido": "Olá, Rádio Eleva! Quero pedir uma música:",
-  "chat_url": "https://radio-eleva-default-rtdb.firebaseio.com/chat",
   "banners": [
     {
       "id": "b1787623926586",
-      "link": "https://www.mercadolivre.com.br/patinete-eletrico-honeywhale-h4-2400w-e-75-km-de-autonomia-para-adultos/p/MLB50303718?pdp_filters=item_id:MLB6726388956#is_advertising=true&searchVariation=MLB50303718&backend_model=search-backend&be_origin=backend&position=2&search_layout=grid&type=pad&tracking_id=87037b20-078f-41b8-95ac-9ffdfc186fb4&ad_domain=VQCATCORE_LST&ad_position=2&ad_click_id=ZDVjZWZmYjUtYjViMy00NmVlLWJhYTEtMmVjNDBkMDMxNDg0",
-      "tipo": "imagem",
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1787623924948_fretegrtis3.jpg",
-      "publicar_em": "2026-08-24T23:12"
+      "link": "https://www.mercadolivre.com.br/patinete-eletrico-honeywhale-h4-2400w-e-75-km-de-autonomia-para-adultos/p/MLB50303718?pdp_filters=item_id:MLB6726388956#is_advertising=true&searchVariation=MLB50303718&backend_model=search-backend&be_origin=backend&position=2&search_layout=grid&type=pad&tracking_id=87037b20-078f-41b8-95ac-9ffdfc186fb4&ad_domain=VQCATCORE_LST&ad_position=2&ad_click_id=ZDVjZWZmYjUtYjViMy00NmVlLWJhYTEtMmVjNDBkMDMxNDg0",
+      "publicar_em": "2026-08-24T23:12",
+      "tipo": "imagem"
     },
     {
       "id": "b1787625639486",
-      "link": "",
-      "tipo": "imagem",
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1787625638263_diadospais.jpg",
-      "publicar_em": "2026-08-24T23:40"
+      "link": "",
+      "publicar_em": "2026-08-24T23:40",
+      "tipo": "imagem"
     },
     {
       "id": "b1787625664968",
-      "link": "",
-      "tipo": "imagem",
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1787625663676_rgisdanese-lanamento2026.jpg",
-      "publicar_em": "2026-08-24T23:41"
+      "link": "",
+      "publicar_em": "2026-08-24T23:41",
+      "tipo": "imagem"
     },
     {
       "id": "b1787625717500",
-      "link": "",
-      "tipo": "imagem",
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1787625716098_logoeleva.jpg",
-      "publicar_em": "2026-08-24T23:41"
+      "link": "",
+      "publicar_em": "2026-08-24T23:41",
+      "tipo": "imagem"
     }
   ],
-  "noticias": [
+  "campanhas": [
     {
-      "titulo": "Fuxico Gospel",
-      "resumo": "“Pastores serão presos?”: Advogado Jeffrey Chiquini dispara alerta sobre nova lei penal",
-      "texto": "",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783560502804_advogado-Jeffrey-Chiquini_Easy-Resize.com_-768x512.jpg",
-      "link": "https://www.fuxicogospel.com.br/politica/pl-misoginia-urgencia-camara-jeffrey-chiquini-frei-gilson-liberdade-religiosa/",
-      "data": "08 de julho de 2026"
+      "cidade": "Rio de Janeiro",
+      "estado": "Rio de Janeiro",
+      "frequencia": "sempre",
+      "id": "c1785101569541",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785106852027_Designsemnome.png",
+      "link": "https://www.mercadolivre.com.br/lavadora-de-alta-pressao-krcher-pratica-black-1500-psilibras-1400w-300lh-com-aplicador-de-detergente-e-lanca-regulavel-127v/p/MLB47945119?pdp_filters=item_id%3AMLB5528395730",
+      "nivel": "cidade",
+      "nome": "Mercado Livre",
+      "publicar_em": "2026-07-26T19:42",
+      "segundos_fechar": 10,
+      "tamanho": "retrato",
+      "tipo": "imagem"
+    },
+    {
+      "cidade": "Cataguases",
+      "estado": "Minas Gerais",
+      "frequencia": "sempre",
+      "id": "c1785101484980",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1788917957567_SupermercadosMorais2.jpg",
+      "link": "https://www.supermercadomorais.com.br/encarte-di%C3%A1rio",
+      "nivel": "cidade",
+      "nome": "Supermercados Morais",
+      "publicar_em": "2026-09-08T22:36",
+      "segundos_fechar": 10,
+      "tamanho": "retrato",
+      "tipo": "imagem"
+    },
+    {
+      "cidade": "Leopoldina",
+      "estado": "Minas Gerais",
+      "frequencia": "sempre",
+      "id": "c1789321957686",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1789321956235_FontFruit-Leopoldina.jpg",
+      "link": "https://www.instagram.com/fontefruti/",
+      "nivel": "cidade",
+      "nome": "Font Fruit Leopoldina",
+      "publicar_em": "2026-09-13T14:52",
+      "segundos_fechar": 10,
+      "tamanho": "retrato",
+      "tipo": "imagem"
+    },
+    {
+      "cidade": "Além Paraíba",
+      "estado": "Minas Gerais",
+      "frequencia": "sempre",
+      "id": "c1789320853083",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1789320851719_Bahamas-Mix1.jpg",
+      "link": "https://bahamas.com.br/encartes/",
+      "nivel": "cidade",
+      "nome": "Supermercados Bahamas Mix",
+      "publicar_em": "2026-09-13T14:34",
+      "segundos_fechar": 10,
+      "tamanho": "retrato",
+      "tipo": "imagem"
     }
   ],
-  "redes": [
-    {
-      "nome": "Instagram",
-      "link": "https://www.instagram.com/amusicadoseujeito/"
-    },
-    {
-      "nome": "Facebook",
-      "link": ""
-    },
-    {
-      "nome": "YouTube",
-      "link": ""
-    },
-    {
-      "nome": "TikTok",
-      "link": ""
-    }
-  ],
-  "programacao": [
-    {
-      "dias": [
-        "Segunda",
-        "Terça",
-        "Quarta",
-        "Quinta",
-        "Sexta"
-      ],
-      "horario": "08:00",
-      "programa": "Manhã de Glória",
-      "apresentador": "Mattos Lyra",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783819589330_tarde_total_300kb.png"
-    },
-    {
-      "dias": [
-        "Segunda",
-        "Terça",
-        "Quarta",
-        "Quinta",
-        "Sexta"
-      ],
-      "horario": "10:00",
-      "programa": "Programa Ednei Gonçalves",
-      "apresentador": "Ednei Gonçalves",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783819631594_tarde_total_300kb.png"
-    },
-    {
-      "dias": [
-        "Domingo"
-      ],
-      "horario": "06:00",
-      "programa": "Manhã de Adoração",
-      "apresentador": "André Simas",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1784455464290_tarde_total_300kb.png"
-    }
-  ],
-  "enquetes": [
-    {
-      "id": "e1784161886064",
-      "pergunta": "Você acredita que um cristão pode beber chope sem desagradar a Deus?",
-      "opcoes": [
-        "SIM",
-        "NÃO"
-      ],
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1784161879421_ChatGPTImage15dejul.de202621_18_05.png",
-      "exibir_resultado": "sim"
-    }
-  ],
-  "promocoes": [
-    {
-      "id": "p1783816645723",
-      "pergunta": "E mais?",
-      "opcao1": "Show",
-      "opcao2": "Melhor",
-      "regulamento": "",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783816644531_tardetotal.jpeg",
-      "publicar_em": "2026-07-11T21:37"
-    },
-    {
-      "id": "p1783816605721",
-      "pergunta": "O que você acha?",
-      "opcao1": "Boa",
-      "opcao2": "Ótima",
-      "regulamento": "",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783816604515_WhatsAppImage2026-07-11at07.26.19.jpeg",
-      "publicar_em": "2026-07-11T21:36"
-    },
-    {
-      "id": "p1783729414787",
-      "pergunta": "Qual é a rádio?",
-      "opcao1": "Eleva",
-      "opcao2": "Outras",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783729413648_WhatsAppImage2026-07-10at20.47.12.jpeg",
-      "publicar_em": "2026-07-10T21:23"
-    }
-  ],
-  "chat_suspensao_horas": 0,
   "chat_palavras": [
     "porra",
     "merda",
@@ -284,66 +229,120 @@
     "arrombar",
     "encher o saco"
   ],
+  "chat_suspensao_horas": 0,
   "chat_suspensao_minutos": 10,
-  "campanha": {},
-  "campanhas": [
+  "chat_url": "https://radio-eleva-default-rtdb.firebaseio.com/chat",
+  "enquetes": [
     {
-      "id": "c1785101569541",
-      "nome": "Mercado Livre",
-      "nivel": "cidade",
-      "estado": "Rio de Janeiro",
-      "cidade": "Rio de Janeiro",
-      "tamanho": "retrato",
-      "link": "https://www.mercadolivre.com.br/lavadora-de-alta-pressao-krcher-pratica-black-1500-psilibras-1400w-300lh-com-aplicador-de-detergente-e-lanca-regulavel-127v/p/MLB47945119?pdp_filters=item_id%3AMLB5528395730",
-      "segundos_fechar": 10,
-      "frequencia": "sempre",
-      "tipo": "imagem",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1785106852027_Designsemnome.png",
-      "publicar_em": "2026-07-26T19:42"
-    },
-    {
-      "id": "c1785101484980",
-      "nome": "Supermercados Morais",
-      "nivel": "cidade",
-      "estado": "Minas Gerais",
-      "cidade": "Cataguases",
-      "tamanho": "retrato",
-      "link": "https://www.supermercadomorais.com.br/encarte-di%C3%A1rio",
-      "segundos_fechar": 10,
-      "frequencia": "sempre",
-      "tipo": "imagem",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1788917957567_SupermercadosMorais2.jpg",
-      "publicar_em": "2026-09-08T22:36"
-    },
-    {
-      "id": "c1789321957686",
-      "nome": "Font Fruit Leopoldina",
-      "nivel": "cidade",
-      "estado": "Minas Gerais",
-      "cidade": "Leopoldina",
-      "tamanho": "retrato",
-      "link": "https://www.instagram.com/fontefruti/",
-      "segundos_fechar": 10,
-      "frequencia": "sempre",
-      "tipo": "imagem",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1789321956235_FontFruit-Leopoldina.jpg",
-      "publicar_em": "2026-09-13T14:52"
-    },
-    {
-      "id": "c1789320853083",
-      "nome": "Supermercados Bahamas Mix",
-      "nivel": "cidade",
-      "estado": "Minas Gerais",
-      "cidade": "Além Paraíba",
-      "tamanho": "retrato",
-      "link": "https://bahamas.com.br/encartes/",
-      "segundos_fechar": 10,
-      "frequencia": "sempre",
-      "tipo": "imagem",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1789320851719_Bahamas-Mix1.jpg",
-      "publicar_em": "2026-09-13T14:34"
+      "exibir_resultado": "sim",
+      "id": "e1784161886064",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1784161879421_ChatGPTImage15dejul.de202621_18_05.png",
+      "opcoes": [
+        "SIM",
+        "NÃO"
+      ],
+      "pergunta": "Você acredita que um cristão pode beber chope sem desagradar a Deus?"
     }
   ],
+  "logo_url": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/assets/logo.png",
+  "mensagem_pedido": "Olá, Rádio Eleva! Quero pedir uma música:",
+  "nome": "Rádio Eleva",
+  "noticias": [
+    {
+      "data": "08 de julho de 2026",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783560502804_advogado-Jeffrey-Chiquini_Easy-Resize.com_-768x512.jpg",
+      "link": "https://www.fuxicogospel.com.br/politica/pl-misoginia-urgencia-camara-jeffrey-chiquini-frei-gilson-liberdade-religiosa/",
+      "resumo": "“Pastores serão presos?”: Advogado Jeffrey Chiquini dispara alerta sobre nova lei penal",
+      "texto": "",
+      "titulo": "Fuxico Gospel"
+    }
+  ],
+  "programacao": [
+    {
+      "apresentador": "Mattos Lyra",
+      "dias": [
+        "Segunda",
+        "Terça",
+        "Quarta",
+        "Quinta",
+        "Sexta"
+      ],
+      "horario": "08:00",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783819589330_tarde_total_300kb.png",
+      "programa": "Manhã de Glória"
+    },
+    {
+      "apresentador": "Ednei Gonçalves",
+      "dias": [
+        "Segunda",
+        "Terça",
+        "Quarta",
+        "Quinta",
+        "Sexta"
+      ],
+      "horario": "10:00",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783819631594_tarde_total_300kb.png",
+      "programa": "Programa Ednei Gonçalves"
+    },
+    {
+      "apresentador": "André Simas",
+      "dias": [
+        "Domingo"
+      ],
+      "horario": "06:00",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1784455464290_tarde_total_300kb.png",
+      "programa": "Manhã de Adoração"
+    }
+  ],
+  "promocoes": [
+    {
+      "id": "p1783816645723",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783816644531_tardetotal.jpeg",
+      "opcao1": "Show",
+      "opcao2": "Melhor",
+      "pergunta": "E mais?",
+      "publicar_em": "2026-07-11T21:37",
+      "regulamento": ""
+    },
+    {
+      "id": "p1783816605721",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783816604515_WhatsAppImage2026-07-11at07.26.19.jpeg",
+      "opcao1": "Boa",
+      "opcao2": "Ótima",
+      "pergunta": "O que você acha?",
+      "publicar_em": "2026-07-11T21:36",
+      "regulamento": ""
+    },
+    {
+      "id": "p1783729414787",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-app/main/imagens/1783729413648_WhatsAppImage2026-07-10at20.47.12.jpeg",
+      "opcao1": "Eleva",
+      "opcao2": "Outras",
+      "pergunta": "Qual é a rádio?",
+      "publicar_em": "2026-07-10T21:23"
+    }
+  ],
+  "redes": [
+    {
+      "nome": "Instagram",
+      "link": "https://www.instagram.com/amusicadoseujeito/"
+    },
+    {
+      "nome": "Facebook",
+      "link": ""
+    },
+    {
+      "nome": "YouTube",
+      "link": ""
+    },
+    {
+      "nome": "TikTok",
+      "link": ""
+    }
+  ],
+  "senha_apagar": "21a450ca63e673188f62d47608211457ed9f61dc8184b39c38d8fdf4b9cbaa71",
+  "slogan": "A Sua Estação",
+  "stream_url": "https://sv16.hdradios.net:8516/stream",
   "tv_video": "",
-  "senha_apagar": "21a450ca63e673188f62d47608211457ed9f61dc8184b39c38d8fdf4b9cbaa71"
+  "whatsapp": "5521978994649"
 }
