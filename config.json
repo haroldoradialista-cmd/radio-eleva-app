@@ -30,27 +30,13 @@
     },
     {
       "id": "b1789736256257",
-      "link": "https://www.minhaitatiaia.com.br/",
-      "tipo": "imagem",
       "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-imagens/main/imagens/1789736255139_cozinhacompleta.jpg",
-      "publicar_em": "2026-09-18T09:57"
+      "link": "https://www.minhaitatiaia.com.br/",
+      "publicar_em": "2026-09-18T09:57",
+      "tipo": "imagem"
     }
   ],
   "campanhas": [
-    {
-      "cidade": "Rio de Janeiro",
-      "estado": "Rio de Janeiro",
-      "frequencia": "sempre",
-      "id": "c1785101569541",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-imagens/main/imagens/1785106852027_Designsemnome.png",
-      "link": "https://www.mercadolivre.com.br/lavadora-de-alta-pressao-krcher-pratica-black-1500-psilibras-1400w-300lh-com-aplicador-de-detergente-e-lanca-regulavel-127v/p/MLB47945119?pdp_filters=item_id%3AMLB5528395730",
-      "nivel": "cidade",
-      "nome": "Mercado Livre",
-      "publicar_em": "2026-07-26T19:42",
-      "segundos_fechar": 10,
-      "tamanho": "retrato",
-      "tipo": "imagem"
-    },
     {
       "cidade": "Cataguases",
       "estado": "Minas Gerais",
@@ -92,6 +78,20 @@
       "segundos_fechar": 10,
       "tamanho": "retrato",
       "tipo": "imagem"
+    },
+    {
+      "id": "c1785101569541",
+      "nome": "Renner Natal",
+      "nivel": "cidade",
+      "estado": "Rio de Janeiro",
+      "cidade": "Rio de Janeiro",
+      "tamanho": "retrato",
+      "link": "https://www.lojasrenner.com.br/?utm_source=google&utm_medium=cpc&utm_campaign=google_rennerbr_conversao_venda_renner_geral_geral_inst&gad_source=1&gad_campaignid=175902105&gbraid=0AAAAADomBMkc0_wXitKjtaUFdllbcJ0WD&gclid=CjwKCAjwwrPVBhA1EiwAv_YO-RH1BbPoBLpUqFkz7V5j2OfFjHZ6dEB28rL8ByPSojodrdgQxWvHmhoCmyQQAvD_BwE",
+      "segundos_fechar": 10,
+      "frequencia": "sempre",
+      "tipo": "imagem",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-imagens/main/imagens/1789736959479_renner.jpg",
+      "publicar_em": "2026-09-18T10:07"
     }
   ],
   "chat_palavras": [
@@ -351,5 +351,6 @@
   "slogan": "A Sua Estação",
   "stream_url": "https://sv16.hdradios.net:8516/stream",
   "tv_video": "",
-  "whatsapp": "5521978994649"
+  "whatsapp": "5521978994649",
+  "campanha": {}
 }
