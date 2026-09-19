@@ -80,18 +80,32 @@
       "tipo": "imagem"
     },
     {
+      "cidade": "Rio de Janeiro",
+      "estado": "Rio de Janeiro",
+      "frequencia": "sempre",
       "id": "c1785101569541",
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-imagens/main/imagens/1789736959479_renner.jpg",
+      "link": "https://www.lojasrenner.com.br/?utm_source=google&utm_medium=cpc&utm_campaign=google_rennerbr_conversao_venda_renner_geral_geral_inst&gad_source=1&gad_campaignid=175902105&gbraid=0AAAAADomBMkc0_wXitKjtaUFdllbcJ0WD&gclid=CjwKCAjwwrPVBhA1EiwAv_YO-RH1BbPoBLpUqFkz7V5j2OfFjHZ6dEB28rL8ByPSojodrdgQxWvHmhoCmyQQAvD_BwE",
+      "nivel": "cidade",
       "nome": "Renner Natal",
+      "publicar_em": "2026-09-18T10:07",
+      "segundos_fechar": 10,
+      "tamanho": "retrato",
+      "tipo": "imagem"
+    },
+    {
+      "id": "c1789851539094",
+      "nome": "Magalu Natal",
       "nivel": "cidade",
       "estado": "Rio de Janeiro",
       "cidade": "Rio de Janeiro",
       "tamanho": "retrato",
-      "link": "https://www.lojasrenner.com.br/?utm_source=google&utm_medium=cpc&utm_campaign=google_rennerbr_conversao_venda_renner_geral_geral_inst&gad_source=1&gad_campaignid=175902105&gbraid=0AAAAADomBMkc0_wXitKjtaUFdllbcJ0WD&gclid=CjwKCAjwwrPVBhA1EiwAv_YO-RH1BbPoBLpUqFkz7V5j2OfFjHZ6dEB28rL8ByPSojodrdgQxWvHmhoCmyQQAvD_BwE",
+      "link": "https://www.magazineluiza.com.br/apple-iphone-18-pro-256gb-bordo-63-48mp-ios-27-5g/p/242486300/te/18pr/?seller_id=magazineluiza",
       "segundos_fechar": 10,
       "frequencia": "sempre",
       "tipo": "imagem",
-      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-imagens/main/imagens/1789736959479_renner.jpg",
-      "publicar_em": "2026-09-18T10:07"
+      "imagem": "https://raw.githubusercontent.com/haroldoradialista-cmd/radio-eleva-imagens/main/imagens/1789851537468_magalu1.jpg",
+      "publicar_em": "2026-09-19T17:58"
     }
   ],
   "chat_palavras": [
